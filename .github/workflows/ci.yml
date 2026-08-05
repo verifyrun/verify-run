@@ -57,6 +57,11 @@ jobs:
           python -m pip install --upgrade pip build
           python -m build
           ls -l dist/
+      - name: Install the project so the inspection tests can import it
+        # The inspection tests read the built archives, but they live in the test suite and
+        # import the project and PyYAML like any other test. Building alone does not put those
+        # on the job's interpreter.
+        run: python -m pip install -e .
       - name: Inspect package contents
         run: python -m unittest tests.test_release.PackageContents -v
       - name: Install the wheel into a clean environment
