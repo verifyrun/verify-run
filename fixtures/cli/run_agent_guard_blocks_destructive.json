@@ -1,0 +1,28 @@
+{
+  "note": "agent-guard blocks a destructive command on the candidate alone.",
+  "template": "agent-guard",
+  "tree": {
+    "bin": {
+      "kind": "dir"
+    },
+    "bin/rm": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+      "mode": "0755"
+    }
+  },
+  "argv": [
+    "bin/rm",
+    "-rf",
+    "./workspace"
+  ],
+  "identity": [],
+  "expected": {
+    "exit": 10,
+    "outcome": "BLOCK",
+    "executed": false,
+    "receipts": 1,
+    "consumed": 0,
+    "replays": true
+  }
+}

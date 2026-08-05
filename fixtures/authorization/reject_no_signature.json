@@ -1,0 +1,13 @@
+{
+  "description": "no signature",
+  "base": "minimum_valid",
+  "mutation": {
+    "kind": "drop",
+    "field": "signature"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "authorization_schema_invalid"
+  }
+}

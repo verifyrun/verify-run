@@ -1,0 +1,11 @@
+{
+  "description": "issue before snapshot freeze",
+  "mutation": {
+    "kind": "early_issue"
+  },
+  "stage": "issuance",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "authorization_not_yet_valid"
+  }
+}

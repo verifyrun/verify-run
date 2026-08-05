@@ -1,0 +1,8 @@
+{
+  "description": "ordering boolean literals",
+  "source": "true > false",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_type_error"
+  }
+}

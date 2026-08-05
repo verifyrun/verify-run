@@ -1,0 +1,6 @@
+{
+  "description": "set",
+  "format": "yaml",
+  "source_base64": "ISFzZXQKPyBhCj8gYgo=",
+  "expected": {"outcome": "ERROR", "reason_code": "source_construct_unsupported"}
+}

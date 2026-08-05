@@ -1,0 +1,6 @@
+{
+  "description": "negative infinity",
+  "format": "yaml",
+  "source_base64": "bjogLS5pbmYK",
+  "expected": {"outcome": "ERROR", "reason_code": "float_not_permitted"}
+}

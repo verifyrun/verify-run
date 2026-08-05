@@ -1,0 +1,6 @@
+{
+  "description": "leading plus",
+  "format": "yaml",
+  "source_base64": "bjogKzEK",
+  "expected": {"outcome": "ERROR", "reason_code": "source_construct_unsupported"}
+}

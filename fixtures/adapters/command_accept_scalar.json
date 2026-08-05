@@ -1,0 +1,31 @@
+{
+  "note": "pipeline-gate compares evidence.tests to a string, so stdout is a JSON string.",
+  "tree": {
+    "ci": {
+      "kind": "dir"
+    },
+    "ci/last-test-result.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCnByaW50ZiAnInBhc3NlZCInCg==",
+      "mode": "0755"
+    }
+  },
+  "declaration": {
+    "id": "tests",
+    "source": "exec",
+    "ref": "./ci/last-test-result.sh",
+    "max_age_seconds": 900
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "acquisition",
+    "acquisition": {
+      "id": "tests",
+      "status": "ok",
+      "acquired_at": "2026-08-04T12:00:00Z",
+      "value": "passed"
+    },
+    "canonical": "\"passed\"",
+    "sha256": "559532ad927252eed5d9b6687d55203a96b956d822055f4570f196a93a42bece"
+  }
+}

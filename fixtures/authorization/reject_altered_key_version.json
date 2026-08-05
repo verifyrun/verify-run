@@ -1,0 +1,14 @@
+{
+  "description": "altered key version",
+  "base": "minimum_valid",
+  "mutation": {
+    "kind": "signature_field",
+    "field": "key_version",
+    "value": 2
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signing_key_unknown"
+  }
+}

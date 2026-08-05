@@ -1,0 +1,6 @@
+{
+  "description": "non-string key (boolean)",
+  "format": "yaml",
+  "source_base64": "dHJ1ZTogYQo=",
+  "expected": {"outcome": "ERROR", "reason_code": "canonical_form_invalid"}
+}

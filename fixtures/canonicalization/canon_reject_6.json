@@ -1,0 +1,5 @@
+{
+  "description": "Exponent notation parses to a float and is refused, not rounded to an integer",
+  "input": {"n": 1e3},
+  "expected": {"outcome": "ERROR", "reason_code": "float_not_permitted"}
+}

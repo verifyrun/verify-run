@@ -1,0 +1,14 @@
+{
+  "description": "changed expires at",
+  "base": "minimum_valid",
+  "mutation": {
+    "kind": "field",
+    "field": "expires_at",
+    "value": "2026-08-05T09:00:00Z"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signature_invalid"
+  }
+}

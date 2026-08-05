@@ -1,0 +1,6 @@
+{
+  "description": "binary",
+  "format": "yaml",
+  "source_base64": "bjogMGIxMDEK",
+  "expected": {"outcome": "ERROR", "reason_code": "source_construct_unsupported"}
+}

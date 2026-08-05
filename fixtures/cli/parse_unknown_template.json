@@ -1,0 +1,11 @@
+{
+  "note": "sensor-loop was replaced by claims-gate before v1; the parser refuses it.",
+  "argv": [
+    "init",
+    "--template",
+    "sensor-loop"
+  ],
+  "expected": {
+    "exit": 2
+  }
+}

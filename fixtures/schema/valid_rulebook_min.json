@@ -1,0 +1,24 @@
+{
+  "description": "valid instance of rulebook.schema.json",
+  "schema": "https://verifyrun.com/spec/v1/rulebook.schema.json",
+  "value": {
+    "rulebook_id": "r-1",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "evidence": [],
+    "rules": [
+      {
+        "id": "a",
+        "when": "true",
+        "outcome": "ALLOW",
+        "reason": "x"
+      }
+    ],
+    "default_outcome": "HOLD"
+  },
+  "expected": {
+    "valid": true
+  },
+  "canonical": "{\"adopted_at\":\"2026-08-05T00:00:00Z\",\"default_outcome\":\"HOLD\",\"evidence\":[],\"rulebook_id\":\"r-1\",\"rules\":[{\"id\":\"a\",\"outcome\":\"ALLOW\",\"reason\":\"x\",\"when\":\"true\"}],\"version\":\"1.0.0\"}",
+  "sha256": "4ccbde033a0c19786a1c111204312fcd88f7f128e6cc0b63e835d6d4f14ef720"
+}

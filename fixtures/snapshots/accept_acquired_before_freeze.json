@@ -1,0 +1,51 @@
+{
+  "description": "acquired before freeze",
+  "rulebook": {
+    "rulebook_id": "snap",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "evidence": [
+      {
+        "id": "a",
+        "source": "file"
+      }
+    ],
+    "rules": [
+      {
+        "id": "r",
+        "when": "candidate.kind == \"command\"",
+        "outcome": "ALLOW",
+        "reason": "ok"
+      }
+    ],
+    "default_outcome": "HOLD"
+  },
+  "snapshot_id": "s-1",
+  "frozen_at": "2026-08-05T00:00:00Z",
+  "acquisitions": [
+    {
+      "id": "a",
+      "status": "ok",
+      "acquired_at": "2026-08-04T23:00:00Z",
+      "value": "v"
+    }
+  ],
+  "payload": {
+    "snapshot_id": "s-1",
+    "rulebook_digest": "PINNED",
+    "frozen_at": "2026-08-05T00:00:00Z",
+    "items": [
+      {
+        "id": "a",
+        "order": 0,
+        "acquired_at": "2026-08-04T23:00:00Z",
+        "status": "ok",
+        "value": "v"
+      }
+    ]
+  },
+  "payload_canonical_template": "{\"frozen_at\":\"2026-08-05T00:00:00Z\",\"items\":[{\"acquired_at\":\"2026-08-04T23:00:00Z\",\"id\":\"a\",\"order\":0,\"status\":\"ok\",\"value\":\"v\"}],\"rulebook_digest\":\"PINNED\",\"snapshot_id\":\"s-1\"}",
+  "order": [
+    "a"
+  ]
+}

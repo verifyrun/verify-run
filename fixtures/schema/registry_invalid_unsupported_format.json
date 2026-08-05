@@ -1,0 +1,15 @@
+{
+  "description": "unsupported format",
+  "kind": "registry",
+  "documents": [
+    {
+      "$id": "x:1",
+      "type": "string",
+      "format": "email"
+    }
+  ],
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "schema_registry_invalid"
+  }
+}

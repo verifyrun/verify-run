@@ -1,0 +1,8 @@
+{
+  "description": "fresh takes a path",
+  "source": "fresh(candidate.a)",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_type_error"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "note": "An acquisition without an id could not be placed in a snapshot.",
+  "tree": {},
+  "declaration": {
+    "source": "file",
+    "ref": ".vfy/approvals.json"
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "adapter_error",
+    "reason_code": "evidence_adapter_config_invalid"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "description": "A fractional number is a float and is never valid input",
+  "format": "json",
+  "source_base64": "eyJhbW91bnQiOjEyLjV9",
+  "expected": {"outcome": "ERROR", "reason_code": "float_not_permitted"}
+}

@@ -1,0 +1,6 @@
+{
+  "description": "ordered map",
+  "format": "yaml",
+  "source_base64": "azogISFvbWFwCi0gYTogMQo=",
+  "expected": {"outcome": "ERROR", "reason_code": "source_construct_unsupported"}
+}

@@ -1,0 +1,6 @@
+{
+  "description": "duplicate key at root",
+  "format": "yaml",
+  "source_base64": "YTogMQphOiAyCg==",
+  "expected": {"outcome": "ERROR", "reason_code": "canonical_form_invalid"}
+}

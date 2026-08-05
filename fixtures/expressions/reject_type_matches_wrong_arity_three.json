@@ -1,0 +1,8 @@
+{
+  "description": "matches wrong arity three",
+  "source": "matches(candidate.a, \"p\", \"q\")",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_type_error"
+  }
+}

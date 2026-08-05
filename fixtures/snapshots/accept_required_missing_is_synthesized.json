@@ -1,0 +1,62 @@
+{
+  "description": "required missing is synthesized",
+  "rulebook": {
+    "rulebook_id": "snap",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "evidence": [
+      {
+        "id": "given",
+        "source": "file"
+      },
+      {
+        "id": "absent_one",
+        "source": "file"
+      }
+    ],
+    "rules": [
+      {
+        "id": "r",
+        "when": "candidate.kind == \"command\"",
+        "outcome": "ALLOW",
+        "reason": "ok"
+      }
+    ],
+    "default_outcome": "HOLD"
+  },
+  "snapshot_id": "s-1",
+  "frozen_at": "2026-08-05T00:00:00Z",
+  "acquisitions": [
+    {
+      "id": "given",
+      "status": "ok",
+      "acquired_at": "2026-08-05T00:00:00Z",
+      "value": "v"
+    }
+  ],
+  "payload": {
+    "snapshot_id": "s-1",
+    "rulebook_digest": "PINNED",
+    "frozen_at": "2026-08-05T00:00:00Z",
+    "items": [
+      {
+        "id": "given",
+        "order": 0,
+        "acquired_at": "2026-08-05T00:00:00Z",
+        "status": "ok",
+        "value": "v"
+      },
+      {
+        "id": "absent_one",
+        "order": 1,
+        "acquired_at": "2026-08-05T00:00:00Z",
+        "status": "missing"
+      }
+    ]
+  },
+  "payload_canonical_template": "{\"frozen_at\":\"2026-08-05T00:00:00Z\",\"items\":[{\"acquired_at\":\"2026-08-05T00:00:00Z\",\"id\":\"given\",\"order\":0,\"status\":\"ok\",\"value\":\"v\"},{\"acquired_at\":\"2026-08-05T00:00:00Z\",\"id\":\"absent_one\",\"order\":1,\"status\":\"missing\"}],\"rulebook_digest\":\"PINNED\",\"snapshot_id\":\"s-1\"}",
+  "order": [
+    "given",
+    "absent_one"
+  ]
+}

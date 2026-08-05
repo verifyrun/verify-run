@@ -1,0 +1,13 @@
+{
+  "description": "supplied different rulebook",
+  "base": "minimum_valid",
+  "mutation": {
+    "kind": "supply",
+    "object": "rulebook"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "authorization_binding_mismatch"
+  }
+}

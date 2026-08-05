@@ -1,0 +1,8 @@
+{
+  "description": "Both ends of the integer interval, and JSON -0 as the integer zero",
+  "format": "json",
+  "source_base64": "eyJtYXgiOjkwMDcxOTkyNTQ3NDA5OTEsIm1pbiI6LTkwMDcxOTkyNTQ3NDA5OTEsInplcm8iOi0wfQ==",
+  "value": {"max": 9007199254740991, "min": -9007199254740991, "zero": 0},
+  "canonical": "{\"max\":9007199254740991,\"min\":-9007199254740991,\"zero\":0}",
+  "sha256": "b7b2401ddca2165824e98c61890c0aaec470258d3119dd265d02be9438bf47e6"
+}

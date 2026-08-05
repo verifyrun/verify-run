@@ -1,0 +1,6 @@
+{
+  "description": "A lone surrogate escape has no UTF-8 representation",
+  "format": "json",
+  "source_base64": "eyJzIjoiXHVkODAwIn0=",
+  "expected": {"outcome": "ERROR", "reason_code": "surrogate_not_permitted"}
+}

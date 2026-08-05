@@ -1,0 +1,143 @@
+{
+  "description": "allow with authorization and execution",
+  "TEST_ONLY": "keys here are published constants and authorize nothing",
+  "template": "pipeline-gate.yaml",
+  "rulebook_source": "rulebook_id: pipeline-gate\nversion: 1.0.0\nadopted_at: \"2026-08-05T00:00:00Z\"\ndescription: Gate a deployment on declared branch and fresh test evidence.\ntrack: [branch]\nevidence:\n  - {id: tests, source: exec, ref: \"./ci/last-test-result.sh\", max_age_seconds: 900}\nrules:\n  - id: tests-green-on-main\n    when: 'identity.branch == \"main\" and fresh(tests) and evidence.tests == \"passed\"'\n    outcome: ALLOW\n    reason: Tests green on main within freshness bound.\n  - id: tests-red\n    when: 'fresh(tests) and evidence.tests == \"failed\"'\n    outcome: BLOCK\n    reason: Tests failed.\n  - id: wrong-branch\n    when: 'identity.branch != \"main\"'\n    outcome: BLOCK\n    reason: Deploys only from main.\ndefault_outcome: HOLD\nauthorization: {ttl_seconds: 300, single_use: true}\n",
+  "candidate": {
+    "candidate_id": "c-1",
+    "kind": "command",
+    "action": {
+      "summary": "deploy",
+      "argv": [
+        "./deploy.sh",
+        "v1.2.3"
+      ]
+    },
+    "identity": {
+      "branch": "main"
+    }
+  },
+  "acquisitions": [
+    {
+      "id": "tests",
+      "status": "ok",
+      "value": "passed",
+      "acquired_at": "2026-08-04T23:59:30Z"
+    }
+  ],
+  "frozen_at": "2026-08-05T00:00:00Z",
+  "snapshot": {
+    "frozen_at": "2026-08-05T00:00:00Z",
+    "items": [
+      {
+        "acquired_at": "2026-08-04T23:59:30Z",
+        "id": "tests",
+        "order": 0,
+        "status": "ok",
+        "value": "passed"
+      }
+    ],
+    "rulebook_digest": "sha256:eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "snapshot_digest": "sha256:9f2d76050755f66315c7b0900d9fcd5c395385b97c7b793c592881c431c6b26a",
+    "snapshot_id": "s-1"
+  },
+  "authorization": {
+    "action_digest": "sha256:b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "authorization_id": "auth-1",
+    "evidence_digest": "sha256:9f2d76050755f66315c7b0900d9fcd5c395385b97c7b793c592881c431c6b26a",
+    "expires_at": "2026-08-05T00:05:00Z",
+    "issued_at": "2026-08-05T00:00:00Z",
+    "nonce": "nnnnnnnnnnnnnnnn",
+    "rulebook_digest": "sha256:eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "runtime_id": "runtime-1",
+    "signature": {
+      "alg": "ed25519",
+      "key_id": "auth-key",
+      "key_version": 1,
+      "value": "vmF0jQsFS5HYRVMayR8aaaW7AHFrMzB3D7nXB8AvR35QFdfpg46Gfkj6/U8VRITbqXD5LN+UrdufMDLSKAL5Cg=="
+    }
+  },
+  "unsigned_payload": {
+    "receipt_id": "r-1",
+    "spec_version": "1",
+    "created_at": "2026-08-05T00:00:06Z",
+    "rulebook": {
+      "rulebook_id": "pipeline-gate",
+      "version": "1.0.0",
+      "digest": "sha256:eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee"
+    },
+    "candidate_digest": "sha256:b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "evidence_digest": "sha256:9f2d76050755f66315c7b0900d9fcd5c395385b97c7b793c592881c431c6b26a",
+    "result": {
+      "matched_rule": "tests-green-on-main",
+      "outcome": "ALLOW",
+      "reasons": [
+        {
+          "code": "rule_allow",
+          "message": "Tests green on main within freshness bound.",
+          "rule_id": "tests-green-on-main"
+        }
+      ],
+      "trace": [
+        "0:tests-green-on-main:true"
+      ]
+    },
+    "replay": {
+      "mode": "recompute-decision"
+    },
+    "authorization_id": "auth-1",
+    "execution": {
+      "acknowledged": true,
+      "acknowledged_at": "2026-08-05T00:00:05Z",
+      "exit_status": 0
+    }
+  },
+  "unsigned_canonical": "{\"authorization_id\":\"auth-1\",\"candidate_digest\":\"sha256:b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb\",\"created_at\":\"2026-08-05T00:00:06Z\",\"evidence_digest\":\"sha256:9f2d76050755f66315c7b0900d9fcd5c395385b97c7b793c592881c431c6b26a\",\"execution\":{\"acknowledged\":true,\"acknowledged_at\":\"2026-08-05T00:00:05Z\",\"exit_status\":0},\"receipt_id\":\"r-1\",\"replay\":{\"mode\":\"recompute-decision\"},\"result\":{\"matched_rule\":\"tests-green-on-main\",\"outcome\":\"ALLOW\",\"reasons\":[{\"code\":\"rule_allow\",\"message\":\"Tests green on main within freshness bound.\",\"rule_id\":\"tests-green-on-main\"}],\"trace\":[\"0:tests-green-on-main:true\"]},\"rulebook\":{\"digest\":\"sha256:eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee\",\"rulebook_id\":\"pipeline-gate\",\"version\":\"1.0.0\"},\"spec_version\":\"1\"}",
+  "signature": "9PN9Q4FRBuC90fSOAbSP8tCpQNHUNDc+h5SI0hlUe4cnWUmrgyhX4RNXYHdo51GhXDoEsU8TfEPBrIOyelVcDA==",
+  "receipt": {
+    "receipt_id": "r-1",
+    "spec_version": "1",
+    "created_at": "2026-08-05T00:00:06Z",
+    "rulebook": {
+      "rulebook_id": "pipeline-gate",
+      "version": "1.0.0",
+      "digest": "sha256:eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee"
+    },
+    "candidate_digest": "sha256:b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "evidence_digest": "sha256:9f2d76050755f66315c7b0900d9fcd5c395385b97c7b793c592881c431c6b26a",
+    "result": {
+      "matched_rule": "tests-green-on-main",
+      "outcome": "ALLOW",
+      "reasons": [
+        {
+          "code": "rule_allow",
+          "message": "Tests green on main within freshness bound.",
+          "rule_id": "tests-green-on-main"
+        }
+      ],
+      "trace": [
+        "0:tests-green-on-main:true"
+      ]
+    },
+    "replay": {
+      "mode": "recompute-decision"
+    },
+    "authorization_id": "auth-1",
+    "execution": {
+      "acknowledged": true,
+      "acknowledged_at": "2026-08-05T00:00:05Z",
+      "exit_status": 0
+    },
+    "signature": {
+      "alg": "ed25519",
+      "key_id": "receipt-key",
+      "key_version": 1,
+      "value": "9PN9Q4FRBuC90fSOAbSP8tCpQNHUNDc+h5SI0hlUe4cnWUmrgyhX4RNXYHdo51GhXDoEsU8TfEPBrIOyelVcDA=="
+    }
+  },
+  "receipt_canonical": "{\"authorization_id\":\"auth-1\",\"candidate_digest\":\"sha256:b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb\",\"created_at\":\"2026-08-05T00:00:06Z\",\"evidence_digest\":\"sha256:9f2d76050755f66315c7b0900d9fcd5c395385b97c7b793c592881c431c6b26a\",\"execution\":{\"acknowledged\":true,\"acknowledged_at\":\"2026-08-05T00:00:05Z\",\"exit_status\":0},\"receipt_id\":\"r-1\",\"replay\":{\"mode\":\"recompute-decision\"},\"result\":{\"matched_rule\":\"tests-green-on-main\",\"outcome\":\"ALLOW\",\"reasons\":[{\"code\":\"rule_allow\",\"message\":\"Tests green on main within freshness bound.\",\"rule_id\":\"tests-green-on-main\"}],\"trace\":[\"0:tests-green-on-main:true\"]},\"rulebook\":{\"digest\":\"sha256:eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee\",\"rulebook_id\":\"pipeline-gate\",\"version\":\"1.0.0\"},\"signature\":{\"alg\":\"ed25519\",\"key_id\":\"receipt-key\",\"key_version\":1,\"value\":\"9PN9Q4FRBuC90fSOAbSP8tCpQNHUNDc+h5SI0hlUe4cnWUmrgyhX4RNXYHdo51GhXDoEsU8TfEPBrIOyelVcDA==\"},\"spec_version\":\"1\"}",
+  "receipt_public_key_hex": "2543b92ff1095511476adc8369db6ddc933665a11978dda1404ee1066ca9559d",
+  "receipt_private_key_hex": "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f",
+  "authorization_public_key_hex": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+  "expected_outcome": "ALLOW"
+}

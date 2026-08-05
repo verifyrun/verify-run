@@ -1,0 +1,8 @@
+{
+  "description": "fresh wrong arity zero",
+  "source": "fresh()",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_type_error"
+  }
+}

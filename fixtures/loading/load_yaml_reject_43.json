@@ -1,0 +1,6 @@
+{
+  "description": "integer above the interval",
+  "format": "yaml",
+  "source_base64": "bjogOTAwNzE5OTI1NDc0MDk5Mgo=",
+  "expected": {"outcome": "ERROR", "reason_code": "canonical_form_invalid"}
+}

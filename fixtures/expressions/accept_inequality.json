@@ -1,0 +1,25 @@
+{
+  "description": "inequality",
+  "source": "identity.branch != \"main\"",
+  "declared_evidence": [],
+  "ast": {
+    "type": "compare",
+    "operator": "!=",
+    "left": {
+      "type": "path",
+      "root": "identity",
+      "segments": [
+        {
+          "member": "branch"
+        }
+      ]
+    },
+    "right": {
+      "type": "literal",
+      "value": "main"
+    }
+  },
+  "canonical": "{\"left\":{\"root\":\"identity\",\"segments\":[{\"member\":\"branch\"}],\"type\":\"path\"},\"operator\":\"!=\",\"right\":{\"type\":\"literal\",\"value\":\"main\"},\"type\":\"compare\"}",
+  "sha256": "2b44830b0fcb98a80c3b0436ee6d3de9ce0a83a03a020709e10d1961a80710e1",
+  "evidence_ids": []
+}

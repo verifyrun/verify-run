@@ -1,0 +1,71 @@
+{
+  "description": "template agent write inside workspace",
+  "source": "candidate.kind == \"tool_call\" and candidate.action.tool == \"write_file\" and matches(candidate.action.params.path, \"./workspace/*\")",
+  "declared_evidence": [
+    "approvals"
+  ],
+  "ast": {
+    "type": "and",
+    "operands": [
+      {
+        "type": "compare",
+        "operator": "==",
+        "left": {
+          "type": "path",
+          "root": "candidate",
+          "segments": [
+            {
+              "member": "kind"
+            }
+          ]
+        },
+        "right": {
+          "type": "literal",
+          "value": "tool_call"
+        }
+      },
+      {
+        "type": "compare",
+        "operator": "==",
+        "left": {
+          "type": "path",
+          "root": "candidate",
+          "segments": [
+            {
+              "member": "action"
+            },
+            {
+              "member": "tool"
+            }
+          ]
+        },
+        "right": {
+          "type": "literal",
+          "value": "write_file"
+        }
+      },
+      {
+        "type": "matches",
+        "path": {
+          "type": "path",
+          "root": "candidate",
+          "segments": [
+            {
+              "member": "action"
+            },
+            {
+              "member": "params"
+            },
+            {
+              "member": "path"
+            }
+          ]
+        },
+        "pattern": "./workspace/*"
+      }
+    ]
+  },
+  "canonical": "{\"operands\":[{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"kind\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"tool_call\"},\"type\":\"compare\"},{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"action\"},{\"member\":\"tool\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"write_file\"},\"type\":\"compare\"},{\"path\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"action\"},{\"member\":\"params\"},{\"member\":\"path\"}],\"type\":\"path\"},\"pattern\":\"./workspace/*\",\"type\":\"matches\"}],\"type\":\"and\"}",
+  "sha256": "90dc1903babffc0824a47e74d212654554c6e5d02e6e34924f51bc62ee6ab239",
+  "evidence_ids": []
+}

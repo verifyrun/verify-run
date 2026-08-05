@@ -1,0 +1,10 @@
+{
+  "note": "Re-running over an unchanged workspace changes nothing and keeps the same keys.",
+  "template": "pipeline-gate",
+  "run_twice": true,
+  "expected": {
+    "exit": 0,
+    "keys_unchanged": true,
+    "config_unchanged": true
+  }
+}

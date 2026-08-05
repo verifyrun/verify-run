@@ -1,0 +1,8 @@
+{
+  "description": "Comments and ordinary whitespace carry no meaning",
+  "format": "yaml",
+  "source_base64": "IyBsZWFkaW5nIGNvbW1lbnQKCmE6IDEgICAjIHRyYWlsaW5nIGNvbW1lbnQKCiMgYW5vdGhlcgpiOgogIC0geCAgICMgaW4gYSBsaXN0Cgo=",
+  "value": {"a": 1, "b": ["x"]},
+  "canonical": "{\"a\":1,\"b\":[\"x\"]}",
+  "sha256": "fd5e92badbe24726f55b88132dd5fa1ceec0efd960b3bcd44f527b4bcc84af34"
+}

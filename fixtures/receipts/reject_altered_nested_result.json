@@ -1,0 +1,13 @@
+{
+  "description": "altered nested result",
+  "base": "allow_with_authorization_and_execution",
+  "mutation": {
+    "kind": "result_outcome",
+    "value": "BLOCK"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signature_invalid"
+  }
+}

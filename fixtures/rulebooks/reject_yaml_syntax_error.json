@@ -1,0 +1,9 @@
+{
+  "description": "yaml syntax error",
+  "stage": "source",
+  "source_base64": "cnVsZWJvb2tfaWQ6IHItMQp2ZXJzaW9uOiBbMS4wLjAK",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "source_syntax_invalid"
+  }
+}

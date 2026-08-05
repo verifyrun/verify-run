@@ -1,0 +1,26 @@
+{
+  "description": "rulebook allow as default",
+  "schema": "https://verifyrun.com/spec/v1/rulebook.schema.json",
+  "value": {
+    "rulebook_id": "r-1",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "evidence": [],
+    "rules": [
+      {
+        "id": "a",
+        "when": "true",
+        "outcome": "ALLOW",
+        "reason": "x"
+      }
+    ],
+    "default_outcome": "ALLOW"
+  },
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "rulebook_schema_invalid",
+    "instance_path": "$.default_outcome",
+    "schema_path": "$.properties.default_outcome.enum",
+    "keyword": "enum"
+  }
+}

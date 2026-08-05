@@ -1,0 +1,6 @@
+{
+  "description": "Precomposed U+00E9 and decomposed e + U+0301 stay two distinct members, in keys and in values. Canonicalization never normalizes.",
+  "input": {"\u00e9": "\u00e9", "e\u0301": "e\u0301"},
+  "canonical": "{\"e\u0301\":\"e\u0301\",\"\u00e9\":\"\u00e9\"}",
+  "sha256": "2b8599359615227d4bffe298511d6d9520d9cf98c59adf9541e6e023e41ffe7b"
+}

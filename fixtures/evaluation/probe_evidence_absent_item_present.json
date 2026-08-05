@@ -1,0 +1,19 @@
+{
+  "description": "evidence absent item present",
+  "when": "present(e)",
+  "declare": [
+    {
+      "id": "e",
+      "source": "file"
+    }
+  ],
+  "items": [],
+  "candidate": {
+    "candidate_id": "c",
+    "kind": "command",
+    "action": {
+      "summary": "s"
+    }
+  },
+  "expected": "false"
+}

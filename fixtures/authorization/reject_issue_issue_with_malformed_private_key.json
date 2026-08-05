@@ -1,0 +1,11 @@
+{
+  "description": "issue with malformed private key",
+  "mutation": {
+    "kind": "bad_private_key"
+  },
+  "stage": "issuance",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signing_key_invalid"
+  }
+}

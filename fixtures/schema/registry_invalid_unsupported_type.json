@@ -1,0 +1,14 @@
+{
+  "description": "unsupported type",
+  "kind": "registry",
+  "documents": [
+    {
+      "$id": "x:1",
+      "type": "number"
+    }
+  ],
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "schema_registry_invalid"
+  }
+}

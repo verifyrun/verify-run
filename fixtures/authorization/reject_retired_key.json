@@ -1,0 +1,12 @@
+{
+  "description": "retired key",
+  "base": "minimum_valid",
+  "mutation": {
+    "kind": "key_retired"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signing_key_retired"
+  }
+}

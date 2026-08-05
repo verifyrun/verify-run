@@ -1,0 +1,20 @@
+# The source distribution must be auditable: a project whose golden vectors cannot be checked
+# from its own sdist is asking to be trusted rather than verified.
+include LICENSE NOTICE README.md CHANGELOG.md pyproject.toml MANIFEST.in
+recursive-include spec *.md *.schema.json
+recursive-include templates *.yaml
+recursive-include fixtures *.json *.md
+recursive-include tests *.py
+include docs/*.md
+include .github/workflows/ci.yml
+
+# Never, in either distribution.
+exclude .DS_Store
+recursive-exclude . *.key
+recursive-exclude . *.pyc
+prune .venv
+prune .vfy
+prune verify-run
+prune dist
+prune build
+global-exclude .DS_Store __pycache__

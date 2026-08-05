@@ -1,0 +1,20 @@
+{
+  "description": "evidence optional declaration present",
+  "when": "present(e)",
+  "declare": [
+    {
+      "id": "e",
+      "source": "file",
+      "required": false
+    }
+  ],
+  "items": [],
+  "candidate": {
+    "candidate_id": "c",
+    "kind": "command",
+    "action": {
+      "summary": "s"
+    }
+  },
+  "expected": "false"
+}

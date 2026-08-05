@@ -1,0 +1,14 @@
+{
+  "description": "changed issued at",
+  "base": "minimum_valid",
+  "mutation": {
+    "kind": "field",
+    "field": "issued_at",
+    "value": "2026-08-05T00:00:01Z"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signature_invalid"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "note": "watch is v1.5; the v1 surface is nothing more.",
+  "argv": [
+    "watch"
+  ],
+  "expected": {
+    "exit": 2
+  }
+}

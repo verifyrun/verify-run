@@ -1,0 +1,8 @@
+{
+  "description": "formatting variants of and_flattened",
+  "sources": [
+    "candidate.a==\"x\" and candidate.b==\"y\" and candidate.c==\"z\"",
+    "candidate.a == \"x\"   and   candidate.b == \"y\"   and   candidate.c == \"z\""
+  ],
+  "canonical": "{\"operands\":[{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"a\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"x\"},\"type\":\"compare\"},{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"b\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"y\"},\"type\":\"compare\"},{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"c\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"z\"},\"type\":\"compare\"}],\"type\":\"and\"}"
+}

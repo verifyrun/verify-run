@@ -1,0 +1,6 @@
+{
+  "description": "float",
+  "format": "yaml",
+  "source_base64": "bjogMS41Cg==",
+  "expected": {"outcome": "ERROR", "reason_code": "float_not_permitted"}
+}

@@ -1,0 +1,6 @@
+{
+  "description": "malformed UTF-8",
+  "format": "yaml",
+  "source_base64": "azogIv8iCg==",
+  "expected": {"outcome": "ERROR", "reason_code": "source_encoding_invalid"}
+}

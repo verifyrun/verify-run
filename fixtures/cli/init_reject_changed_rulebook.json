@@ -1,0 +1,12 @@
+{
+  "note": "A user edit is never silently overwritten.",
+  "template": "pipeline-gate",
+  "run_twice": true,
+  "mutate_between": {
+    "rulebook.yaml": "# edited by hand\n"
+  },
+  "expected": {
+    "exit": 1,
+    "reason_code": "cli_workspace_conflict"
+  }
+}

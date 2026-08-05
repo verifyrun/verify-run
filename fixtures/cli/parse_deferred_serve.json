@@ -1,0 +1,9 @@
+{
+  "note": "serve follows only if an integration demands it.",
+  "argv": [
+    "serve"
+  ],
+  "expected": {
+    "exit": 2
+  }
+}

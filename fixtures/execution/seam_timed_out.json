@@ -1,0 +1,14 @@
+{
+  "note": "The world may already have changed, so the attempt is acknowledged with no exit status.",
+  "stage": "after-launch",
+  "state": {
+    "authorization_consumed": true,
+    "process_started": true,
+    "acknowledgment_available": true,
+    "receipt_available": true,
+    "stored_record_available": true,
+    "automatic_retry_permitted": false
+  },
+  "reason_code": null,
+  "recovery": "None automatic. The external effect, if any, is outside this system."
+}

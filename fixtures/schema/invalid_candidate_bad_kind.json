@@ -1,0 +1,18 @@
+{
+  "description": "candidate bad kind",
+  "schema": "https://verifyrun.com/spec/v1/candidate.schema.json",
+  "value": {
+    "candidate_id": "c",
+    "kind": "bogus",
+    "action": {
+      "summary": "x"
+    }
+  },
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "candidate_schema_invalid",
+    "instance_path": "$.kind",
+    "schema_path": "$.properties.kind.enum",
+    "keyword": "enum"
+  }
+}

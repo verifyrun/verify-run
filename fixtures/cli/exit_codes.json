@@ -1,0 +1,13 @@
+{
+  "note": "Three separate things: the decision, the child's status, and the CLI's health.",
+  "codes": {
+    "ALLOW and the command exited zero": 0,
+    "a CLI operational failure with no decision": 1,
+    "a usage error from the parser": 2,
+    "BLOCK": 10,
+    "HOLD": 11,
+    "ERROR": 12,
+    "ALLOW but the command did not exit zero": 13,
+    "ALLOW but the record could not be written": 14
+  }
+}

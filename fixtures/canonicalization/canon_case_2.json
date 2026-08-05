@@ -1,0 +1,6 @@
+{
+  "description": "A supplementary-plane scalar is valid and is emitted literally as UTF-8",
+  "input": {"clef": "𝄞"},
+  "canonical": "{\"clef\":\"𝄞\"}",
+  "sha256": "4483ccae290205cc01ef57b642a0637135f7febef4bdc67a249e4c0fa0135ceb"
+}

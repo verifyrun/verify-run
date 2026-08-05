@@ -1,0 +1,43 @@
+{
+  "description": "status missing under requires",
+  "rulebook": {
+    "rulebook_id": "bridge",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "evidence": [
+      {
+        "id": "a",
+        "source": "file"
+      }
+    ],
+    "rules": [
+      {
+        "id": "r",
+        "when": "candidate.kind == \"command\"",
+        "outcome": "ALLOW",
+        "reason": "ok",
+        "requires_evidence": [
+          "a"
+        ]
+      }
+    ],
+    "default_outcome": "BLOCK"
+  },
+  "snapshot_id": "s-1",
+  "frozen_at": "2026-08-05T00:00:00Z",
+  "acquisitions": [
+    {
+      "id": "a",
+      "status": "missing",
+      "acquired_at": "2026-08-05T00:00:00Z"
+    }
+  ],
+  "candidate": {
+    "candidate_id": "c",
+    "kind": "command",
+    "action": {
+      "summary": "s"
+    }
+  },
+  "expected_outcome": "HOLD"
+}

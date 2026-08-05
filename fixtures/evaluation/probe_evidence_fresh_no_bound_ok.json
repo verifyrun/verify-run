@@ -1,0 +1,25 @@
+{
+  "description": "evidence fresh no bound ok",
+  "when": "fresh(e)",
+  "declare": [
+    {
+      "id": "e",
+      "source": "file"
+    }
+  ],
+  "items": [
+    {
+      "id": "e",
+      "status": "ok",
+      "value": "v"
+    }
+  ],
+  "candidate": {
+    "candidate_id": "c",
+    "kind": "command",
+    "action": {
+      "summary": "s"
+    }
+  },
+  "expected": "true"
+}

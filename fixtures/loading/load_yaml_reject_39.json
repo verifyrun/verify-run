@@ -1,0 +1,6 @@
+{
+  "description": "byte-order mark",
+  "format": "yaml",
+  "source_base64": "77u/YTogMQo=",
+  "expected": {"outcome": "ERROR", "reason_code": "source_encoding_invalid"}
+}

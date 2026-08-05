@@ -1,0 +1,6 @@
+{
+  "description": "non-string key (integer)",
+  "format": "yaml",
+  "source_base64": "MTogYQo=",
+  "expected": {"outcome": "ERROR", "reason_code": "canonical_form_invalid"}
+}

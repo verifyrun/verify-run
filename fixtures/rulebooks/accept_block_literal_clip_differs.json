@@ -1,0 +1,32 @@
+{
+  "description": "block literal clip differs",
+  "source_base64": "cnVsZWJvb2tfaWQ6IGJsb2NrLWxpdAp2ZXJzaW9uOiAxLjAuMAphZG9wdGVkX2F0OiAiMjAyNi0wOC0wNVQwMDowMDowMFoiCmRlc2NyaXB0aW9uOiB8CiAgbGluZSBvbmUKICBsaW5lIHR3bwpldmlkZW5jZTogW10KcnVsZXM6CiAgLSBpZDogcgogICAgd2hlbjogJ3RydWUnCiAgICBvdXRjb21lOiBBTExPVwogICAgcmVhc29uOiBvawpkZWZhdWx0X291dGNvbWU6IEhPTEQK",
+  "value": {
+    "rulebook_id": "block-lit",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "description": "line one\nline two\n",
+    "evidence": [],
+    "rules": [
+      {
+        "id": "r",
+        "when": "true",
+        "outcome": "ALLOW",
+        "reason": "ok"
+      }
+    ],
+    "default_outcome": "HOLD"
+  },
+  "canonical": "{\"adopted_at\":\"2026-08-05T00:00:00Z\",\"default_outcome\":\"HOLD\",\"description\":\"line one\\nline two\\n\",\"evidence\":[],\"rulebook_id\":\"block-lit\",\"rules\":[{\"id\":\"r\",\"outcome\":\"ALLOW\",\"reason\":\"ok\",\"when\":\"true\"}],\"version\":\"1.0.0\"}",
+  "sha256": "15af0126e4fc3479e46501c2f6e2f1ac1e3192fdad1e9072fa34aad40be0ebaf",
+  "digest": "sha256:15af0126e4fc3479e46501c2f6e2f1ac1e3192fdad1e9072fa34aad40be0ebaf",
+  "rulebook_id": "block-lit",
+  "version": "1.0.0",
+  "adopted_at": "2026-08-05T00:00:00Z",
+  "applies": [
+    [
+      "2026-08-05T00:00:00Z",
+      true
+    ]
+  ]
+}

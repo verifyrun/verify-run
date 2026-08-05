@@ -1,0 +1,35 @@
+{
+  "note": "A file observation flows through the builder into an ALLOW.",
+  "rulebook_ref": "templates/agent-guard.yaml",
+  "tree": {
+    ".vfy": {
+      "kind": "dir"
+    },
+    ".vfy/approvals.json": {
+      "kind": "file",
+      "bytes_base64": "eyJhcHByb3ZlZCI6dHJ1ZSwiYnkiOiJkYW5hIn0=",
+      "mode": "0644"
+    }
+  },
+  "snapshot_id": "snap-bridge-agent-guard-allow-workspace-write",
+  "frozen_at": "2026-08-05T00:00:00Z",
+  "acquired_at": "2026-08-04T23:59:30Z",
+  "candidate": {
+    "candidate_id": "c-bridge-6",
+    "kind": "tool_call",
+    "action": {
+      "summary": "write notes",
+      "tool": "write_file",
+      "params": {
+        "path": "./workspace/notes.md"
+      }
+    }
+  },
+  "expected": {
+    "statuses": {
+      "approvals": "ok"
+    },
+    "outcome": "ALLOW",
+    "matched_rule": "write-inside-workspace"
+  }
+}

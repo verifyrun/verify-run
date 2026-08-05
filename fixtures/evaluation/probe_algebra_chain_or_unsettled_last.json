@@ -1,0 +1,41 @@
+{
+  "description": "algebra chain or unsettled last",
+  "when": "present(f) or present(f) or evidence.u == \"x\"",
+  "declare": [
+    {
+      "id": "t",
+      "source": "file"
+    },
+    {
+      "id": "f",
+      "source": "file"
+    },
+    {
+      "id": "u",
+      "source": "file"
+    }
+  ],
+  "items": [
+    {
+      "id": "t",
+      "status": "ok",
+      "value": "x"
+    },
+    {
+      "id": "f",
+      "status": "missing"
+    },
+    {
+      "id": "u",
+      "status": "missing"
+    }
+  ],
+  "candidate": {
+    "candidate_id": "c",
+    "kind": "command",
+    "action": {
+      "summary": "s"
+    }
+  },
+  "expected": "unsettled"
+}

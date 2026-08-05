@@ -1,0 +1,14 @@
+{
+  "description": "malformed signature encoding",
+  "base": "minimum_valid",
+  "mutation": {
+    "kind": "signature_field",
+    "field": "value",
+    "value": "not base64!!"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signature_malformed"
+  }
+}

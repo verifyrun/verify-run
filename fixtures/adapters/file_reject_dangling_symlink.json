@@ -1,0 +1,24 @@
+{
+  "note": "A broken symlink is a configuration fault, not a missing file.",
+  "tree": {
+    ".vfy": {
+      "kind": "dir"
+    },
+    ".vfy/approvals.json": {
+      "kind": "symlink",
+      "target": "gone.json"
+    }
+  },
+  "declaration": {
+    "id": "approvals",
+    "source": "file",
+    "ref": ".vfy/approvals.json",
+    "max_age_seconds": 86400,
+    "required": false
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "adapter_error",
+    "reason_code": "evidence_path_invalid"
+  }
+}

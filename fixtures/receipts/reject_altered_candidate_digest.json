@@ -1,0 +1,14 @@
+{
+  "description": "altered candidate digest",
+  "base": "allow_with_authorization_and_execution",
+  "mutation": {
+    "kind": "field",
+    "field": "candidate_digest",
+    "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signature_invalid"
+  }
+}

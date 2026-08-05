@@ -1,0 +1,219 @@
+# verify-run
+
+**A local, deterministic gate that decides whether a consequential command is allowed to run —
+and leaves a signed receipt you can replay offline.**
+
+Alpha. Everything runs on your machine. No account, no database, no browser, no network call, no
+telemetry.
+
+## The problem
+
+Software is increasingly allowed to act: agents run shell commands, pipelines deploy, workflows
+move money. The usual controls are a code review before the fact and a log line after it. Neither
+tells you *why* a specific action was permitted, under which rules, against which evidence — and
+neither lets anyone check that answer later without trusting whoever wrote the log.
+
+`verify-run` puts one deterministic decision between the intent and the action, and records it in
+a form that can be recomputed from its own inputs.
+
+## Install
+
+```bash
+python -m pip install verify-run
+```
+
+Requires Python 3.11 or newer. Two dependencies: PyYAML and cryptography.
+
+## 90-second quickstart
+
+```bash
+mkdir demo && cd demo
+vfy init --template pipeline-gate
+```
+
+```
+initialized  .
+  rulebook   rulebook.yaml   (template pipeline-gate)
+  runtime    local-033506d02ab8629c
+  store      .vfy
+  keys were generated in .vfy/keys; the private halves are never printed.
+```
+
+The template gates a deploy on two things: the branch, and fresh passing tests. Provide both —
+a program to gate, and the command that reports test status:
+
+```bash
+mkdir -p bin ci
+printf '#!/bin/sh\nprintf "deployed %s\\n" "$1"\n' > bin/deploy.sh && chmod +x bin/deploy.sh
+printf '#!/bin/sh\nprintf %s "\\"passed\\""\n' '' > ci/last-test-result.sh && chmod +x ci/last-test-result.sh
+```
+
+Now gate the deploy:
+
+```bash
+vfy run --identity branch=main -- bin/deploy.sh v1.2.3
+```
+
+```
+ALLOW   bin/deploy.sh v1.2.3   rule: tests-green-on-main
+        rule_allow: Tests green on main within freshness bound.
+        receipt .vfy/receipts/r-b4b83611eecc18cf00ca07a0.json
+        executed, exit 0
+```
+
+Try it from the wrong branch, and from a state where the tests cannot be read:
+
+```
+BLOCK   bin/deploy.sh v1.2.3   rule: wrong-branch
+        rule_block: Deploys only from main.
+        receipt .vfy/receipts/r-075c672f2cb9c2fc2c859194.json
+        nothing executed
+
+HOLD    bin/deploy.sh v1.2.3
+        evidence_unsettled tests: Evidence could not settle this rule.
+        receipt .vfy/receipts/r-940642b37391e90eba0091c8.json
+        nothing executed
+```
+
+List what happened, and recompute any of it:
+
+```bash
+vfy receipts list
+vfy replay .vfy/receipts/r-b4b83611eecc18cf00ca07a0.json
+```
+
+```
+ALLOW   r-b4b83611eecc18cf00ca07a0
+  verification  signature verified
+  replay        recomputed and identical
+  authorization verified against the recorded bindings
+```
+
+Every transcript above is real output from this version. Full walkthrough:
+[docs/quickstart.md](docs/quickstart.md).
+
+## Four outcomes, never collapsed
+
+| Outcome | Meaning | Exit code |
+|---|---|---|
+| **ALLOW** | The rulebook and the evidence authorize this exact action. | 0 (13 if the command itself failed) |
+| **BLOCK** | The rulebook reached a negative result. The receipt names which rule. | 10 |
+| **HOLD** | The rulebook *cannot settle it* — evidence missing, stale, or conflicting. Not a failure. | 11 |
+| **ERROR** | The request was malformed; evaluation never validly began. Not a decision. | 12 |
+
+HOLD is the one most systems get wrong. "I don't know" is a different answer from "no", and
+merging them is how a gate starts silently guessing.
+
+## The workflow
+
+```
+vfy init      create a workspace from a template
+vfy check     evaluate a candidate without executing anything
+vfy run       gate a command
+vfy replay    verify and recompute a stored decision
+vfy receipts  list, or show one with verification and replay
+```
+
+`check` is a preview: it reaches a decision and writes nothing. `run` is the governed path — it
+evaluates, and on ALLOW it issues a single-use authorization bound to that exact command, consumes
+it, launches, records what happened, signs a receipt, and stores everything replay needs.
+
+## The rulebook
+
+```yaml
+rulebook_id: pipeline-gate
+version: 1.0.0
+adopted_at: "2026-08-05T00:00:00Z"
+track: [branch]
+evidence:
+  - {id: tests, source: exec, ref: "./ci/last-test-result.sh", max_age_seconds: 900}
+rules:
+  - id: tests-green-on-main
+    when: 'identity.branch == "main" and fresh(tests) and evidence.tests == "passed"'
+    outcome: ALLOW
+    reason: Tests green on main within freshness bound.
+  - id: tests-red
+    when: 'fresh(tests) and evidence.tests == "failed"'
+    outcome: BLOCK
+    reason: Tests failed.
+default_outcome: HOLD
+authorization: {ttl_seconds: 300, single_use: true}
+```
+
+Rules are tried in order; the first one that is *true* decides. A rule that cannot be settled
+stops the walk and holds. See [docs/rulebook-reference.md](docs/rulebook-reference.md).
+
+## Supported evidence
+
+- **`file`** — a local JSON file.
+- **`exec`** — a local command whose stdout is JSON.
+
+**`http` is not implemented in this alpha.** A rulebook may declare it — the bundled `claims-gate`
+template does — and nothing is faked: the item is recorded as missing, the rulebook holds, and the
+CLI names the source. That is the correct answer for evidence nobody acquired, not a defect.
+
+## Not in this alpha
+
+HTTP evidence, `watch` mode, `serve` mode, hosted registry or vault, fleets, accounts, billing, a
+browser interface, device/GPIO support, and the npm runtime. None of these exist here.
+
+## What replay does and does not mean
+
+Replay **recomputes the decision** from the exact recorded rulebook, candidate, and evidence
+snapshot, and compares the result byte for byte. It also verifies the receipt's signature against
+a key registry *you* supply.
+
+Replay does **not** re-run the command, re-acquire evidence, contact any system, or establish that
+the world changed. A receipt records that a runtime reported an exit status — not that a deploy
+succeeded. See [docs/receipts-and-replay.md](docs/receipts-and-replay.md).
+
+## Security model, briefly
+
+- Trust roots are key registries you control. An artifact never certifies itself.
+- An authorization is issued only on ALLOW, bound to the exact command, rulebook, and evidence
+  digests, and is single-use — consumed **before** the process starts.
+- No shell is ever involved. Arguments are passed literally.
+- The parent environment is not inherited; a gated command sees only what your config names.
+- **This is not a sandbox.** The command runs with your privileges.
+- **Exactly-once external execution is not claimed.** A crash after consumption and before launch
+  spends the authority without acting; a crash after launch may change the world without a stored
+  receipt. Both are stated plainly rather than papered over.
+
+Full boundaries, including what is deliberately *not* guaranteed:
+[docs/security.md](docs/security.md).
+
+## Determinism
+
+Evaluation is a pure function of the pinned rulebook, the candidate, and the frozen evidence
+snapshot. It reads no clock, no randomness, no environment, no network, and no locale. The same
+canonical inputs produce byte-identical outputs — which is what makes replay checkable at all.
+
+Timestamps, key generation, and nonces live at the command-line edge and enter the trusted layers
+only as recorded values.
+
+## Python support
+
+Requires `>=3.11`. Developed and fully tested on CPython 3.14 (macOS, arm64); continuous
+integration covers 3.11, 3.12, and 3.13 on Linux. Other platforms are expected to work but are
+not yet proven — see [docs/security.md](docs/security.md) for the exact platform caveats.
+
+## Development
+
+```bash
+python -m venv .venv && .venv/bin/pip install -e .
+.venv/bin/python -m unittest discover -s tests -t .
+```
+
+Standard-library `unittest`, no test-framework dependency. The `spec/` directory is the authority
+and `fixtures/` holds the golden vectors; implementations conform to them, never the reverse.
+
+## Alpha status
+
+Version `0.1.0a1`. The decision semantics, canonical form, and receipt format are frozen and
+covered by golden vectors. The command surface is the five commands above. Interfaces may still
+change before 1.0; recorded artifacts carry a `spec_version` so a future change cannot silently
+reinterpret an old receipt.
+
+## License
+
+Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).

@@ -1,0 +1,6 @@
+{
+  "description": "tab indentation",
+  "format": "yaml",
+  "source_base64": "YToKCWI6IDEK",
+  "expected": {"outcome": "ERROR", "reason_code": "source_syntax_invalid"}
+}

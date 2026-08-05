@@ -1,0 +1,6 @@
+{
+  "description": "pairs",
+  "format": "yaml",
+  "source_base64": "azogISFwYWlycwotIGE6IDEK",
+  "expected": {"outcome": "ERROR", "reason_code": "source_construct_unsupported"}
+}

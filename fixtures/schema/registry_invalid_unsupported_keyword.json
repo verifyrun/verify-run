@@ -1,0 +1,15 @@
+{
+  "description": "unsupported keyword",
+  "kind": "registry",
+  "documents": [
+    {
+      "$id": "x:1",
+      "type": "object",
+      "maxProperties": 2
+    }
+  ],
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "schema_registry_invalid"
+  }
+}

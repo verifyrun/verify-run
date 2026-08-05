@@ -1,0 +1,31 @@
+{
+  "description": "repeated index",
+  "source": "candidate.a[0][12] == \"x\"",
+  "declared_evidence": [],
+  "ast": {
+    "type": "compare",
+    "operator": "==",
+    "left": {
+      "type": "path",
+      "root": "candidate",
+      "segments": [
+        {
+          "member": "a"
+        },
+        {
+          "index": 0
+        },
+        {
+          "index": 12
+        }
+      ]
+    },
+    "right": {
+      "type": "literal",
+      "value": "x"
+    }
+  },
+  "canonical": "{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"a\"},{\"index\":0},{\"index\":12}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"x\"},\"type\":\"compare\"}",
+  "sha256": "2caaacd13e874a8cec2a8e996d49b13931f240d3169a88bc91dc6c20ffbbd1a1",
+  "evidence_ids": []
+}

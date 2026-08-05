@@ -1,0 +1,12 @@
+{
+  "description": "unknown receipt key",
+  "base": "allow_with_authorization_and_execution",
+  "mutation": {
+    "kind": "key_absent"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signing_key_unknown"
+  }
+}

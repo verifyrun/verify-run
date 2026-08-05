@@ -1,0 +1,21 @@
+{
+  "description": "candidate identity value not string",
+  "schema": "https://verifyrun.com/spec/v1/candidate.schema.json",
+  "value": {
+    "candidate_id": "c",
+    "kind": "command",
+    "action": {
+      "summary": "x"
+    },
+    "identity": {
+      "k": 1
+    }
+  },
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "candidate_schema_invalid",
+    "instance_path": "$.identity.k",
+    "schema_path": "$.properties.identity.additionalProperties.type",
+    "keyword": "type"
+  }
+}

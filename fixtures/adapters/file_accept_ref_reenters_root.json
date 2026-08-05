@@ -1,0 +1,32 @@
+{
+  "note": "Containment is decided by resolution: a spelling that lands back inside is not refused.",
+  "tree": {
+    ".vfy": {
+      "kind": "dir"
+    },
+    ".vfy/approvals.json": {
+      "kind": "file",
+      "bytes_base64": "eyJhcHByb3ZlZCI6ZmFsc2V9",
+      "mode": "0644"
+    }
+  },
+  "declaration": {
+    "id": "approvals",
+    "source": "file",
+    "ref": ".vfy/../.vfy/approvals.json"
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "acquisition",
+    "acquisition": {
+      "id": "approvals",
+      "status": "ok",
+      "acquired_at": "2026-08-04T12:00:00Z",
+      "value": {
+        "approved": false
+      }
+    },
+    "canonical": "{\"approved\":false}",
+    "sha256": "2cd29ef83c924138134bcfedff798f2490e8fcac372d6f8db1cd1deeed884854"
+  }
+}

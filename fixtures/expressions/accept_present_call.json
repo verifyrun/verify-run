@@ -1,0 +1,16 @@
+{
+  "description": "present call",
+  "source": "present(tests)",
+  "declared_evidence": [
+    "tests"
+  ],
+  "ast": {
+    "type": "present",
+    "evidence_id": "tests"
+  },
+  "canonical": "{\"evidence_id\":\"tests\",\"type\":\"present\"}",
+  "sha256": "1f0493971affdd64c6a3c8810e9c073b85b36c4a01166da675734413c3a5154f",
+  "evidence_ids": [
+    "tests"
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "description": "template claims over authority",
+  "source": "candidate.action.params.amount > evidence.authority_limit",
+  "declared_evidence": [
+    "coverage",
+    "docs_complete",
+    "authority_limit"
+  ],
+  "ast": {
+    "type": "compare",
+    "operator": ">",
+    "left": {
+      "type": "path",
+      "root": "candidate",
+      "segments": [
+        {
+          "member": "action"
+        },
+        {
+          "member": "params"
+        },
+        {
+          "member": "amount"
+        }
+      ]
+    },
+    "right": {
+      "type": "path",
+      "root": "evidence",
+      "segments": [
+        {
+          "member": "authority_limit"
+        }
+      ]
+    }
+  },
+  "canonical": "{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"action\"},{\"member\":\"params\"},{\"member\":\"amount\"}],\"type\":\"path\"},\"operator\":\">\",\"right\":{\"root\":\"evidence\",\"segments\":[{\"member\":\"authority_limit\"}],\"type\":\"path\"},\"type\":\"compare\"}",
+  "sha256": "ad093cc4967f575a3138639f5912550398ceaf87751ab770437488114eee8049",
+  "evidence_ids": [
+    "authority_limit"
+  ]
+}

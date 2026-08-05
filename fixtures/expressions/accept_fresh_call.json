@@ -1,0 +1,16 @@
+{
+  "description": "fresh call",
+  "source": "fresh(tests)",
+  "declared_evidence": [
+    "tests"
+  ],
+  "ast": {
+    "type": "fresh",
+    "evidence_id": "tests"
+  },
+  "canonical": "{\"evidence_id\":\"tests\",\"type\":\"fresh\"}",
+  "sha256": "24d1b0a865880378272283ffef8c1794d0ed4cc80011ed02eae7e3310a2ce6b1",
+  "evidence_ids": [
+    "tests"
+  ]
+}

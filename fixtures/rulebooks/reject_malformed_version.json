@@ -1,0 +1,9 @@
+{
+  "description": "malformed version",
+  "stage": "schema",
+  "source_base64": "cnVsZWJvb2tfaWQ6IHItMQp2ZXJzaW9uOiAiMS4wIgphZG9wdGVkX2F0OiAiMjAyNi0wOC0wNVQwMDowMDowMFoiCmV2aWRlbmNlOiBbXQpydWxlczoKICAtIGlkOiByCiAgICB3aGVuOiAndHJ1ZScKICAgIG91dGNvbWU6IEFMTE9XCiAgICByZWFzb246IG9rCmRlZmF1bHRfb3V0Y29tZTogSE9MRAo=",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "rulebook_schema_invalid"
+  }
+}

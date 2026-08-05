@@ -1,0 +1,34 @@
+{
+  "note": "Stdout is strict JSON; nothing is inferred from the script name.",
+  "tree": {
+    "ci": {
+      "kind": "dir"
+    },
+    "ci/last-test-result.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCnByaW50ZiAneyJzdWl0ZSI6InVuaXQiLCJmYWlsdXJlcyI6MH0nCg==",
+      "mode": "0755"
+    }
+  },
+  "declaration": {
+    "id": "tests",
+    "source": "exec",
+    "ref": "./ci/last-test-result.sh",
+    "max_age_seconds": 900
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "acquisition",
+    "acquisition": {
+      "id": "tests",
+      "status": "ok",
+      "acquired_at": "2026-08-04T12:00:00Z",
+      "value": {
+        "suite": "unit",
+        "failures": 0
+      }
+    },
+    "canonical": "{\"failures\":0,\"suite\":\"unit\"}",
+    "sha256": "724c6e954882bc12891c3a0d966358245df09f087c9d508c0511810cb3248762"
+  }
+}

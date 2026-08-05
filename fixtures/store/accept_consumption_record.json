@@ -1,0 +1,12 @@
+{
+  "description": "one consumption record, named by the sha256 of the nonce",
+  "filename": "c37981c132b7a7d5bea887a29284ea4c11a26571c66d39e2dbebe0d51a4ebe70.json",
+  "record": {
+    "action_digest": "sha256:b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "authorization_id": "auth-1",
+    "evidence_digest": "sha256:9f2d76050755f66315c7b0900d9fcd5c395385b97c7b793c592881c431c6b26a",
+    "nonce": "nnnnnnnnnnnnnnnn",
+    "rulebook_digest": "sha256:eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee"
+  },
+  "nonce_sha256": "c37981c132b7a7d5bea887a29284ea4c11a26571c66d39e2dbebe0d51a4ebe70"
+}

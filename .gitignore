@@ -1,0 +1,51 @@
+# Environments and build output
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Bytecode and caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Operating-system metadata
+.DS_Store
+Thumbs.db
+
+# Editor metadata
+.idea/
+.vscode/
+
+# Local workspaces created by `vfy init`. These hold generated private signing keys
+# and a developer's own receipts; neither belongs in this repository.
+.vfy/
+*.key
+
+# Local run output that is not source
+*.log
+soak-*.txt
+
+# Namespace-reservation placeholder and the original kickoff archive. Neither is part of
+# the Python distribution; both are kept out of the release rather than deleted.
+verify-run/
+verify-run-kickoff.zip
+
+# Internal planning documents, kept locally and deliberately out of this repository.
+# Both carry pricing tiers, revenue-accounting rules, and deal sizes, none of which is product
+# documentation, and nothing in the source, tests, specifications, or packaging reads them.
+# Git history is permanent, so publishing them is not reversible; excluding them is.
+# To include them, delete these two lines.
+SPRINT_PLAN.md
+VERIFY_Product_Architecture_v2.md
+
+# Credentials, never
+.env
+.env.*
+.pypirc

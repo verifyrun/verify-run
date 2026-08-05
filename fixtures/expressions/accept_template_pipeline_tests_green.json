@@ -1,0 +1,55 @@
+{
+  "description": "template pipeline tests green",
+  "source": "identity.branch == \"main\" and fresh(tests) and evidence.tests == \"passed\"",
+  "declared_evidence": [
+    "tests"
+  ],
+  "ast": {
+    "type": "and",
+    "operands": [
+      {
+        "type": "compare",
+        "operator": "==",
+        "left": {
+          "type": "path",
+          "root": "identity",
+          "segments": [
+            {
+              "member": "branch"
+            }
+          ]
+        },
+        "right": {
+          "type": "literal",
+          "value": "main"
+        }
+      },
+      {
+        "type": "fresh",
+        "evidence_id": "tests"
+      },
+      {
+        "type": "compare",
+        "operator": "==",
+        "left": {
+          "type": "path",
+          "root": "evidence",
+          "segments": [
+            {
+              "member": "tests"
+            }
+          ]
+        },
+        "right": {
+          "type": "literal",
+          "value": "passed"
+        }
+      }
+    ]
+  },
+  "canonical": "{\"operands\":[{\"left\":{\"root\":\"identity\",\"segments\":[{\"member\":\"branch\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"main\"},\"type\":\"compare\"},{\"evidence_id\":\"tests\",\"type\":\"fresh\"},{\"left\":{\"root\":\"evidence\",\"segments\":[{\"member\":\"tests\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"passed\"},\"type\":\"compare\"}],\"type\":\"and\"}",
+  "sha256": "0a7a66b9cf84fe1a6add4fe21ddfbaffedad333e4fdffcca7f496cfde971ca7c",
+  "evidence_ids": [
+    "tests"
+  ]
+}

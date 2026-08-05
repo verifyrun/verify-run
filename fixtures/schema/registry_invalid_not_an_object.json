@@ -1,0 +1,11 @@
+{
+  "description": "not an object",
+  "kind": "registry",
+  "documents": [
+    "nope"
+  ],
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "schema_registry_invalid"
+  }
+}

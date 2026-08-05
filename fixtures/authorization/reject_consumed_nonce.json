@@ -1,0 +1,12 @@
+{
+  "description": "consumed nonce",
+  "base": "minimum_valid",
+  "mutation": {
+    "kind": "consumed"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "authorization_nonce_reused"
+  }
+}

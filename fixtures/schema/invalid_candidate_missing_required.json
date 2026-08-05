@@ -1,0 +1,17 @@
+{
+  "description": "candidate missing required",
+  "schema": "https://verifyrun.com/spec/v1/candidate.schema.json",
+  "value": {
+    "kind": "command",
+    "action": {
+      "summary": "x"
+    }
+  },
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "candidate_schema_invalid",
+    "instance_path": "$.candidate_id",
+    "schema_path": "$.required",
+    "keyword": "required"
+  }
+}

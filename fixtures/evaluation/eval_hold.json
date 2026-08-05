@@ -1,0 +1,6 @@
+{"description": "Stale evidence cannot settle -> HOLD, not BLOCK",
+ "rulebook_ref": "templates/pipeline-gate.yaml", "candidate": {"candidate_id": "c-3",
+ "kind": "command", "action": {"summary": "deploy", "argv": ["./deploy.sh", "v1.2.4"]},
+ "identity": {"branch": "main"}},
+ "evidence_overrides": {"tests": {"status": "stale", "age_seconds": 9999}},
+ "expected": {"outcome": "HOLD", "reason_code": "evidence_unsettled"}}

@@ -1,0 +1,6 @@
+{
+  "description": "multiple documents",
+  "format": "yaml",
+  "source_base64": "YTogMQotLS0KYjogMgo=",
+  "expected": {"outcome": "ERROR", "reason_code": "source_syntax_invalid"}
+}

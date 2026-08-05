@@ -1,0 +1,8 @@
+{
+  "description": "Canonical integers at both ends of the interval, and zero",
+  "format": "yaml",
+  "source_base64": "bWF4OiA5MDA3MTk5MjU0NzQwOTkxCm1pbjogLTkwMDcxOTkyNTQ3NDA5OTEKemVybzogMApuZWc6IC0xCg==",
+  "value": {"max": 9007199254740991, "min": -9007199254740991, "zero": 0, "neg": -1},
+  "canonical": "{\"max\":9007199254740991,\"min\":-9007199254740991,\"neg\":-1,\"zero\":0}",
+  "sha256": "38ce4603e38371a2b56876246a87339d03f1bcc9d8022c2527ca0f204fd77a8e"
+}

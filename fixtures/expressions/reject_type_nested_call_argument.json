@@ -1,0 +1,8 @@
+{
+  "description": "nested call argument",
+  "source": "fresh(present(a))",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_type_error"
+  }
+}

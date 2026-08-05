@@ -1,0 +1,6 @@
+{
+  "description": "Exponent notation is a float, not an integer written differently",
+  "format": "json",
+  "source_base64": "eyJuIjoxZTN9",
+  "expected": {"outcome": "ERROR", "reason_code": "float_not_permitted"}
+}

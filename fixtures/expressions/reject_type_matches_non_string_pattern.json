@@ -1,0 +1,8 @@
+{
+  "description": "matches non string pattern",
+  "source": "matches(candidate.a, 5)",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_type_error"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "description": "equality",
+  "source": "candidate.kind == \"command\"",
+  "declared_evidence": [],
+  "ast": {
+    "type": "compare",
+    "operator": "==",
+    "left": {
+      "type": "path",
+      "root": "candidate",
+      "segments": [
+        {
+          "member": "kind"
+        }
+      ]
+    },
+    "right": {
+      "type": "literal",
+      "value": "command"
+    }
+  },
+  "canonical": "{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"kind\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"command\"},\"type\":\"compare\"}",
+  "sha256": "339a30b135c6137f329c45903e9beb69dbe525120df6776d86e2b17a328d9488",
+  "evidence_ids": []
+}

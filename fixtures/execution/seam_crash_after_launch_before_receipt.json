@@ -1,0 +1,14 @@
+{
+  "note": "The most consequential loss: an external effect may exist with no record of it. This unit cannot close it without a transactional external actuator, and does not claim to.",
+  "stage": "after-launch",
+  "state": {
+    "authorization_consumed": true,
+    "process_started": true,
+    "acknowledgment_available": false,
+    "receipt_available": false,
+    "stored_record_available": false,
+    "automatic_retry_permitted": false
+  },
+  "reason_code": null,
+  "recovery": "None. The spent consumption record is the only surviving evidence a run began."
+}

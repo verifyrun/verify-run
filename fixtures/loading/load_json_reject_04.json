@@ -1,0 +1,6 @@
+{
+  "description": "A UTF-8 byte-order mark is not permitted on input",
+  "format": "json",
+  "source_base64": "77u/eyJhIjoxfQ==",
+  "expected": {"outcome": "ERROR", "reason_code": "source_encoding_invalid"}
+}

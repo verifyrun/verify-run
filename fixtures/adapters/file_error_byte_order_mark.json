@@ -1,0 +1,29 @@
+{
+  "note": "A byte-order mark is source, not content, and the loader refuses it.",
+  "tree": {
+    ".vfy": {
+      "kind": "dir"
+    },
+    ".vfy/approvals.json": {
+      "kind": "file",
+      "bytes_base64": "77u/eyJhcHByb3ZlZCI6dHJ1ZX0=",
+      "mode": "0644"
+    }
+  },
+  "declaration": {
+    "id": "approvals",
+    "source": "file",
+    "ref": ".vfy/approvals.json",
+    "max_age_seconds": 86400,
+    "required": false
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "acquisition",
+    "acquisition": {
+      "id": "approvals",
+      "status": "error",
+      "acquired_at": "2026-08-04T12:00:00Z"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "description": "An integer one above the accepted interval",
+  "format": "json",
+  "source_base64": "eyJuIjo5MDA3MTk5MjU0NzQwOTkyfQ==",
+  "expected": {"outcome": "ERROR", "reason_code": "canonical_form_invalid"}
+}

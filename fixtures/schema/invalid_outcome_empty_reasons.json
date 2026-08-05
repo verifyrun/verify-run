@@ -1,0 +1,15 @@
+{
+  "description": "outcome empty reasons",
+  "schema": "https://verifyrun.com/spec/v1/outcome.schema.json",
+  "value": {
+    "outcome": "ALLOW",
+    "reasons": []
+  },
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "outcome_schema_invalid",
+    "instance_path": "$.reasons",
+    "schema_path": "$.properties.reasons.minItems",
+    "keyword": "minItems"
+  }
+}

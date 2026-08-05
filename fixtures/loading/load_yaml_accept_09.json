@@ -1,0 +1,8 @@
+{
+  "description": "All six block scalar forms: literal and folded, clip, strip, and keep chomping",
+  "format": "yaml",
+  "source_base64": "Y2xpcF9saXQ6IHwKICBhCiAgYgpzdHJpcF9saXQ6IHwtCiAgYQogIGIKa2VlcF9saXQ6IHwrCiAgYQogIGIKCmNsaXBfZm9sZDogPgogIGEKICBiCnN0cmlwX2ZvbGQ6ID4tCiAgYQogIGIKa2VlcF9mb2xkOiA+KwogIGEKICBiCgo=",
+  "value": {"clip_lit": "a\nb\n", "strip_lit": "a\nb", "keep_lit": "a\nb\n\n", "clip_fold": "a b\n", "strip_fold": "a b", "keep_fold": "a b\n\n"},
+  "canonical": "{\"clip_fold\":\"a b\\n\",\"clip_lit\":\"a\\nb\\n\",\"keep_fold\":\"a b\\n\\n\",\"keep_lit\":\"a\\nb\\n\\n\",\"strip_fold\":\"a b\",\"strip_lit\":\"a\\nb\"}",
+  "sha256": "ac694c1d540f4178988118e5f2354c31cbe92c6f3f960f836f97f52017d399cb"
+}

@@ -1,0 +1,29 @@
+{
+  "note": "A symlink anywhere on the way is refused, not only at the leaf.",
+  "tree": {
+    "real": {
+      "kind": "dir"
+    },
+    "real/approvals.json": {
+      "kind": "file",
+      "bytes_base64": "eyJhcHByb3ZlZCI6dHJ1ZX0=",
+      "mode": "0644"
+    },
+    ".vfy": {
+      "kind": "symlink",
+      "target": "real"
+    }
+  },
+  "declaration": {
+    "id": "approvals",
+    "source": "file",
+    "ref": ".vfy/approvals.json",
+    "max_age_seconds": 86400,
+    "required": false
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "adapter_error",
+    "reason_code": "evidence_path_invalid"
+  }
+}

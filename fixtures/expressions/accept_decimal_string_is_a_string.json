@@ -1,0 +1,25 @@
+{
+  "description": "decimal string is a string",
+  "source": "candidate.amount > \"12.50\"",
+  "declared_evidence": [],
+  "ast": {
+    "type": "compare",
+    "operator": ">",
+    "left": {
+      "type": "path",
+      "root": "candidate",
+      "segments": [
+        {
+          "member": "amount"
+        }
+      ]
+    },
+    "right": {
+      "type": "literal",
+      "value": "12.50"
+    }
+  },
+  "canonical": "{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"amount\"}],\"type\":\"path\"},\"operator\":\">\",\"right\":{\"type\":\"literal\",\"value\":\"12.50\"},\"type\":\"compare\"}",
+  "sha256": "b5758eb85cbb5b018f5698018215aa07de443772aad9cb3dabdfaf808fab6bad",
+  "evidence_ids": []
+}

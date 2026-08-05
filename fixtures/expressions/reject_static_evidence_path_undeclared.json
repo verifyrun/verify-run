@@ -1,0 +1,12 @@
+{
+  "description": "evidence path undeclared",
+  "source": "evidence.nowhere == \"x\"",
+  "declared_evidence": [
+    "tests"
+  ],
+  "undeclared_id": "nowhere",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "undeclared_evidence_id"
+  }
+}

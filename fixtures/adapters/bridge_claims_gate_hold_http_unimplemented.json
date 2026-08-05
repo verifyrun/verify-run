@@ -1,0 +1,44 @@
+{
+  "note": "claims-gate declares an http source no v1 adapter implements. Both file items are acquired, coverage is synthesized as missing, fresh(coverage) is false, and the rulebook reaches neither ALLOW nor its coverage-denies BLOCK from local evidence alone.",
+  "rulebook_ref": "templates/claims-gate.yaml",
+  "tree": {
+    "claim": {
+      "kind": "dir"
+    },
+    "claim/docs-manifest.json": {
+      "kind": "file",
+      "bytes_base64": "eyJjb21wbGV0ZSI6dHJ1ZX0=",
+      "mode": "0644"
+    },
+    "claim/authority.json": {
+      "kind": "file",
+      "bytes_base64": "MjUwMDA=",
+      "mode": "0644"
+    }
+  },
+  "snapshot_id": "snap-bridge-claims-gate-hold-http-unimplemented",
+  "frozen_at": "2026-08-05T00:00:00Z",
+  "acquired_at": "2026-08-04T23:59:30Z",
+  "candidate": {
+    "candidate_id": "c-bridge-10",
+    "kind": "custom",
+    "action": {
+      "summary": "settle claim",
+      "params": {
+        "amount": 1000
+      }
+    },
+    "identity": {
+      "claim_id": "CLM-1",
+      "adjuster_id": "ADJ-7"
+    }
+  },
+  "expected": {
+    "statuses": {
+      "docs_complete": "ok",
+      "authority_limit": "ok",
+      "coverage": "missing"
+    },
+    "outcome": "HOLD"
+  }
+}

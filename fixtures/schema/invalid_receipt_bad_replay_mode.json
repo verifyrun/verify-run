@@ -1,0 +1,41 @@
+{
+  "description": "receipt bad replay mode",
+  "schema": "https://verifyrun.com/spec/v1/receipt.schema.json",
+  "value": {
+    "receipt_id": "r1",
+    "spec_version": "1",
+    "created_at": "2026-08-05T00:00:00Z",
+    "rulebook": {
+      "rulebook_id": "r-1",
+      "version": "1.0.0",
+      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "candidate_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "evidence_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "result": {
+      "outcome": "ALLOW",
+      "reasons": [
+        {
+          "code": "rule_allow",
+          "message": "ok"
+        }
+      ]
+    },
+    "replay": {
+      "mode": "re-execute"
+    },
+    "signature": {
+      "alg": "ed25519",
+      "key_id": "k1",
+      "key_version": 1,
+      "value": "AAAA"
+    }
+  },
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "receipt_schema_invalid",
+    "instance_path": "$.replay.mode",
+    "schema_path": "$.properties.replay.properties.mode.const",
+    "keyword": "const"
+  }
+}

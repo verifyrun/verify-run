@@ -1,0 +1,14 @@
+{
+  "description": "altered algorithm",
+  "base": "minimum_valid",
+  "mutation": {
+    "kind": "signature_field",
+    "field": "alg",
+    "value": "rsa"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "authorization_schema_invalid"
+  }
+}

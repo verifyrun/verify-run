@@ -1,0 +1,8 @@
+{
+  "description": "Escaped Unicode in the source becomes the scalar it denotes; a tab is re-escaped as \\t",
+  "format": "json",
+  "source_base64": "eyJlIjoiXHUwMGU5IiwidGFiIjoiXHUwMDA5In0=",
+  "value": {"e": "\u00e9", "tab": "\t"},
+  "canonical": "{\"e\":\"\u00e9\",\"tab\":\"\\t\"}",
+  "sha256": "38384325d8adae74bd8f57ccd29a00079ea950027711affac7aaafd1af44e855"
+}

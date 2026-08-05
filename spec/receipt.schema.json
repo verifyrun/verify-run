@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verifyrun.com/spec/v1/receipt.schema.json",
+  "title": "Decision receipt (signed; offline-replayable)",
+  "type": "object",
+  "required": ["receipt_id", "spec_version", "created_at", "rulebook", "candidate_digest",
+               "evidence_digest", "result", "replay", "signature"],
+  "additionalProperties": false,
+  "properties": {
+    "receipt_id": {"type": "string"},
+    "spec_version": {"type": "string", "const": "1"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "rulebook": {"type": "object", "required": ["rulebook_id", "version", "digest"],
+      "additionalProperties": false, "properties": {
+        "rulebook_id": {"type": "string"},
+        "version": {"type": "string"},
+        "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}}},
+    "candidate_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "Digest of the validated canonical candidate, per spec/canonicalization.md. Equal to the authorization's action_digest."},
+    "evidence_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "Equal to the governing snapshot's snapshot_digest."},
+    "result": {"$ref": "https://verifyrun.com/spec/v1/outcome.schema.json"},
+    "authorization_id": {"type": "string"},
+    "execution": {"type": "object", "additionalProperties": false, "properties": {
+      "acknowledged": {"type": "boolean"},
+      "acknowledged_at": {"type": "string", "format": "date-time"},
+      "exit_status": {"type": "integer"},
+      "note": {"type": "string"}},
+      "description": "Whether the authorized consequence actually occurred."},
+    "replay": {"type": "object", "required": ["mode"], "additionalProperties": false,
+      "properties": {"mode": {"type": "string", "const": "recompute-decision",
+        "description": "Replay recomputes the decision from recorded inputs. It does not re-execute the world. The inputs live beside the receipt; see spec/execution-chain.md."}}},
+    "signature": {"$ref": "https://verifyrun.com/spec/v1/authorization.schema.json#/$defs/sig"}
+  }
+}

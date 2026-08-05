@@ -1,0 +1,6 @@
+{
+  "description": "cyclic alias attempt",
+  "format": "yaml",
+  "source_base64": "YTogJkEKICBiOiAqQQo=",
+  "expected": {"outcome": "ERROR", "reason_code": "source_construct_unsupported"}
+}

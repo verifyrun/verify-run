@@ -1,0 +1,18 @@
+{
+  "description": "valid instance of outcome.schema.json",
+  "schema": "https://verifyrun.com/spec/v1/outcome.schema.json",
+  "value": {
+    "outcome": "ALLOW",
+    "reasons": [
+      {
+        "code": "rule_allow",
+        "message": "ok"
+      }
+    ]
+  },
+  "expected": {
+    "valid": true
+  },
+  "canonical": "{\"outcome\":\"ALLOW\",\"reasons\":[{\"code\":\"rule_allow\",\"message\":\"ok\"}]}",
+  "sha256": "bbdee8b6f6c25f550f4ec94b94bc79348baf971c291c5e83ba29e45f8b0b59a6"
+}

@@ -1,0 +1,13 @@
+{
+  "description": "supplied different candidate",
+  "base": "minimum_valid",
+  "mutation": {
+    "kind": "supply",
+    "object": "candidate"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "authorization_binding_mismatch"
+  }
+}

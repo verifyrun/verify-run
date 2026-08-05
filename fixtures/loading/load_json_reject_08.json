@@ -1,0 +1,6 @@
+{
+  "description": "Infinity is not JSON",
+  "format": "json",
+  "source_base64": "eyJuIjpJbmZpbml0eX0=",
+  "expected": {"outcome": "ERROR", "reason_code": "source_syntax_invalid"}
+}

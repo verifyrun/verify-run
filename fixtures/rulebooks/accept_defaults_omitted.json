@@ -1,0 +1,39 @@
+{
+  "description": "defaults omitted",
+  "source_base64": "cnVsZWJvb2tfaWQ6IGRlZmF1bHRzLW9taXR0ZWQKdmVyc2lvbjogMS4wLjAKYWRvcHRlZF9hdDogIjIwMjYtMDgtMDVUMDA6MDA6MDBaIgpldmlkZW5jZToKICAtIHtpZDogZSwgc291cmNlOiBmaWxlfQpydWxlczoKICAtIGlkOiByCiAgICB3aGVuOiAndHJ1ZScKICAgIG91dGNvbWU6IEFMTE9XCiAgICByZWFzb246IG9rCmRlZmF1bHRfb3V0Y29tZTogSE9MRAphdXRob3JpemF0aW9uOiB7c2luZ2xlX3VzZTogdHJ1ZX0K",
+  "value": {
+    "rulebook_id": "defaults-omitted",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "evidence": [
+      {
+        "id": "e",
+        "source": "file"
+      }
+    ],
+    "rules": [
+      {
+        "id": "r",
+        "when": "true",
+        "outcome": "ALLOW",
+        "reason": "ok"
+      }
+    ],
+    "default_outcome": "HOLD",
+    "authorization": {
+      "single_use": true
+    }
+  },
+  "canonical": "{\"adopted_at\":\"2026-08-05T00:00:00Z\",\"authorization\":{\"single_use\":true},\"default_outcome\":\"HOLD\",\"evidence\":[{\"id\":\"e\",\"source\":\"file\"}],\"rulebook_id\":\"defaults-omitted\",\"rules\":[{\"id\":\"r\",\"outcome\":\"ALLOW\",\"reason\":\"ok\",\"when\":\"true\"}],\"version\":\"1.0.0\"}",
+  "sha256": "118c217f7aaea4f26c5fe08fe8605f132f99440a215bbd8cf34ff11b3a0dfae6",
+  "digest": "sha256:118c217f7aaea4f26c5fe08fe8605f132f99440a215bbd8cf34ff11b3a0dfae6",
+  "rulebook_id": "defaults-omitted",
+  "version": "1.0.0",
+  "adopted_at": "2026-08-05T00:00:00Z",
+  "applies": [
+    [
+      "2026-08-05T00:00:00Z",
+      true
+    ]
+  ]
+}

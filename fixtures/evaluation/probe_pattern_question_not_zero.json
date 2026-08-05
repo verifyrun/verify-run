@@ -1,0 +1,44 @@
+{
+  "description": "pattern question not zero",
+  "when": "matches(candidate.action.params.amount, \"a?c\")",
+  "declare": [
+    {
+      "id": "t",
+      "source": "file"
+    },
+    {
+      "id": "f",
+      "source": "file"
+    },
+    {
+      "id": "u",
+      "source": "file"
+    }
+  ],
+  "items": [
+    {
+      "id": "t",
+      "status": "ok",
+      "value": "x"
+    },
+    {
+      "id": "f",
+      "status": "missing"
+    },
+    {
+      "id": "u",
+      "status": "missing"
+    }
+  ],
+  "candidate": {
+    "candidate_id": "c",
+    "kind": "command",
+    "action": {
+      "summary": "s",
+      "params": {
+        "amount": "ac"
+      }
+    }
+  },
+  "expected": "false"
+}

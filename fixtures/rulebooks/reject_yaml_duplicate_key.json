@@ -1,0 +1,9 @@
+{
+  "description": "yaml duplicate key",
+  "stage": "source",
+  "source_base64": "cnVsZWJvb2tfaWQ6IHItMQpydWxlYm9va19pZDogci0yCnZlcnNpb246IDEuMC4wCmFkb3B0ZWRfYXQ6ICIyMDI2LTA4LTA1VDAwOjAwOjAwWiIKZXZpZGVuY2U6IFtdCnJ1bGVzOgogIC0gaWQ6IHIKICAgIHdoZW46ICd0cnVlJwogICAgb3V0Y29tZTogQUxMT1cKICAgIHJlYXNvbjogb2sKZGVmYXVsdF9vdXRjb21lOiBIT0xECg==",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "canonical_form_invalid"
+  }
+}

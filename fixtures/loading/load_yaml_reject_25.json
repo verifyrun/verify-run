@@ -1,0 +1,6 @@
+{
+  "description": "merge key",
+  "format": "yaml",
+  "source_base64": "YmFzZToge2E6IDF9CmQ6CiAgPDw6IHtiOiAyfQo=",
+  "expected": {"outcome": "ERROR", "reason_code": "source_construct_unsupported"}
+}

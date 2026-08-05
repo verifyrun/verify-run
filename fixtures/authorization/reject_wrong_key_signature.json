@@ -1,0 +1,12 @@
+{
+  "description": "wrong key signature",
+  "base": "minimum_valid",
+  "mutation": {
+    "kind": "signed_by_other"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signature_invalid"
+  }
+}

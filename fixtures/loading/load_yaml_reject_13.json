@@ -1,0 +1,6 @@
+{
+  "description": "date",
+  "format": "yaml",
+  "source_base64": "ZDogMjAyNi0wOC0wNQo=",
+  "expected": {"outcome": "ERROR", "reason_code": "source_construct_unsupported"}
+}

@@ -1,0 +1,25 @@
+{
+  "description": "snapshot negative order",
+  "schema": "https://verifyrun.com/spec/v1/evidence.schema.json",
+  "value": {
+    "snapshot_id": "s1",
+    "rulebook_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "frozen_at": "2026-08-05T00:00:00Z",
+    "items": [
+      {
+        "id": "e",
+        "order": -1,
+        "acquired_at": "2026-08-05T00:00:00Z",
+        "status": "ok"
+      }
+    ],
+    "snapshot_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "snapshot_schema_invalid",
+    "instance_path": "$.items[0].order",
+    "schema_path": "$.properties.items.items.properties.order.minimum",
+    "keyword": "minimum"
+  }
+}

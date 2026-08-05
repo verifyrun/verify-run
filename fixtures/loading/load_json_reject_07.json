@@ -1,0 +1,6 @@
+{
+  "description": "NaN is not JSON; a parser that accepts it is extending the format",
+  "format": "json",
+  "source_base64": "eyJuIjpOYU59",
+  "expected": {"outcome": "ERROR", "reason_code": "source_syntax_invalid"}
+}

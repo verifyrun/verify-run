@@ -1,0 +1,27 @@
+{
+  "description": "evidence nested value",
+  "when": "evidence.e.inner == \"deep\"",
+  "declare": [
+    {
+      "id": "e",
+      "source": "file"
+    }
+  ],
+  "items": [
+    {
+      "id": "e",
+      "status": "ok",
+      "value": {
+        "inner": "deep"
+      }
+    }
+  ],
+  "candidate": {
+    "candidate_id": "c",
+    "kind": "command",
+    "action": {
+      "summary": "s"
+    }
+  },
+  "expected": "true"
+}

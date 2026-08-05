@@ -1,0 +1,14 @@
+{
+  "note": "The attempt finished and could not be recorded at all.",
+  "stage": "recording",
+  "state": {
+    "authorization_consumed": true,
+    "process_started": true,
+    "acknowledgment_available": true,
+    "receipt_available": false,
+    "stored_record_available": false,
+    "automatic_retry_permitted": false
+  },
+  "reason_code": "execution_recording_failed",
+  "recovery": "The raised failure names stage=issue and carries no receipt. Never re-execute."
+}

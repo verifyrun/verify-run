@@ -1,0 +1,43 @@
+{
+  "note": "The flagship claims template holds locally because its coverage evidence is declared over http, which this runtime does not acquire. The rulebook is valid.",
+  "template": "claims-gate",
+  "tree": {
+    "claim": {
+      "kind": "dir"
+    },
+    "claim/docs-manifest.json": {
+      "kind": "file",
+      "bytes_base64": "eyJjb21wbGV0ZSI6dHJ1ZX0=",
+      "mode": "0644"
+    },
+    "claim/authority.json": {
+      "kind": "file",
+      "bytes_base64": "MjUwMDA=",
+      "mode": "0644"
+    },
+    "bin": {
+      "kind": "dir"
+    },
+    "bin/ok.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+      "mode": "0755"
+    }
+  },
+  "argv": [
+    "bin/ok.sh"
+  ],
+  "identity": [
+    "claim_id=CLM-1",
+    "adjuster_id=ADJ-7"
+  ],
+  "expected": {
+    "exit": 11,
+    "outcome": "HOLD",
+    "executed": false,
+    "receipts": 1,
+    "consumed": 0,
+    "replays": true,
+    "note_contains": "coverage"
+  }
+}

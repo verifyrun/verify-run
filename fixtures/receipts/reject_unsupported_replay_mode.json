@@ -1,0 +1,13 @@
+{
+  "description": "unsupported replay mode",
+  "base": "allow_with_authorization_and_execution",
+  "mutation": {
+    "kind": "replay_mode",
+    "value": "re-execute"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "receipt_schema_invalid"
+  }
+}

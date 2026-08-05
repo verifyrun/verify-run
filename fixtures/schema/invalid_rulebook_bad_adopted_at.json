@@ -1,0 +1,26 @@
+{
+  "description": "rulebook bad adopted at",
+  "schema": "https://verifyrun.com/spec/v1/rulebook.schema.json",
+  "value": {
+    "rulebook_id": "r-1",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05",
+    "evidence": [],
+    "rules": [
+      {
+        "id": "a",
+        "when": "true",
+        "outcome": "ALLOW",
+        "reason": "x"
+      }
+    ],
+    "default_outcome": "HOLD"
+  },
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "rulebook_schema_invalid",
+    "instance_path": "$.adopted_at",
+    "schema_path": "$.properties.adopted_at.format",
+    "keyword": "format"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "description": "candidate params not object",
+  "schema": "https://verifyrun.com/spec/v1/candidate.schema.json",
+  "value": {
+    "candidate_id": "c",
+    "kind": "command",
+    "action": {
+      "summary": "x",
+      "params": "no"
+    }
+  },
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "candidate_schema_invalid",
+    "instance_path": "$.action.params",
+    "schema_path": "$.properties.action.properties.params.type",
+    "keyword": "type"
+  }
+}

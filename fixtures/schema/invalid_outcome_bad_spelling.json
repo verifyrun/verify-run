@@ -1,0 +1,20 @@
+{
+  "description": "outcome bad spelling",
+  "schema": "https://verifyrun.com/spec/v1/outcome.schema.json",
+  "value": {
+    "outcome": "allow",
+    "reasons": [
+      {
+        "code": "c",
+        "message": "m"
+      }
+    ]
+  },
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "outcome_schema_invalid",
+    "instance_path": "$.outcome",
+    "schema_path": "$.properties.outcome.enum",
+    "keyword": "enum"
+  }
+}

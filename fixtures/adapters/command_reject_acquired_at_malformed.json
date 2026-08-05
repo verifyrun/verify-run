@@ -1,0 +1,24 @@
+{
+  "note": "acquired_at is caller-supplied and must be a date-time in the frozen grammar.",
+  "tree": {
+    "ci": {
+      "kind": "dir"
+    },
+    "ci/last-test-result.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCnByaW50ZiAnInBhc3NlZCInCg==",
+      "mode": "0755"
+    }
+  },
+  "declaration": {
+    "id": "tests",
+    "source": "exec",
+    "ref": "./ci/last-test-result.sh",
+    "max_age_seconds": 900
+  },
+  "acquired_at": "now",
+  "expected": {
+    "class": "adapter_error",
+    "reason_code": "evidence_adapter_config_invalid"
+  }
+}

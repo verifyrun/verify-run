@@ -1,0 +1,44 @@
+{
+  "note": "It may be set explicitly to a directory under the root.",
+  "tree": {
+    "ci": {
+      "kind": "dir"
+    },
+    "marker.txt": {
+      "kind": "file",
+      "bytes_base64": "cm9vdAo=",
+      "mode": "0644"
+    },
+    "ci/marker.txt": {
+      "kind": "file",
+      "bytes_base64": "Y2kK",
+      "mode": "0644"
+    },
+    "ci/last-test-result.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCnJlYWQgbWFya2VyIDwgbWFya2VyLnR4dApwcmludGYgJ3sibWFya2VyIjoiJXMifScgIiRtYXJrZXIiCg==",
+      "mode": "0755"
+    }
+  },
+  "declaration": {
+    "id": "tests",
+    "source": "exec",
+    "ref": "./ci/last-test-result.sh",
+    "max_age_seconds": 900
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "working_directory": "ci",
+  "expected": {
+    "class": "acquisition",
+    "acquisition": {
+      "id": "tests",
+      "status": "ok",
+      "acquired_at": "2026-08-04T12:00:00Z",
+      "value": {
+        "marker": "ci"
+      }
+    },
+    "canonical": "{\"marker\":\"ci\"}",
+    "sha256": "45ec2d62b8b91440f356145a2bc7b63fcd550d83cb4778ac8996e8d186291642"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "description": "A supplementary-plane scalar, written once as a surrogate pair escape and once literally, loads identically both ways",
+  "format": "json",
+  "source_base64": "eyJwYWlyIjoiXHVkODM0XHVkZDFlIiwibGl0ZXJhbCI6IvCdhJ4ifQ==",
+  "value": {"pair": "\ud834\udd1e", "literal": "\ud834\udd1e"},
+  "canonical": "{\"literal\":\"\ud834\udd1e\",\"pair\":\"\ud834\udd1e\"}",
+  "sha256": "3f52d539c6a27585ba16c5a6b25566beca026cc3679e9f4210ba267294ea71f7"
+}

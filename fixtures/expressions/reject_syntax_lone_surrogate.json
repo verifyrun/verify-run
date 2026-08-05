@@ -1,0 +1,8 @@
+{
+  "description": "lone surrogate escape in a string literal",
+  "source": "candidate.a == \"\\ud800\"",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "surrogate_not_permitted"
+  }
+}

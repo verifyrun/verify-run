@@ -1,0 +1,18 @@
+{
+  "description": "valid instance of outcome.schema.json",
+  "schema": "https://verifyrun.com/spec/v1/outcome.schema.json",
+  "value": {
+    "outcome": "ERROR",
+    "reasons": [
+      {
+        "code": "candidate_schema_invalid",
+        "message": "e"
+      }
+    ]
+  },
+  "expected": {
+    "valid": true
+  },
+  "canonical": "{\"outcome\":\"ERROR\",\"reasons\":[{\"code\":\"candidate_schema_invalid\",\"message\":\"e\"}]}",
+  "sha256": "a153f142a7e92e2073f39c50d1e531060c3eba2ce9f8ccd3ad6b3e5a26949789"
+}

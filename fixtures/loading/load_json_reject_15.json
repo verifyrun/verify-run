@@ -1,0 +1,6 @@
+{
+  "description": "An empty source is not a document",
+  "format": "json",
+  "source_base64": "",
+  "expected": {"outcome": "ERROR", "reason_code": "source_syntax_invalid"}
+}

@@ -1,0 +1,27 @@
+{
+  "note": "A BLOCK the candidate alone settles needs no evidence at all.",
+  "rulebook_ref": "templates/agent-guard.yaml",
+  "tree": {},
+  "snapshot_id": "snap-bridge-agent-guard-block-destructive",
+  "frozen_at": "2026-08-05T00:00:00Z",
+  "acquired_at": "2026-08-04T23:59:30Z",
+  "candidate": {
+    "candidate_id": "c-bridge-9",
+    "kind": "command",
+    "action": {
+      "summary": "clean up",
+      "argv": [
+        "rm",
+        "-rf",
+        "./workspace"
+      ]
+    }
+  },
+  "expected": {
+    "statuses": {
+      "approvals": "missing"
+    },
+    "outcome": "BLOCK",
+    "matched_rule": "no-destructive-shell"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "description": "sexagesimal",
+  "format": "yaml",
+  "source_base64": "bjogMTozMAo=",
+  "expected": {"outcome": "ERROR", "reason_code": "source_construct_unsupported"}
+}

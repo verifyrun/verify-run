@@ -1,0 +1,6 @@
+{
+  "description": "The accepted integer interval and its ends. JSON -0 is the integer zero and is written 0. Booleans are booleans, never 1 or 0.",
+  "input": {"zero": 0, "neg_zero": -0, "one": 1, "minus_one": -1, "max": 9007199254740991, "min": -9007199254740991, "t": true, "f": false},
+  "canonical": "{\"f\":false,\"max\":9007199254740991,\"min\":-9007199254740991,\"minus_one\":-1,\"neg_zero\":0,\"one\":1,\"t\":true,\"zero\":0}",
+  "sha256": "9ab29f615da10298894b73b79c4a0f5deb0e13d51b4d863685f43aceb6a0b04f"
+}

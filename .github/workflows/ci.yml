@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: tests (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install from package metadata
+        run: python -m pip install --upgrade pip && python -m pip install -e .
+      - name: Full suite
+        run: python -m unittest discover -s tests -t . -v
+      - name: Suite under hostile interpreter settings
+        env:
+          PYTHONHASHSEED: random
+          LC_ALL: C
+          PYTHONUTF8: "0"
+          TZ: Pacific/Chatham
+        run: python -m unittest discover -s tests -t .
+
+  gates:
+    name: vocabulary, legacy, and secret gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e .
+      - name: Committed gates
+        run: python -m unittest tests.test_release -v
+
+  package:
+    name: build, inspect, and install from built artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build wheel and source distribution
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+          ls -l dist/
+      - name: Inspect package contents
+        run: python -m unittest tests.test_release.PackageContents -v
+      - name: Install the wheel into a clean environment
+        run: |
+          python -m venv /tmp/wheel-env
+          /tmp/wheel-env/bin/pip install dist/*.whl
+      - name: Clean-workspace quickstart from the installed wheel
+        run: |
+          mkdir -p /tmp/demo && cd /tmp/demo
+          /tmp/wheel-env/bin/vfy --version
+          /tmp/wheel-env/bin/vfy --help
+          /tmp/wheel-env/bin/vfy init --template pipeline-gate
+          mkdir -p bin ci
+          printf '#!/bin/sh\nexit 0\n' > bin/deploy.sh && chmod +x bin/deploy.sh
+          printf '#!/bin/sh\nprintf %s "\\"passed\\""\n' '' > ci/last-test-result.sh
+          chmod +x ci/last-test-result.sh
+          /tmp/wheel-env/bin/vfy run --identity branch=main -- bin/deploy.sh v1
+          /tmp/wheel-env/bin/vfy receipts list
+          /tmp/wheel-env/bin/vfy replay "$(ls .vfy/receipts/*.json | head -1)"
+      - name: The installed package must not need the source tree
+        run: |
+          cd /tmp/demo
+          /tmp/wheel-env/bin/python -c "
+          import vfy.resources as r, pathlib
+          here = pathlib.Path(r.__file__).resolve().parent
+          assert r.schema_dir().is_relative_to(here), r.schema_dir()
+          assert r.template_dir().is_relative_to(here), r.template_dir()
+          print('runtime resources resolve inside the installed package')"
+      - name: Install the source distribution into another clean environment
+        run: |
+          python -m venv /tmp/sdist-env
+          /tmp/sdist-env/bin/pip install dist/*.tar.gz
+          cd /tmp && /tmp/sdist-env/bin/vfy --version

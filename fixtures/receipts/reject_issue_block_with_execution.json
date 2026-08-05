@@ -1,0 +1,8 @@
+{
+  "description": "block with execution",
+  "stage": "issuance",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "receipt_binding_mismatch"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "description": "ordering non numeric literals",
+  "source": "\"abc\" > 5",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_type_error"
+  }
+}

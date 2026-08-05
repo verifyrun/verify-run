@@ -1,0 +1,8 @@
+{
+  "description": "Nested mappings and lists, block and flow style",
+  "format": "yaml",
+  "source_base64": "b3V0ZXI6CiAgaW5uZXI6CiAgICAtIGEKICAgIC0gYjogWzEsIDJdCiAgICAgIGM6IHtkOiBlfQo=",
+  "value": {"outer": {"inner": ["a", {"b": [1, 2], "c": {"d": "e"}}]}},
+  "canonical": "{\"outer\":{\"inner\":[\"a\",{\"b\":[1,2],\"c\":{\"d\":\"e\"}}]}}",
+  "sha256": "09ebf649b80f937d39f3bb3522eb8f7a2a708d07f9513743e5dade0bd6bb12a5"
+}

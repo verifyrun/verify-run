@@ -1,0 +1,9 @@
+{
+  "note": "run needs a command after --.",
+  "argv": [
+    "run"
+  ],
+  "expected": {
+    "exit": 2
+  }
+}

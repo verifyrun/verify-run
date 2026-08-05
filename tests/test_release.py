@@ -1,0 +1,377 @@
+"""Closure Unit 14 — release gates, package contents, and documentation accuracy.
+
+These are the checks that must never again depend on somebody remembering to run a grep.
+"""
+
+import json
+import pathlib
+import re
+import subprocess
+import sys
+import tarfile
+import tokenize
+import unittest
+import zipfile
+
+import yaml
+
+from vfy import __version__, canon, load, resources, rulebook, schema
+
+REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
+DIST = REPO_ROOT / "dist"
+
+# The scanners necessarily contain the words they look for, so they exclude themselves. Nothing
+# else is exempt.
+SCANNER_EXEMPT = {"tests/test_release.py", "tests/test_adapters.py", "tests/test_execution.py",
+                  "tests/test_cli.py",
+                  # CLAUDE.md *declares* the banned vocabulary and the legacy exclusion. It can no
+                  # more be scanned for them than the scanners above can scan themselves.
+                  "CLAUDE.md"}
+
+SKIP_TREES = (".venv", ".git", "dist", "build", "__pycache__", "verify-run/", ".vfy/")
+
+
+def _repository_files(suffixes=None):
+    for path in sorted(REPO_ROOT.rglob("*")):
+        relative = path.relative_to(REPO_ROOT).as_posix()
+        if not path.is_file() or any(part in relative for part in SKIP_TREES):
+            continue
+        if relative in SCANNER_EXEMPT:
+            continue
+        if suffixes and path.suffix not in suffixes:
+            continue
+        yield relative, path
+
+
+def _text(path):
+    try:
+        return path.read_text(encoding="utf-8")
+    except (UnicodeDecodeError, OSError):
+        return None
+
+
+class VocabularyGate(unittest.TestCase):
+    """Banned theory and legacy vocabulary, across every public surface."""
+
+    EXACT = ("PAS", "PAS_s", "PAS_h", "TEMPOLOCK", "CHORDLOCK", "GLYPHLOCK", "AURA", "ELF")
+    ANYCASE = ("resonance", "coherence", "regime", "corridor", "entitlement", "constitution",
+               "forcing", "admissibility", "lockgraph", "glyph", "phase", "kernel")
+
+    def test_no_banned_vocabulary_anywhere_in_the_repository(self):
+        exact = re.compile(r"\b(" + "|".join(self.EXACT) + r")\b")
+        anycase = re.compile(r"\b(" + "|".join(self.ANYCASE) + r")\b", re.IGNORECASE)
+        findings = []
+        scanned = 0
+        for relative, path in _repository_files():
+            text = _text(path)
+            if text is None:
+                continue
+            scanned += 1
+            for number, line in enumerate(text.splitlines(), 1):
+                for pattern in (exact, anycase):
+                    found = pattern.search(line)
+                    if found:
+                        findings.append("%s:%d %s" % (relative, number, found.group(0)))
+        self.assertGreater(scanned, 100, "the scanner read almost nothing; check SKIP_TREES")
+        self.assertEqual(findings, [], "banned vocabulary on a public surface")
+
+    def test_the_rendered_cli_help_is_clean(self):
+        from vfy import cli
+
+        parser = cli.build_parser()
+        text = [parser.format_help()]
+        for action in parser._actions:
+            if getattr(action, "choices", None) and hasattr(action.choices, "values"):
+                text += [sub.format_help() for sub in action.choices.values()]
+        rendered = "\n".join(text).lower()
+        for word in self.ANYCASE:
+            self.assertNotIn(word, rendered)
+
+    def test_the_scanner_is_not_vacuous(self):
+        exact = re.compile(r"\b(" + "|".join(self.EXACT) + r")\b")
+        self.assertTrue(exact.search("the AURA subsystem"))
+        anycase = re.compile(r"\b(" + "|".join(self.ANYCASE) + r")\b", re.IGNORECASE)
+        self.assertTrue(anycase.search("Kernel"))
+        self.assertIsNone(anycase.search("itself"), "ELF-style substring matching would fire here")
+
+
+class LegacyGate(unittest.TestCase):
+    """No runtime linkage to the legacy tree, in code, packaging, or instructions."""
+
+    NAMES = ("ric-core-2", "ric_core", "ric-core")
+
+    def test_no_source_or_packaging_reference(self):
+        findings = []
+        for relative, path in _repository_files():
+            if relative == "docs/EXTRACTION_GUIDE.md":
+                continue  # historical salvage boundaries, no linkage; asserted separately
+            text = _text(path)
+            if text is None:
+                continue
+            for name in self.NAMES:
+                if name in text:
+                    findings.append("%s references %s" % (relative, name))
+        self.assertEqual(findings, [])
+
+    def test_the_extraction_guide_creates_no_linkage(self):
+        text = _text(REPO_ROOT / "docs" / "EXTRACTION_GUIDE.md")
+        for instruction in ("pip install", "npm install", "git clone", "sys.path", "import "):
+            self.assertNotIn(instruction, text,
+                             "the extraction guide instructs a reader to obtain legacy code")
+
+    def test_no_declared_dependency_outside_the_two(self):
+        text = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        declared = re.search(r"dependencies = \[(.*?)\]", text, re.S).group(1)
+        # Count the quoted requirements, not commas: ">=42,<52" carries one of its own.
+        requirements = re.findall(r'"([^"]+)"', declared)
+        self.assertEqual(len(requirements), 2, "runtime dependencies changed: %r" % requirements)
+        self.assertTrue(any(r.startswith("PyYAML") for r in requirements))
+        self.assertTrue(any(r.startswith("cryptography") for r in requirements))
+
+    def test_no_subprocess_call_into_anything_legacy(self):
+        for relative, path in _repository_files({".py"}):
+            text = _text(path)
+            for name in self.NAMES:
+                self.assertNotIn(name, text, relative)
+
+
+class SecretGate(unittest.TestCase):
+    """No credential may enter the repository, and test seeds must say what they are."""
+
+    PATTERNS = {
+        "PEM private key": re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
+        "PyPI token": re.compile(r"\bpypi-[A-Za-z0-9_-]{16,}"),
+        "GitHub token": re.compile(r"\bgh[pousr]_[A-Za-z0-9]{20,}"),
+        "Stripe secret": re.compile(r"\b(sk|rk)_(live|test)_[A-Za-z0-9]{16,}"),
+        "AWS access key": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
+        "secret assignment": re.compile(
+            r"(?i)\b(api[_-]?key|client[_-]?secret|password)\s*[:=]\s*['\"][^'\"]{12,}"),
+    }
+    PUBLISHED_TEST_SEEDS = (
+        "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f",
+    )
+
+    def test_no_credential_in_the_repository(self):
+        findings = []
+        for relative, path in _repository_files():
+            if path.name.startswith(".env"):
+                findings.append("%s is a dotenv file" % relative)
+            text = _text(path)
+            if text is None:
+                continue
+            for label, pattern in self.PATTERNS.items():
+                if pattern.search(text):
+                    findings.append("%s carries a %s" % (relative, label))
+        self.assertEqual(findings, [])
+
+    def test_every_published_seed_is_marked_test_only(self):
+        unmarked = []
+        for relative, path in _repository_files():
+            text = _text(path)
+            if text is None or not any(s in text for s in self.PUBLISHED_TEST_SEEDS):
+                continue
+            if "TEST_ONLY" not in text and "TEST-ONLY" not in text:
+                unmarked.append(relative)
+        self.assertEqual(unmarked, [], "a published test seed appears without saying it is one")
+
+    def test_no_generated_workspace_key_is_tracked(self):
+        for relative, path in _repository_files():
+            self.assertFalse(relative.endswith(".key"), relative)
+            self.assertNotIn("/.vfy/", "/" + relative, relative)
+
+    def test_the_ignore_file_covers_what_must_never_ship(self):
+        text = (REPO_ROOT / ".gitignore").read_text(encoding="utf-8")
+        for pattern in (".venv/", "__pycache__/", "dist/", "build/", "*.egg-info/", ".DS_Store",
+                        ".vfy/", "*.key", ".env", "verify-run/", "verify-run-kickoff.zip"):
+            self.assertIn(pattern, text, pattern)
+
+    def test_the_ignore_file_hides_no_authoritative_source(self):
+        text = (REPO_ROOT / ".gitignore").read_text(encoding="utf-8")
+        for never in ("spec/", "templates/", "fixtures/", "tests/", "vfy/", "*.json", "*.yaml",
+                      "*.md"):
+            self.assertNotIn("\n" + never, "\n" + text, never)
+
+
+class VersionAndMetadata(unittest.TestCase):
+    def test_one_authoritative_version(self):
+        pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        declared = re.search(r'^version = "([^"]+)"', pyproject, re.M).group(1)
+        self.assertEqual(declared, __version__)
+        self.assertRegex(__version__, r"\A\d+\.\d+\.\d+((a|b|rc)\d+|\.dev\d+)?\Z")
+        self.assertNotEqual(__version__, "1.0.0", "an alpha may not claim 1.0.0")
+
+    def test_the_cli_reports_the_same_version(self):
+        completed = subprocess.run([sys.executable, "-m", "vfy.cli", "--version"],
+                                   capture_output=True, cwd=str(REPO_ROOT))
+        text = (completed.stdout + completed.stderr).decode("utf-8")
+        self.assertIn(__version__, text)
+
+    def test_the_declared_python_range_matches_what_is_claimed(self):
+        pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        self.assertIn('requires-python = ">=3.11"', pyproject)
+        workflow = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "ci.yml")
+                                  .read_text(encoding="utf-8"))
+        matrix = workflow["jobs"]["test"]["strategy"]["matrix"]["python"]
+        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        for version in matrix:
+            self.assertIn(version, readme, "CI tests %s but the README does not say so" % version)
+
+    def test_the_entry_point_and_license_are_declared(self):
+        pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        self.assertIn('vfy = "vfy.cli:main"', pyproject)
+        self.assertIn('license = "Apache-2.0"', pyproject)
+        self.assertTrue((REPO_ROOT / "LICENSE").is_file())
+        self.assertIn("Apache License", (REPO_ROOT / "LICENSE").read_text(encoding="utf-8"))
+        self.assertTrue((REPO_ROOT / "NOTICE").is_file())
+
+
+class RuntimeResources(unittest.TestCase):
+    def test_the_runtime_reads_only_schemas_and_templates_from_its_distribution(self):
+        self.assertEqual(len(list(resources.schema_dir().glob("*.schema.json"))), 6)
+        self.assertEqual(len(list(resources.template_dir().glob("*.yaml"))), 3)
+
+    def test_no_module_reaches_out_of_the_package_except_the_documented_fallback(self):
+        for path in sorted((REPO_ROOT / "vfy").rglob("*.py")):
+            text = _text(path)
+            if path.name == "resources.py":
+                continue  # the one documented fallback, proven unused when installed
+            self.assertNotIn("parent.parent", text, path.name)
+
+    def test_packaging_maps_the_authoritative_directories_rather_than_copying_them(self):
+        pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        self.assertIn('"vfy._schemas" = "spec"', pyproject)
+        self.assertIn('"vfy._templates" = "templates"', pyproject)
+        # One copy in the repository, at the authoritative path.
+        self.assertFalse((REPO_ROOT / "vfy" / "_schemas").exists())
+        self.assertFalse((REPO_ROOT / "vfy" / "_templates").exists())
+
+
+class DocumentationAccuracy(unittest.TestCase):
+    """Every rulebook example in the docs must parse under the real parser."""
+
+    def _registry(self):
+        return schema.build_registry([load.load_json_bytes(p.read_bytes())
+                                      for p in sorted(resources.schema_dir()
+                                                      .glob("*.schema.json"))])
+
+    def _yaml_blocks(self, path):
+        text = (REPO_ROOT / path).read_text(encoding="utf-8")
+        return re.findall(r"```yaml\n(.*?)```", text, re.S)
+
+    def test_every_documented_rulebook_parses_and_pins(self):
+        registry = self._registry()
+        checked = 0
+        for document in ("README.md", "docs/rulebook-reference.md"):
+            for block in self._yaml_blocks(document):
+                value = yaml.safe_load(block)
+                if not isinstance(value, dict) or "rulebook_id" not in value:
+                    continue  # a fragment, exercised by the fragment test below
+                with self.subTest(document=document):
+                    pinned = rulebook.load_rulebook_bytes(
+                        canon.canonicalize(value).encode("utf-8"), registry)
+                    self.assertTrue(pinned.digest.startswith("sha256:"))
+                    checked += 1
+        self.assertGreaterEqual(checked, 2, "no complete rulebook example was checked")
+
+    def test_every_documented_when_expression_parses(self):
+        from vfy import expr
+
+        checked = 0
+        for document in ("README.md", "docs/rulebook-reference.md", "docs/quickstart.md"):
+            text = (REPO_ROOT / document).read_text(encoding="utf-8")
+            for source in re.findall(r"when: '([^']+)'", text):
+                with self.subTest(document=document, when=source):
+                    expr.parse_expression(source)
+                    checked += 1
+        self.assertGreaterEqual(checked, 4)
+
+    def test_the_documented_exit_codes_match_the_implementation(self):
+        from vfy import cli
+
+        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        for code, phrase in ((cli.EXIT_BLOCK, "| 10 |"), (cli.EXIT_HOLD, "| 11 |"),
+                             (cli.EXIT_ERROR, "| 12 |")):
+            self.assertIn(phrase, readme, "exit code %d is not documented" % code)
+        quickstart = (REPO_ROOT / "docs" / "quickstart.md").read_text(encoding="utf-8")
+        for code in (0, 1, 2, 10, 11, 12, 13, 14):
+            self.assertIn("`%d`" % code, quickstart, "exit code %d is not documented" % code)
+
+    def test_the_docs_claim_no_excluded_feature(self):
+        for document in ("README.md", "docs/quickstart.md", "docs/security.md",
+                         "docs/receipts-and-replay.md", "CHANGELOG.md"):
+            text = (REPO_ROOT / document).read_text(encoding="utf-8").lower()
+            for overclaim in ("exactly-once execution", "formally verified", "guarantees truth",
+                              "solves ai safety", "proves the world changed", "is sandboxed",
+                              "cross-platform proven"):
+                # Only an *asserted* claim counts. "not independently formally verified" is the
+                # disclaimer this project is supposed to carry, and a scanner that flagged it
+                # would push the docs toward saying less. A negator anywhere earlier in the same
+                # sentence clears the phrase; adjacency is too narrow to catch real wording.
+                for found in re.finditer(re.escape(overclaim), text):
+                    sentence = text[max(0, found.start() - 120):found.start()]
+                    sentence = sentence.rsplit(".", 1)[-1].rsplit("\n\n", 1)[-1]
+                    negated = re.search(r"\b(not|never|no|without|nor)\b", sentence)
+                    self.assertIsNotNone(
+                        negated, "%s asserts %r: ...%s"
+                        % (document, overclaim, text[found.start() - 60:found.end()]))
+
+    def test_the_documentation_set_exists(self):
+        for name in ("README.md", "CHANGELOG.md", "LICENSE", "NOTICE",
+                     "docs/quickstart.md", "docs/rulebook-reference.md",
+                     "docs/receipts-and-replay.md", "docs/security.md",
+                     "docs/release-checklist.md", "spec/release.md"):
+            self.assertTrue((REPO_ROOT / name).is_file(), name)
+
+
+class PackageContents(unittest.TestCase):
+    """Runs only when dist/ has been built. CI builds first, then invokes this."""
+
+    def setUp(self):
+        if not DIST.is_dir() or not list(DIST.glob("*.whl")):
+            self.skipTest("no built artifacts in dist/; run `python -m build` first")
+
+    def _wheel(self):
+        return sorted(DIST.glob("*.whl"))[-1]
+
+    def _sdist(self):
+        return sorted(DIST.glob("*.tar.gz"))[-1]
+
+    def test_the_wheel_carries_the_runtime_and_nothing_else(self):
+        with zipfile.ZipFile(self._wheel()) as archive:
+            names = archive.namelist()
+        self.assertTrue(any(n.endswith("vfy/cli.py") for n in names))
+        self.assertEqual(sum(1 for n in names if n.endswith(".schema.json")), 6)
+        self.assertEqual(sum(1 for n in names if n.endswith(".yaml")), 3)
+        for forbidden in ("tests/", "fixtures/", ".venv", ".vfy/", "verify-run/",
+                          "verify-run-kickoff.zip", "__pycache__", ".DS_Store", ".key"):
+            self.assertFalse(any(forbidden in n for n in names),
+                             "%s appears in the wheel" % forbidden)
+        for n in names:
+            self.assertFalse(n.endswith(".md") and "/_schemas/" in n,
+                             "specification prose shipped in the wheel: " + n)
+
+    def test_the_source_distribution_can_be_audited(self):
+        with tarfile.open(self._sdist()) as archive:
+            names = archive.getnames()
+        for required in ("LICENSE", "NOTICE", "README.md", "CHANGELOG.md", "pyproject.toml"):
+            self.assertTrue(any(n.endswith("/" + required) for n in names), required)
+        self.assertTrue(any("/tests/" in n for n in names), "tests must be auditable")
+        self.assertTrue(any("/fixtures/" in n for n in names), "fixtures must be auditable")
+        for forbidden in (".venv", "/.vfy/", "verify-run-kickoff.zip", "__pycache__", ".key",
+                          ".DS_Store"):
+            self.assertFalse(any(forbidden in n for n in names),
+                             "%s appears in the source distribution" % forbidden)
+
+    def test_no_built_artifact_carries_a_credential(self):
+        seeds = [bytes.fromhex(s) for s in SecretGate.PUBLISHED_TEST_SEEDS]
+        with zipfile.ZipFile(self._wheel()) as archive:
+            for name in archive.namelist():
+                blob = archive.read(name)
+                self.assertNotIn(b"-----BEGIN", blob, name)
+                for seed in seeds:
+                    self.assertNotIn(seed, blob, name)
+
+
+if __name__ == "__main__":
+    unittest.main()

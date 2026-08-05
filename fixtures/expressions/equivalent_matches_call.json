@@ -1,0 +1,8 @@
+{
+  "description": "formatting variants of matches_call",
+  "sources": [
+    "matches(candidate.action.summary,\"*rm -rf*\")",
+    "matches( candidate.action.summary , \"*rm -rf*\" )"
+  ],
+  "canonical": "{\"path\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"action\"},{\"member\":\"summary\"}],\"type\":\"path\"},\"pattern\":\"*rm -rf*\",\"type\":\"matches\"}"
+}

@@ -1,0 +1,14 @@
+{
+  "description": "altered evidence digest",
+  "base": "allow_with_authorization_and_execution",
+  "mutation": {
+    "kind": "field",
+    "field": "evidence_digest",
+    "value": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signature_invalid"
+  }
+}

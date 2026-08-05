@@ -1,0 +1,15 @@
+{
+  "description": "altered execution acknowledgment",
+  "base": "allow_with_authorization_and_execution",
+  "mutation": {
+    "kind": "execution",
+    "value": {
+      "acknowledged": false
+    }
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signature_invalid"
+  }
+}

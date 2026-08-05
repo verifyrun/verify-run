@@ -1,0 +1,15 @@
+{
+  "description": "forbidden lookahead",
+  "kind": "registry",
+  "documents": [
+    {
+      "$id": "x:1",
+      "type": "string",
+      "pattern": "^(?=a)a$"
+    }
+  ],
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "schema_registry_invalid"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "description": "valid instance of evidence.schema.json",
+  "schema": "https://verifyrun.com/spec/v1/evidence.schema.json",
+  "value": {
+    "snapshot_id": "s1",
+    "rulebook_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "frozen_at": "2026-08-05T00:00:00Z",
+    "items": [
+      {
+        "id": "tests",
+        "order": 0,
+        "acquired_at": "2026-08-05T00:00:00Z",
+        "status": "ok",
+        "value": "passed",
+        "value_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      {
+        "id": "docs",
+        "order": 1,
+        "acquired_at": "2026-08-05T00:00:00Z",
+        "status": "missing"
+      }
+    ],
+    "snapshot_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "expected": {
+    "valid": true
+  },
+  "canonical": "{\"frozen_at\":\"2026-08-05T00:00:00Z\",\"items\":[{\"acquired_at\":\"2026-08-05T00:00:00Z\",\"id\":\"tests\",\"order\":0,\"status\":\"ok\",\"value\":\"passed\",\"value_digest\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"},{\"acquired_at\":\"2026-08-05T00:00:00Z\",\"id\":\"docs\",\"order\":1,\"status\":\"missing\"}],\"rulebook_digest\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_digest\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_id\":\"s1\"}",
+  "sha256": "a4abe50a0b5d3248311e64068e210079dc7decdbc0f6a0f2bde8cb9b97956f62"
+}

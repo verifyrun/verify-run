@@ -1,0 +1,30 @@
+{
+  "note": "A top-level JSON string is a value; pipeline-gate compares evidence to one.",
+  "tree": {
+    "ci": {
+      "kind": "dir"
+    },
+    "ci/result.json": {
+      "kind": "file",
+      "bytes_base64": "InBhc3NlZCI=",
+      "mode": "0644"
+    }
+  },
+  "declaration": {
+    "id": "tests",
+    "source": "file",
+    "ref": "ci/result.json"
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "acquisition",
+    "acquisition": {
+      "id": "tests",
+      "status": "ok",
+      "acquired_at": "2026-08-04T12:00:00Z",
+      "value": "passed"
+    },
+    "canonical": "\"passed\"",
+    "sha256": "559532ad927252eed5d9b6687d55203a96b956d822055f4570f196a93a42bece"
+  }
+}

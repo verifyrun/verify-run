@@ -1,0 +1,6 @@
+{
+  "description": "explicit numeric tag",
+  "format": "yaml",
+  "source_base64": "azogISFpbnQgNwo=",
+  "expected": {"outcome": "ERROR", "reason_code": "source_construct_unsupported"}
+}

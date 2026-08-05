@@ -1,0 +1,6 @@
+{
+  "description": "Exact escape output: quote and reverse solidus escaped; C0 controls named or \\u00xx with lowercase hex; solidus, DEL, U+2028, U+2029 and all valid non-ASCII emitted literally.",
+  "input": {"astral": "\ud834\udd1e", "backslash": "\\", "bmp": "\u00e9", "controls": "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\u000b\f\r\u000e\u000f\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f", "del": "\u007f", "quote": "\"", "sep": "\u2028\u2029", "solidus": "a/b"},
+  "canonical": "{\"astral\":\"\ud834\udd1e\",\"backslash\":\"\\\\\",\"bmp\":\"\u00e9\",\"controls\":\"\\u0000\\u0001\\u0002\\u0003\\u0004\\u0005\\u0006\\u0007\\b\\t\\n\\u000b\\f\\r\\u000e\\u000f\\u0010\\u0011\\u0012\\u0013\\u0014\\u0015\\u0016\\u0017\\u0018\\u0019\\u001a\\u001b\\u001c\\u001d\\u001e\\u001f\",\"del\":\"\u007f\",\"quote\":\"\\\"\",\"sep\":\"\u2028\u2029\",\"solidus\":\"a/b\"}",
+  "sha256": "9bbfb2b65099e2dfdb23ee5c83b2212a4386d87c29a586d8b26ec492d9c77623"
+}

@@ -1,0 +1,6 @@
+{
+  "description": "leading-zero octal",
+  "format": "yaml",
+  "source_base64": "bjogMDE3Cg==",
+  "expected": {"outcome": "ERROR", "reason_code": "source_construct_unsupported"}
+}

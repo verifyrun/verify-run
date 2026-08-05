@@ -1,0 +1,19 @@
+{
+  "description": "outcome reason missing code",
+  "schema": "https://verifyrun.com/spec/v1/outcome.schema.json",
+  "value": {
+    "outcome": "ALLOW",
+    "reasons": [
+      {
+        "message": "m"
+      }
+    ]
+  },
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "outcome_schema_invalid",
+    "instance_path": "$.reasons[0].code",
+    "schema_path": "$.properties.reasons.items.required",
+    "keyword": "required"
+  }
+}

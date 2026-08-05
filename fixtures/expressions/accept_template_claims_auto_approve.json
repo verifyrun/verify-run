@@ -1,0 +1,74 @@
+{
+  "description": "template claims auto approve",
+  "source": "fresh(coverage) and evidence.coverage == \"covered\" and present(docs_complete) and candidate.action.params.amount <= evidence.authority_limit",
+  "declared_evidence": [
+    "coverage",
+    "docs_complete",
+    "authority_limit"
+  ],
+  "ast": {
+    "type": "and",
+    "operands": [
+      {
+        "type": "fresh",
+        "evidence_id": "coverage"
+      },
+      {
+        "type": "compare",
+        "operator": "==",
+        "left": {
+          "type": "path",
+          "root": "evidence",
+          "segments": [
+            {
+              "member": "coverage"
+            }
+          ]
+        },
+        "right": {
+          "type": "literal",
+          "value": "covered"
+        }
+      },
+      {
+        "type": "present",
+        "evidence_id": "docs_complete"
+      },
+      {
+        "type": "compare",
+        "operator": "<=",
+        "left": {
+          "type": "path",
+          "root": "candidate",
+          "segments": [
+            {
+              "member": "action"
+            },
+            {
+              "member": "params"
+            },
+            {
+              "member": "amount"
+            }
+          ]
+        },
+        "right": {
+          "type": "path",
+          "root": "evidence",
+          "segments": [
+            {
+              "member": "authority_limit"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "canonical": "{\"operands\":[{\"evidence_id\":\"coverage\",\"type\":\"fresh\"},{\"left\":{\"root\":\"evidence\",\"segments\":[{\"member\":\"coverage\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"covered\"},\"type\":\"compare\"},{\"evidence_id\":\"docs_complete\",\"type\":\"present\"},{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"action\"},{\"member\":\"params\"},{\"member\":\"amount\"}],\"type\":\"path\"},\"operator\":\"<=\",\"right\":{\"root\":\"evidence\",\"segments\":[{\"member\":\"authority_limit\"}],\"type\":\"path\"},\"type\":\"compare\"}],\"type\":\"and\"}",
+  "sha256": "4bbdc7a3d41d1727cd9501dd28e45593489158c53d235a61c08b1130d9b8903e",
+  "evidence_ids": [
+    "coverage",
+    "docs_complete",
+    "authority_limit"
+  ]
+}

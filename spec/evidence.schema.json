@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verifyrun.com/spec/v1/evidence.schema.json",
+  "title": "Evidence snapshot (frozen before evaluation; never amended after)",
+  "type": "object",
+  "required": ["snapshot_id", "rulebook_digest", "frozen_at", "items", "snapshot_digest"],
+  "additionalProperties": false,
+  "properties": {
+    "snapshot_id": {"type": "string"},
+    "rulebook_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "frozen_at": {"type": "string", "format": "date-time"},
+    "items": {"type": "array", "items": {
+      "type": "object",
+      "required": ["id", "order", "acquired_at", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string"},
+        "order": {"type": "integer", "minimum": 0,
+          "description": "Acquisition order, exactly 0..n-1 across items in array order. Evidence after the freeze never enters this decision."},
+        "acquired_at": {"type": "string", "format": "date-time",
+          "description": "Must be at or before frozen_at."},
+        "status": {"type": "string", "enum": ["ok", "missing", "stale", "error"]},
+        "value": {"description": "No floats. Non-integer numbers are canonical decimal strings per spec/canonicalization.md."},
+        "value_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$",
+          "description": "Digest of this item's value. Present only when value is present."}
+      }}},
+    "snapshot_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "Digest of this snapshot with snapshot_digest omitted, per spec/canonicalization.md."}
+  }
+}

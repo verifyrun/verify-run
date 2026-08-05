@@ -1,0 +1,9 @@
+{
+  "note": "A symlinked workspace root is refused before anything is written.",
+  "template": "pipeline-gate",
+  "workspace_is_symlink": true,
+  "expected": {
+    "exit": 1,
+    "reason_code": "cli_workspace_invalid"
+  }
+}

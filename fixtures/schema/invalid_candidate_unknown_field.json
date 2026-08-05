@@ -1,0 +1,19 @@
+{
+  "description": "candidate unknown field",
+  "schema": "https://verifyrun.com/spec/v1/candidate.schema.json",
+  "value": {
+    "candidate_id": "c",
+    "kind": "command",
+    "action": {
+      "summary": "x"
+    },
+    "extra": 1
+  },
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "candidate_schema_invalid",
+    "instance_path": "$.extra",
+    "schema_path": "$.additionalProperties",
+    "keyword": "additionalProperties"
+  }
+}

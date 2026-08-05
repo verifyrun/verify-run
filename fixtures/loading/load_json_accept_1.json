@@ -1,0 +1,8 @@
+{
+  "description": "Nested mapping and array; members sorted at every depth, array order kept",
+  "format": "json",
+  "source_base64": "eyJiIjpbMSwyLHsiYyI6IngifV0sImEiOnsieiI6MX19",
+  "value": {"b": [1, 2, {"c": "x"}], "a": {"z": 1}},
+  "canonical": "{\"a\":{\"z\":1},\"b\":[1,2,{\"c\":\"x\"}]}",
+  "sha256": "f8eb06f21b0a923971d28bea8dcd45135e75dc25dc40bdc6bd6ca1e18d54d838"
+}

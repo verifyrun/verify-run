@@ -1,0 +1,14 @@
+{
+  "note": "Every refusal above the consumption line leaves nothing spent and nothing started, so the caller may fix the input and try again with a new authorization.",
+  "stage": "before-consumption",
+  "state": {
+    "authorization_consumed": false,
+    "process_started": false,
+    "acknowledgment_available": false,
+    "receipt_available": false,
+    "stored_record_available": false,
+    "automatic_retry_permitted": false
+  },
+  "reason_code": null,
+  "recovery": "Repair the input and issue a new authorization. Nothing was spent."
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verifyrun.com/spec/v1/authorization.schema.json",
+  "title": "Single-use action authorization (only issued on ALLOW)",
+  "type": "object",
+  "required": ["authorization_id", "nonce", "issued_at", "expires_at", "runtime_id",
+               "action_digest", "rulebook_digest", "evidence_digest", "signature"],
+  "additionalProperties": false,
+  "properties": {
+    "authorization_id": {"type": "string"},
+    "nonce": {"type": "string", "minLength": 16,
+      "description": "Single use. Store consumed nonces; reuse must be rejected."},
+    "issued_at": {"type": "string", "format": "date-time"},
+    "expires_at": {"type": "string", "format": "date-time"},
+    "runtime_id": {"type": "string"},
+    "action_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "Digest of the exact canonical candidate. A different command is a different digest. Equal to the receipt's candidate_digest, per spec/canonicalization.md."},
+    "rulebook_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "evidence_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "Equal to the governing snapshot's snapshot_digest."},
+    "signature": {"$ref": "#/$defs/sig"}
+  },
+  "$defs": {"sig": {"type": "object", "required": ["alg", "key_id", "key_version", "value"],
+    "additionalProperties": false, "properties": {
+      "alg": {"type": "string", "const": "ed25519"},
+      "key_id": {"type": "string"},
+      "key_version": {"type": "integer", "minimum": 1},
+      "value": {"type": "string",
+        "description": "base64 with padding (RFC 4648 section 4) over the artifact with its signature member omitted, per spec/canonicalization.md."}}}}
+}

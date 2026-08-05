@@ -1,0 +1,47 @@
+{
+  "description": "integer boundaries",
+  "source": "candidate.n == 9007199254740991 or candidate.n == -9007199254740991",
+  "declared_evidence": [],
+  "ast": {
+    "type": "or",
+    "operands": [
+      {
+        "type": "compare",
+        "operator": "==",
+        "left": {
+          "type": "path",
+          "root": "candidate",
+          "segments": [
+            {
+              "member": "n"
+            }
+          ]
+        },
+        "right": {
+          "type": "literal",
+          "value": 9007199254740991
+        }
+      },
+      {
+        "type": "compare",
+        "operator": "==",
+        "left": {
+          "type": "path",
+          "root": "candidate",
+          "segments": [
+            {
+              "member": "n"
+            }
+          ]
+        },
+        "right": {
+          "type": "literal",
+          "value": -9007199254740991
+        }
+      }
+    ]
+  },
+  "canonical": "{\"operands\":[{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"n\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":9007199254740991},\"type\":\"compare\"},{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"n\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":-9007199254740991},\"type\":\"compare\"}],\"type\":\"or\"}",
+  "sha256": "1387fd00bf1255a03848e6bdde28b02afa01e29a2917485adbad50422d8d5dae",
+  "evidence_ids": []
+}

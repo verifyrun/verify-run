@@ -1,0 +1,6 @@
+{
+  "description": "duplicate key nested",
+  "format": "yaml",
+  "source_base64": "bzoKICBpOgogICAgazogMQogICAgazogMgo=",
+  "expected": {"outcome": "ERROR", "reason_code": "canonical_form_invalid"}
+}

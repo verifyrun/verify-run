@@ -1,0 +1,19 @@
+{
+  "description": "evidence absent item value",
+  "when": "evidence.e == \"v\"",
+  "declare": [
+    {
+      "id": "e",
+      "source": "file"
+    }
+  ],
+  "items": [],
+  "candidate": {
+    "candidate_id": "c",
+    "kind": "command",
+    "action": {
+      "summary": "s"
+    }
+  },
+  "expected": "unsettled"
+}

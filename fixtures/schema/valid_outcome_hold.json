@@ -1,0 +1,19 @@
+{
+  "description": "valid instance of outcome.schema.json",
+  "schema": "https://verifyrun.com/spec/v1/outcome.schema.json",
+  "value": {
+    "outcome": "HOLD",
+    "reasons": [
+      {
+        "code": "evidence_unsettled",
+        "message": "u",
+        "evidence_id": "tests"
+      }
+    ]
+  },
+  "expected": {
+    "valid": true
+  },
+  "canonical": "{\"outcome\":\"HOLD\",\"reasons\":[{\"code\":\"evidence_unsettled\",\"evidence_id\":\"tests\",\"message\":\"u\"}]}",
+  "sha256": "a5f307988d1ce4858f7ba349c47f674c6cca733c89732feaa37b70118eba43ec"
+}

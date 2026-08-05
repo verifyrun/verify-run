@@ -1,0 +1,23 @@
+{
+  "description": "outcome trace item not string",
+  "schema": "https://verifyrun.com/spec/v1/outcome.schema.json",
+  "value": {
+    "outcome": "ALLOW",
+    "reasons": [
+      {
+        "code": "c",
+        "message": "m"
+      }
+    ],
+    "trace": [
+      1
+    ]
+  },
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "outcome_schema_invalid",
+    "instance_path": "$.trace[0]",
+    "schema_path": "$.properties.trace.items.type",
+    "keyword": "type"
+  }
+}

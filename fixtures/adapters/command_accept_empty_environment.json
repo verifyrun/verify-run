@@ -1,0 +1,36 @@
+{
+  "note": "Nothing ambient reaches an evidence command: the parent exports the sentinel and the child cannot see it.",
+  "tree": {
+    "ci": {
+      "kind": "dir"
+    },
+    "ci/last-test-result.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCnByaW50ZiAneyJzZW50aW5lbCI6IiVzIn0nICIke1ZGWV9GSVhUVVJFX1NFTlRJTkVMLWFic2VudH0iCg==",
+      "mode": "0755"
+    }
+  },
+  "declaration": {
+    "id": "tests",
+    "source": "exec",
+    "ref": "./ci/last-test-result.sh",
+    "max_age_seconds": 900
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "parent_environment": {
+    "VFY_FIXTURE_SENTINEL": "present"
+  },
+  "expected": {
+    "class": "acquisition",
+    "acquisition": {
+      "id": "tests",
+      "status": "ok",
+      "acquired_at": "2026-08-04T12:00:00Z",
+      "value": {
+        "sentinel": "absent"
+      }
+    },
+    "canonical": "{\"sentinel\":\"absent\"}",
+    "sha256": "dec6dbd73481a791fc47227a3173ba649474037c93ca912c77fdac72bb2fa104"
+  }
+}

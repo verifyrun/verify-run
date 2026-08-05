@@ -1,0 +1,30 @@
+{
+  "note": "An explicit JSON null is a recorded observation, not an absence.",
+  "tree": {
+    "claim": {
+      "kind": "dir"
+    },
+    "claim/authority.json": {
+      "kind": "file",
+      "bytes_base64": "bnVsbA==",
+      "mode": "0644"
+    }
+  },
+  "declaration": {
+    "id": "authority_limit",
+    "source": "file",
+    "ref": "./claim/authority.json"
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "acquisition",
+    "acquisition": {
+      "id": "authority_limit",
+      "status": "ok",
+      "acquired_at": "2026-08-04T12:00:00Z",
+      "value": null
+    },
+    "canonical": "null",
+    "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+  }
+}

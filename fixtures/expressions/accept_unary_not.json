@@ -1,0 +1,19 @@
+{
+  "description": "unary not",
+  "source": "not present(approvals)",
+  "declared_evidence": [
+    "approvals"
+  ],
+  "ast": {
+    "type": "not",
+    "operand": {
+      "type": "present",
+      "evidence_id": "approvals"
+    }
+  },
+  "canonical": "{\"operand\":{\"evidence_id\":\"approvals\",\"type\":\"present\"},\"type\":\"not\"}",
+  "sha256": "9e925bf2527e72094d32e41d01daa872bfb83e0f56bbac44e6a8a3b84c60804a",
+  "evidence_ids": [
+    "approvals"
+  ]
+}

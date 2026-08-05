@@ -1,0 +1,6 @@
+{
+  "description": "malformed YAML",
+  "format": "yaml",
+  "source_base64": "YTogWzEsIDIK",
+  "expected": {"outcome": "ERROR", "reason_code": "source_syntax_invalid"}
+}

@@ -1,0 +1,9 @@
+verify-run
+Copyright 2026 Devin Bostick
+
+This product includes software developed by Devin Bostick.
+
+Licensed under the Apache License, Version 2.0. See LICENSE.
+
+The local runtime is free software. The hosted plane referenced in the project's
+architecture documents is a separate service and is not part of this distribution.

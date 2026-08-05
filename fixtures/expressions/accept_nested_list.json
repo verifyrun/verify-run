@@ -1,0 +1,32 @@
+{
+  "description": "nested list",
+  "source": "candidate.k in [[\"a\"],[\"b\"]]",
+  "declared_evidence": [],
+  "ast": {
+    "type": "membership",
+    "operator": "in",
+    "operand": {
+      "type": "path",
+      "root": "candidate",
+      "segments": [
+        {
+          "member": "k"
+        }
+      ]
+    },
+    "list": {
+      "type": "literal",
+      "value": [
+        [
+          "a"
+        ],
+        [
+          "b"
+        ]
+      ]
+    }
+  },
+  "canonical": "{\"list\":{\"type\":\"literal\",\"value\":[[\"a\"],[\"b\"]]},\"operand\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"k\"}],\"type\":\"path\"},\"operator\":\"in\",\"type\":\"membership\"}",
+  "sha256": "71cb2440c60511ea880838dbdc2477d3ec9932f1de4c84e7fa1313c6b0a9d118",
+  "evidence_ids": []
+}

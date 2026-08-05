@@ -1,0 +1,23 @@
+{
+  "note": "An absent optional file is recorded as missing, and present() is false without it.",
+  "rulebook_ref": "templates/agent-guard.yaml",
+  "tree": {},
+  "snapshot_id": "snap-bridge-agent-guard-hold-absent-approvals",
+  "frozen_at": "2026-08-05T00:00:00Z",
+  "acquired_at": "2026-08-04T23:59:30Z",
+  "candidate": {
+    "candidate_id": "c-bridge-7",
+    "kind": "tool_call",
+    "action": {
+      "summary": "email the customer",
+      "tool": "send_email"
+    }
+  },
+  "expected": {
+    "statuses": {
+      "approvals": "missing"
+    },
+    "outcome": "HOLD",
+    "matched_rule": "outbound-email-needs-approval"
+  }
+}

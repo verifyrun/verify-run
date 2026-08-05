@@ -1,0 +1,14 @@
+{
+  "note": "http is declared by claims-gate and implemented by no adapter in v1.",
+  "tree": {},
+  "declaration": {
+    "id": "coverage",
+    "source": "http",
+    "ref": "https://api.internal.example/coverage"
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "adapter_error",
+    "reason_code": "evidence_adapter_config_invalid"
+  }
+}

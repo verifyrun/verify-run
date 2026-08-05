@@ -1,0 +1,9 @@
+{
+  "note": "rules appears once in an illustrative file tree and is not a v1 command.",
+  "argv": [
+    "rules"
+  ],
+  "expected": {
+    "exit": 2
+  }
+}

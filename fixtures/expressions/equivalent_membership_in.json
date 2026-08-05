@@ -1,0 +1,8 @@
+{
+  "description": "formatting variants of membership_in",
+  "sources": [
+    "candidate.kind in [\"command\",\"tool_call\"]",
+    "candidate.kind in [ \"command\" , \"tool_call\" ]"
+  ],
+  "canonical": "{\"list\":{\"type\":\"literal\",\"value\":[\"command\",\"tool_call\"]},\"operand\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"kind\"}],\"type\":\"path\"},\"operator\":\"in\",\"type\":\"membership\"}"
+}

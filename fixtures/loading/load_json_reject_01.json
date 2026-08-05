@@ -1,0 +1,6 @@
+{
+  "description": "Duplicate key at the root, before a mapping exists to lose it",
+  "format": "json",
+  "source_base64": "eyJhIjoxLCJhIjoyfQ==",
+  "expected": {"outcome": "ERROR", "reason_code": "canonical_form_invalid"}
+}

@@ -1,0 +1,24 @@
+{
+  "note": "An absent file is an evidence gap, not a configuration fault.",
+  "tree": {
+    ".vfy": {
+      "kind": "dir"
+    }
+  },
+  "declaration": {
+    "id": "approvals",
+    "source": "file",
+    "ref": ".vfy/approvals.json",
+    "max_age_seconds": 86400,
+    "required": false
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "acquisition",
+    "acquisition": {
+      "id": "approvals",
+      "status": "missing",
+      "acquired_at": "2026-08-04T12:00:00Z"
+    }
+  }
+}

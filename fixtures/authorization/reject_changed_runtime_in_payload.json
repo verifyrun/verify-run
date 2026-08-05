@@ -1,0 +1,14 @@
+{
+  "description": "changed runtime in payload",
+  "base": "minimum_valid",
+  "mutation": {
+    "kind": "field",
+    "field": "runtime_id",
+    "value": "other"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signature_invalid"
+  }
+}

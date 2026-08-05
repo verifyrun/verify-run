@@ -1,0 +1,31 @@
+{
+  "description": "ordering lt",
+  "source": "candidate.action.params.amount < 5",
+  "declared_evidence": [],
+  "ast": {
+    "type": "compare",
+    "operator": "<",
+    "left": {
+      "type": "path",
+      "root": "candidate",
+      "segments": [
+        {
+          "member": "action"
+        },
+        {
+          "member": "params"
+        },
+        {
+          "member": "amount"
+        }
+      ]
+    },
+    "right": {
+      "type": "literal",
+      "value": 5
+    }
+  },
+  "canonical": "{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"action\"},{\"member\":\"params\"},{\"member\":\"amount\"}],\"type\":\"path\"},\"operator\":\"<\",\"right\":{\"type\":\"literal\",\"value\":5},\"type\":\"compare\"}",
+  "sha256": "1b127ddd9b4fe580a95da9f4b8e22229af9451c762ab78a4b3ed19f808da30f1",
+  "evidence_ids": []
+}

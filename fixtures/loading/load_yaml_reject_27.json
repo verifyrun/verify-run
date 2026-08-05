@@ -1,0 +1,6 @@
+{
+  "description": "explicit timestamp tag",
+  "format": "yaml",
+  "source_base64": "azogISF0aW1lc3RhbXAgMjAyNi0wOC0wNQo=",
+  "expected": {"outcome": "ERROR", "reason_code": "source_construct_unsupported"}
+}

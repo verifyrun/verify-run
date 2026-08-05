@@ -1,0 +1,15 @@
+{
+  "description": "unanchored pattern",
+  "kind": "registry",
+  "documents": [
+    {
+      "$id": "x:1",
+      "type": "string",
+      "pattern": "[a-z]+"
+    }
+  ],
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "schema_registry_invalid"
+  }
+}

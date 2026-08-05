@@ -1,0 +1,12 @@
+{
+  "description": "signature copied from another payload",
+  "base": "minimum_valid",
+  "mutation": {
+    "kind": "signature_copy"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signature_invalid"
+  }
+}

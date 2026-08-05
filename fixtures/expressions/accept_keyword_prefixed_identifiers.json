@@ -1,0 +1,30 @@
+{
+  "description": "keyword prefixed identifiers",
+  "source": "candidate.nothing == candidate.android",
+  "declared_evidence": [],
+  "ast": {
+    "type": "compare",
+    "operator": "==",
+    "left": {
+      "type": "path",
+      "root": "candidate",
+      "segments": [
+        {
+          "member": "nothing"
+        }
+      ]
+    },
+    "right": {
+      "type": "path",
+      "root": "candidate",
+      "segments": [
+        {
+          "member": "android"
+        }
+      ]
+    }
+  },
+  "canonical": "{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"nothing\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"android\"}],\"type\":\"path\"},\"type\":\"compare\"}",
+  "sha256": "302e8a98028acf0e688c64b31f0e8dc12a64155cbb7b2a4d4759543a68fbd48c",
+  "evidence_ids": []
+}

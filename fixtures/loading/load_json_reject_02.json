@@ -1,0 +1,6 @@
+{
+  "description": "Duplicate key nested two levels down",
+  "format": "json",
+  "source_base64": "eyJvdXRlciI6eyJpbm5lciI6eyJrIjoxLCJrIjoyfX19",
+  "expected": {"outcome": "ERROR", "reason_code": "canonical_form_invalid"}
+}

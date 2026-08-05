@@ -1,0 +1,25 @@
+{
+  "description": "valid instance of authorization.schema.json",
+  "schema": "https://verifyrun.com/spec/v1/authorization.schema.json",
+  "value": {
+    "authorization_id": "a1",
+    "nonce": "nnnnnnnnnnnnnnnn",
+    "issued_at": "2026-08-05T00:00:00Z",
+    "expires_at": "2026-08-05T00:05:00Z",
+    "runtime_id": "rt",
+    "action_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "rulebook_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "evidence_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "signature": {
+      "alg": "ed25519",
+      "key_id": "k1",
+      "key_version": 1,
+      "value": "AAAA"
+    }
+  },
+  "expected": {
+    "valid": true
+  },
+  "canonical": "{\"action_digest\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"authorization_id\":\"a1\",\"evidence_digest\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"expires_at\":\"2026-08-05T00:05:00Z\",\"issued_at\":\"2026-08-05T00:00:00Z\",\"nonce\":\"nnnnnnnnnnnnnnnn\",\"rulebook_digest\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"runtime_id\":\"rt\",\"signature\":{\"alg\":\"ed25519\",\"key_id\":\"k1\",\"key_version\":1,\"value\":\"AAAA\"}}",
+  "sha256": "1fd9afc64678867f3bf358f9a87ecc5117273c3f8d1b81555bbdd0b7397ea8e6"
+}

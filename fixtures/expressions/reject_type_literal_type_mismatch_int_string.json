@@ -1,0 +1,8 @@
+{
+  "description": "literal type mismatch int string",
+  "source": "1 == \"1\"",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_type_error"
+  }
+}

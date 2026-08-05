@@ -1,0 +1,44 @@
+{
+  "note": "Unparseable content makes a direct value reference unsettled, which holds.",
+  "rulebook_ref": "templates/claims-gate.yaml",
+  "tree": {
+    "claim": {
+      "kind": "dir"
+    },
+    "claim/docs-manifest.json": {
+      "kind": "file",
+      "bytes_base64": "eyJjb21wbGV0ZSI6dHJ1ZX0=",
+      "mode": "0644"
+    },
+    "claim/authority.json": {
+      "kind": "file",
+      "bytes_base64": "dHdlbnR5IGZpdmUgdGhvdXNhbmQ=",
+      "mode": "0644"
+    }
+  },
+  "snapshot_id": "snap-bridge-claims-gate-hold-unparseable-authority",
+  "frozen_at": "2026-08-05T00:00:00Z",
+  "acquired_at": "2026-08-04T23:59:30Z",
+  "candidate": {
+    "candidate_id": "c-bridge-12",
+    "kind": "custom",
+    "action": {
+      "summary": "settle claim",
+      "params": {
+        "amount": 90000
+      }
+    },
+    "identity": {
+      "claim_id": "CLM-1",
+      "adjuster_id": "ADJ-7"
+    }
+  },
+  "expected": {
+    "statuses": {
+      "docs_complete": "ok",
+      "authority_limit": "error",
+      "coverage": "missing"
+    },
+    "outcome": "HOLD"
+  }
+}

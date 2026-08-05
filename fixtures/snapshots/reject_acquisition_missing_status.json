@@ -1,0 +1,36 @@
+{
+  "description": "acquisition missing status",
+  "rulebook": {
+    "rulebook_id": "snap",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "evidence": [
+      {
+        "id": "a",
+        "source": "file"
+      }
+    ],
+    "rules": [
+      {
+        "id": "r",
+        "when": "candidate.kind == \"command\"",
+        "outcome": "ALLOW",
+        "reason": "ok"
+      }
+    ],
+    "default_outcome": "HOLD"
+  },
+  "snapshot_id": "s-1",
+  "frozen_at": "2026-08-05T00:00:00Z",
+  "acquisitions": [
+    {
+      "id": "a",
+      "acquired_at": "2026-08-05T00:00:00Z"
+    }
+  ],
+  "stage": "construction",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "snapshot_item_invalid"
+  }
+}

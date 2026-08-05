@@ -1,0 +1,8 @@
+{
+  "description": "non integer index",
+  "source": "candidate.a[\"k\"] == \"x\"",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_parse_error"
+  }
+}

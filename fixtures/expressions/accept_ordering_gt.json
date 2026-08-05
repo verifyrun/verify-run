@@ -1,0 +1,40 @@
+{
+  "description": "ordering gt",
+  "source": "candidate.action.params.amount > evidence.limit",
+  "declared_evidence": [
+    "limit"
+  ],
+  "ast": {
+    "type": "compare",
+    "operator": ">",
+    "left": {
+      "type": "path",
+      "root": "candidate",
+      "segments": [
+        {
+          "member": "action"
+        },
+        {
+          "member": "params"
+        },
+        {
+          "member": "amount"
+        }
+      ]
+    },
+    "right": {
+      "type": "path",
+      "root": "evidence",
+      "segments": [
+        {
+          "member": "limit"
+        }
+      ]
+    }
+  },
+  "canonical": "{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"action\"},{\"member\":\"params\"},{\"member\":\"amount\"}],\"type\":\"path\"},\"operator\":\">\",\"right\":{\"root\":\"evidence\",\"segments\":[{\"member\":\"limit\"}],\"type\":\"path\"},\"type\":\"compare\"}",
+  "sha256": "fa83f1a9718c1fcd4c91206668df2ec4fabf0ae7151ae2ae0b8a71bfd8cfbc04",
+  "evidence_ids": [
+    "limit"
+  ]
+}

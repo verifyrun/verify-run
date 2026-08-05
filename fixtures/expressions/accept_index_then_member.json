@@ -1,0 +1,31 @@
+{
+  "description": "index then member",
+  "source": "candidate.a[0].b == \"x\"",
+  "declared_evidence": [],
+  "ast": {
+    "type": "compare",
+    "operator": "==",
+    "left": {
+      "type": "path",
+      "root": "candidate",
+      "segments": [
+        {
+          "member": "a"
+        },
+        {
+          "index": 0
+        },
+        {
+          "member": "b"
+        }
+      ]
+    },
+    "right": {
+      "type": "literal",
+      "value": "x"
+    }
+  },
+  "canonical": "{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"a\"},{\"index\":0},{\"member\":\"b\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"x\"},\"type\":\"compare\"}",
+  "sha256": "60925d1a2186c885d075f2340c6a184be7af6385b5f78a90c4af32bc3c5e5865",
+  "evidence_ids": []
+}

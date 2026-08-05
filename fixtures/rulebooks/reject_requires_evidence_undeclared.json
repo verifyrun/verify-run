@@ -1,0 +1,9 @@
+{
+  "description": "requires evidence undeclared",
+  "stage": "semantic",
+  "source_base64": "cnVsZWJvb2tfaWQ6IHItMQp2ZXJzaW9uOiAxLjAuMAphZG9wdGVkX2F0OiAiMjAyNi0wOC0wNVQwMDowMDowMFoiCmV2aWRlbmNlOgogIC0ge2lkOiBrbm93biwgc291cmNlOiBmaWxlfQpydWxlczoKICAtIGlkOiByCiAgICB3aGVuOiAndHJ1ZScKICAgIG91dGNvbWU6IEFMTE9XCiAgICByZWFzb246IG9rCiAgICByZXF1aXJlc19ldmlkZW5jZTogW2tub3duLCBtaXNzaW5nXQpkZWZhdWx0X291dGNvbWU6IEhPTEQK",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "undeclared_evidence_id"
+  }
+}

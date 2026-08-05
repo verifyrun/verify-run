@@ -1,0 +1,8 @@
+{
+  "description": "Lowercase booleans and lowercase null are the only spellings typed",
+  "format": "yaml",
+  "source_base64": "dDogdHJ1ZQpmOiBmYWxzZQpuOiBudWxsCg==",
+  "value": {"t": true, "f": false, "n": null},
+  "canonical": "{\"f\":false,\"n\":null,\"t\":true}",
+  "sha256": "22e00dc2f7b01420f940fbdbfbdf34fa0667cc6500186495023ba37722cbd05e"
+}

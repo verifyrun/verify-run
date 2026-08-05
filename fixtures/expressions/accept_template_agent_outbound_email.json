@@ -1,0 +1,44 @@
+{
+  "description": "template agent outbound email",
+  "source": "candidate.action.tool == \"send_email\" and not present(approvals)",
+  "declared_evidence": [
+    "approvals"
+  ],
+  "ast": {
+    "type": "and",
+    "operands": [
+      {
+        "type": "compare",
+        "operator": "==",
+        "left": {
+          "type": "path",
+          "root": "candidate",
+          "segments": [
+            {
+              "member": "action"
+            },
+            {
+              "member": "tool"
+            }
+          ]
+        },
+        "right": {
+          "type": "literal",
+          "value": "send_email"
+        }
+      },
+      {
+        "type": "not",
+        "operand": {
+          "type": "present",
+          "evidence_id": "approvals"
+        }
+      }
+    ]
+  },
+  "canonical": "{\"operands\":[{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"action\"},{\"member\":\"tool\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"send_email\"},\"type\":\"compare\"},{\"operand\":{\"evidence_id\":\"approvals\",\"type\":\"present\"},\"type\":\"not\"}],\"type\":\"and\"}",
+  "sha256": "532105023e47ecbef586850e2dff13d0765384fce8cc7f884aae0feee6046cfd",
+  "evidence_ids": [
+    "approvals"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "description": "exponent literal",
+  "source": "candidate.n == 1e3",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_parse_error"
+  }
+}

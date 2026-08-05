@@ -1,0 +1,9 @@
+{
+  "note": "Nothing is added because it is conventional.",
+  "argv": [
+    "frobnicate"
+  ],
+  "expected": {
+    "exit": 2
+  }
+}

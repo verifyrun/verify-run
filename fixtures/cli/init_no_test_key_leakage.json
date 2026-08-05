@@ -1,0 +1,12 @@
+{
+  "note": "The published fixture seeds authorize nothing and never reach a real workspace.",
+  "template": "pipeline-gate",
+  "TEST_ONLY": "the seeds listed below are published constants that authorize nothing; this fixture exists to prove they never reach a real workspace",
+  "forbidden_key_hex": [
+    "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+    "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f"
+  ],
+  "expected": {
+    "exit": 0
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "description": "verified one second before expiry",
+  "TEST_ONLY": "keys in this directory are published constants and authorize nothing",
+  "rulebook": {
+    "rulebook_id": "auth-probe",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "evidence": [
+      {
+        "id": "tests",
+        "source": "exec",
+        "max_age_seconds": 900
+      }
+    ],
+    "rules": [
+      {
+        "id": "green",
+        "when": "identity.branch == \"main\" and fresh(tests) and evidence.tests == \"passed\"",
+        "outcome": "ALLOW",
+        "reason": "Tests green on main."
+      }
+    ],
+    "default_outcome": "HOLD"
+  },
+  "candidate": {
+    "candidate_id": "c-1",
+    "kind": "command",
+    "action": {
+      "summary": "deploy",
+      "argv": [
+        "./deploy.sh",
+        "v1.2.3"
+      ]
+    },
+    "identity": {
+      "branch": "main"
+    }
+  },
+  "acquisitions": [
+    {
+      "id": "tests",
+      "status": "ok",
+      "value": "passed",
+      "acquired_at": "2026-08-04T23:59:30Z"
+    }
+  ],
+  "frozen_at": "2026-08-05T00:00:00Z",
+  "snapshot_id": "s-1",
+  "authorization_id": "auth-1",
+  "nonce": "nnnnnnnnnnnnnnnn",
+  "runtime_id": "runtime-1",
+  "issued_at": "2026-08-05T00:00:00Z",
+  "expected_expires_at": "2026-08-05T00:05:00Z",
+  "ttl_seconds": 300,
+  "key_id": "test-key",
+  "key_version": 1,
+  "private_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "public_key_hex": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+  "unsigned_payload": {
+    "authorization_id": "auth-1",
+    "nonce": "nnnnnnnnnnnnnnnn",
+    "issued_at": "2026-08-05T00:00:00Z",
+    "expires_at": "2026-08-05T00:05:00Z",
+    "runtime_id": "runtime-1",
+    "action_digest": "sha256:b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "rulebook_digest": "sha256:ab2c429a9b62f8df981de0a72f659a70cb867e241c129b1e94e63551ae5d94e9",
+    "evidence_digest": "sha256:07779975dc3f68496bb1965a81eb68450d1c350bf758a8614c80cfeea2f96f39"
+  },
+  "unsigned_canonical": "{\"action_digest\":\"sha256:b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb\",\"authorization_id\":\"auth-1\",\"evidence_digest\":\"sha256:07779975dc3f68496bb1965a81eb68450d1c350bf758a8614c80cfeea2f96f39\",\"expires_at\":\"2026-08-05T00:05:00Z\",\"issued_at\":\"2026-08-05T00:00:00Z\",\"nonce\":\"nnnnnnnnnnnnnnnn\",\"rulebook_digest\":\"sha256:ab2c429a9b62f8df981de0a72f659a70cb867e241c129b1e94e63551ae5d94e9\",\"runtime_id\":\"runtime-1\"}",
+  "signed_bytes_sha256": "afaeb42e066af07daf5af39c23cbdc0412a66a5ab9945a998f6abcb3c0597f8b",
+  "signature": "t7dsn9S59ZWArzX67p6GPN1Ake5zaI9Va2YohPEWLmyIcekuxcZWNvyT93ZHnND1ek3boTHpFx45x1CMW195Cg==",
+  "authorization": {
+    "authorization_id": "auth-1",
+    "nonce": "nnnnnnnnnnnnnnnn",
+    "issued_at": "2026-08-05T00:00:00Z",
+    "expires_at": "2026-08-05T00:05:00Z",
+    "runtime_id": "runtime-1",
+    "action_digest": "sha256:b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "rulebook_digest": "sha256:ab2c429a9b62f8df981de0a72f659a70cb867e241c129b1e94e63551ae5d94e9",
+    "evidence_digest": "sha256:07779975dc3f68496bb1965a81eb68450d1c350bf758a8614c80cfeea2f96f39",
+    "signature": {
+      "alg": "ed25519",
+      "key_id": "test-key",
+      "key_version": 1,
+      "value": "t7dsn9S59ZWArzX67p6GPN1Ake5zaI9Va2YohPEWLmyIcekuxcZWNvyT93ZHnND1ek3boTHpFx45x1CMW195Cg=="
+    }
+  },
+  "authorization_canonical": "{\"action_digest\":\"sha256:b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb\",\"authorization_id\":\"auth-1\",\"evidence_digest\":\"sha256:07779975dc3f68496bb1965a81eb68450d1c350bf758a8614c80cfeea2f96f39\",\"expires_at\":\"2026-08-05T00:05:00Z\",\"issued_at\":\"2026-08-05T00:00:00Z\",\"nonce\":\"nnnnnnnnnnnnnnnn\",\"rulebook_digest\":\"sha256:ab2c429a9b62f8df981de0a72f659a70cb867e241c129b1e94e63551ae5d94e9\",\"runtime_id\":\"runtime-1\",\"signature\":{\"alg\":\"ed25519\",\"key_id\":\"test-key\",\"key_version\":1,\"value\":\"t7dsn9S59ZWArzX67p6GPN1Ake5zaI9Va2YohPEWLmyIcekuxcZWNvyT93ZHnND1ek3boTHpFx45x1CMW195Cg==\"}}",
+  "verification_time": "2026-08-05T00:04:59Z",
+  "expected": "valid"
+}

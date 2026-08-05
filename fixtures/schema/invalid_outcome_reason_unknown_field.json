@@ -1,0 +1,21 @@
+{
+  "description": "outcome reason unknown field",
+  "schema": "https://verifyrun.com/spec/v1/outcome.schema.json",
+  "value": {
+    "outcome": "ALLOW",
+    "reasons": [
+      {
+        "code": "c",
+        "message": "m",
+        "x": 1
+      }
+    ]
+  },
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "outcome_schema_invalid",
+    "instance_path": "$.reasons[0].x",
+    "schema_path": "$.properties.reasons.items.additionalProperties",
+    "keyword": "additionalProperties"
+  }
+}

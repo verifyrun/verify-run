@@ -1,0 +1,30 @@
+{
+  "note": "A ref holding ; $( ) * and spaces stays one literal argument: no shell is involved.",
+  "tree": {
+    "ci": {
+      "kind": "dir"
+    },
+    "ci/weird ; $(whoami) *.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCnByaW50ZiAnInBhc3NlZCInCg==",
+      "mode": "0755"
+    }
+  },
+  "declaration": {
+    "id": "tests",
+    "source": "exec",
+    "ref": "ci/weird ; $(whoami) *.sh"
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "acquisition",
+    "acquisition": {
+      "id": "tests",
+      "status": "ok",
+      "acquired_at": "2026-08-04T12:00:00Z",
+      "value": "passed"
+    },
+    "canonical": "\"passed\"",
+    "sha256": "559532ad927252eed5d9b6687d55203a96b956d822055f4570f196a93a42bece"
+  }
+}

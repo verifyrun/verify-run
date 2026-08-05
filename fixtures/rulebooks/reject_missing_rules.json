@@ -1,0 +1,9 @@
+{
+  "description": "missing rules",
+  "stage": "schema",
+  "source_base64": "cnVsZWJvb2tfaWQ6IHItMQp2ZXJzaW9uOiAxLjAuMAphZG9wdGVkX2F0OiAiMjAyNi0wOC0wNVQwMDowMDowMFoiCmV2aWRlbmNlOiBbXQpkZWZhdWx0X291dGNvbWU6IEhPTEQK",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "rulebook_schema_invalid"
+  }
+}

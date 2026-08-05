@@ -1,0 +1,29 @@
+{
+  "description": "mixed list",
+  "source": "candidate.k in [\"a\",1,true]",
+  "declared_evidence": [],
+  "ast": {
+    "type": "membership",
+    "operator": "in",
+    "operand": {
+      "type": "path",
+      "root": "candidate",
+      "segments": [
+        {
+          "member": "k"
+        }
+      ]
+    },
+    "list": {
+      "type": "literal",
+      "value": [
+        "a",
+        1,
+        true
+      ]
+    }
+  },
+  "canonical": "{\"list\":{\"type\":\"literal\",\"value\":[\"a\",1,true]},\"operand\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"k\"}],\"type\":\"path\"},\"operator\":\"in\",\"type\":\"membership\"}",
+  "sha256": "4db8baefc5265258a77d472bd16a9d86077c0ef2c2912e9469dd56a9d08430e9",
+  "evidence_ids": []
+}

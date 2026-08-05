@@ -1,0 +1,16 @@
+{
+  "description": "valid instance of evidence.schema.json",
+  "schema": "https://verifyrun.com/spec/v1/evidence.schema.json",
+  "value": {
+    "snapshot_id": "s1",
+    "rulebook_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "frozen_at": "2026-08-05T00:00:00Z",
+    "items": [],
+    "snapshot_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "expected": {
+    "valid": true
+  },
+  "canonical": "{\"frozen_at\":\"2026-08-05T00:00:00Z\",\"items\":[],\"rulebook_digest\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_digest\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"snapshot_id\":\"s1\"}",
+  "sha256": "5ce43f17e2cd459d3becf159e0414a1991e61374f8deb6a2d9d0305595d398ed"
+}

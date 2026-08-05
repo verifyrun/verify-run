@@ -1,0 +1,4 @@
+{"description": "Malformed candidate -> ERROR, never a decision",
+ "rulebook_ref": "templates/agent-guard.yaml",
+ "candidate": {"kind": "command"},
+ "expected": {"outcome": "ERROR", "reason_code": "candidate_schema_invalid"}}

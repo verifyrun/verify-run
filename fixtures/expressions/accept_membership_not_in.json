@@ -1,0 +1,27 @@
+{
+  "description": "membership not in",
+  "source": "candidate.kind not in [\"http_request\"]",
+  "declared_evidence": [],
+  "ast": {
+    "type": "membership",
+    "operator": "not in",
+    "operand": {
+      "type": "path",
+      "root": "candidate",
+      "segments": [
+        {
+          "member": "kind"
+        }
+      ]
+    },
+    "list": {
+      "type": "literal",
+      "value": [
+        "http_request"
+      ]
+    }
+  },
+  "canonical": "{\"list\":{\"type\":\"literal\",\"value\":[\"http_request\"]},\"operand\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"kind\"}],\"type\":\"path\"},\"operator\":\"not in\",\"type\":\"membership\"}",
+  "sha256": "8680284d6a3e6f354edd7089d8245c73e5bef7eb07c746412dbb8393d9e44505",
+  "evidence_ids": []
+}

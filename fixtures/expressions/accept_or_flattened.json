@@ -1,0 +1,64 @@
+{
+  "description": "or flattened",
+  "source": "candidate.a == \"x\" or candidate.b == \"y\" or candidate.c == \"z\"",
+  "declared_evidence": [],
+  "ast": {
+    "type": "or",
+    "operands": [
+      {
+        "type": "compare",
+        "operator": "==",
+        "left": {
+          "type": "path",
+          "root": "candidate",
+          "segments": [
+            {
+              "member": "a"
+            }
+          ]
+        },
+        "right": {
+          "type": "literal",
+          "value": "x"
+        }
+      },
+      {
+        "type": "compare",
+        "operator": "==",
+        "left": {
+          "type": "path",
+          "root": "candidate",
+          "segments": [
+            {
+              "member": "b"
+            }
+          ]
+        },
+        "right": {
+          "type": "literal",
+          "value": "y"
+        }
+      },
+      {
+        "type": "compare",
+        "operator": "==",
+        "left": {
+          "type": "path",
+          "root": "candidate",
+          "segments": [
+            {
+              "member": "c"
+            }
+          ]
+        },
+        "right": {
+          "type": "literal",
+          "value": "z"
+        }
+      }
+    ]
+  },
+  "canonical": "{\"operands\":[{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"a\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"x\"},\"type\":\"compare\"},{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"b\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"y\"},\"type\":\"compare\"},{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"c\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"z\"},\"type\":\"compare\"}],\"type\":\"or\"}",
+  "sha256": "28d9c33e04bc2728e57075f7e87a392b83815765a0d7aecfeeb4eca4cd5e2f7e",
+  "evidence_ids": []
+}

@@ -1,0 +1,14 @@
+{
+  "note": "Indistinguishable from a store failure except that nothing was returned to anyone.",
+  "stage": "recording",
+  "state": {
+    "authorization_consumed": true,
+    "process_started": true,
+    "acknowledgment_available": true,
+    "receipt_available": false,
+    "stored_record_available": false,
+    "automatic_retry_permitted": false
+  },
+  "reason_code": null,
+  "recovery": "None. The receipt existed only in memory."
+}

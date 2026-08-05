@@ -1,0 +1,31 @@
+{
+  "description": "valid instance of candidate.schema.json",
+  "schema": "https://verifyrun.com/spec/v1/candidate.schema.json",
+  "value": {
+    "candidate_id": "c-2",
+    "kind": "tool_call",
+    "proposed_by": "agent",
+    "identity": {
+      "branch": "main"
+    },
+    "action": {
+      "summary": "write",
+      "argv": [
+        "a"
+      ],
+      "tool": "write_file",
+      "params": {
+        "path": "./x",
+        "amount": "12.50"
+      },
+      "targets": [
+        "t"
+      ]
+    }
+  },
+  "expected": {
+    "valid": true
+  },
+  "canonical": "{\"action\":{\"argv\":[\"a\"],\"params\":{\"amount\":\"12.50\",\"path\":\"./x\"},\"summary\":\"write\",\"targets\":[\"t\"],\"tool\":\"write_file\"},\"candidate_id\":\"c-2\",\"identity\":{\"branch\":\"main\"},\"kind\":\"tool_call\",\"proposed_by\":\"agent\"}",
+  "sha256": "7191397b0daaab236a0a45daffc3bd752e991f6f64495f5ef1e69cec89a4e793"
+}

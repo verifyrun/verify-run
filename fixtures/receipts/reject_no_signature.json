@@ -1,0 +1,12 @@
+{
+  "description": "no signature",
+  "base": "allow_with_authorization_and_execution",
+  "mutation": {
+    "kind": "drop_signature"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "receipt_schema_invalid"
+  }
+}

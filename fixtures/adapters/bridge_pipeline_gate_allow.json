@@ -1,0 +1,38 @@
+{
+  "note": "Command output becomes evidence and the rulebook allows on it.",
+  "rulebook_ref": "templates/pipeline-gate.yaml",
+  "tree": {
+    "ci": {
+      "kind": "dir"
+    },
+    "ci/last-test-result.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCnByaW50ZiAnInBhc3NlZCInCg==",
+      "mode": "0755"
+    }
+  },
+  "snapshot_id": "snap-bridge-pipeline-gate-allow",
+  "frozen_at": "2026-08-05T00:00:00Z",
+  "acquired_at": "2026-08-04T23:59:30Z",
+  "candidate": {
+    "candidate_id": "c-bridge-1",
+    "kind": "command",
+    "action": {
+      "summary": "deploy",
+      "argv": [
+        "./deploy.sh",
+        "v1.2.3"
+      ]
+    },
+    "identity": {
+      "branch": "main"
+    }
+  },
+  "expected": {
+    "statuses": {
+      "tests": "ok"
+    },
+    "outcome": "ALLOW",
+    "matched_rule": "tests-green-on-main"
+  }
+}

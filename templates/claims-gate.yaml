@@ -1,0 +1,26 @@
+rulebook_id: claims-gate
+version: 1.0.0
+adopted_at: "2026-08-05T00:00:00Z"
+description: >
+  Insurance claims workflow gate: auto-approval only under declared authority, fresh
+  documentation, and coverage; everything unsettled escalates instead of guessing.
+track: [claim_id, adjuster_id]
+evidence:
+  - {id: coverage, source: http, ref: "https://api.internal.example/coverage", max_age_seconds: 3600}
+  - {id: docs_complete, source: file, ref: ./claim/docs-manifest.json, max_age_seconds: 86400}
+  - {id: authority_limit, source: file, ref: ./claim/authority.json, max_age_seconds: 604800}
+rules:
+  - id: over-authority
+    when: 'candidate.action.params.amount > evidence.authority_limit'
+    outcome: HOLD
+    reason: Amount exceeds this adjuster's declared authority; route to named escalation.
+  - id: coverage-denies
+    when: 'fresh(coverage) and evidence.coverage == "excluded"'
+    outcome: BLOCK
+    reason: Coverage determination excludes this claim category. This is a denial, not an unknown.
+  - id: auto-approve-in-authority
+    when: 'fresh(coverage) and evidence.coverage == "covered" and present(docs_complete) and candidate.action.params.amount <= evidence.authority_limit'
+    outcome: ALLOW
+    reason: Covered, documented, within declared authority.
+default_outcome: HOLD
+authorization: {ttl_seconds: 600, single_use: true}

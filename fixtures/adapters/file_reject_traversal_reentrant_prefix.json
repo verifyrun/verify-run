@@ -1,0 +1,18 @@
+{
+  "note": "Popping past the root is refused even when later segments point back inward.",
+  "tree": {
+    ".vfy": {
+      "kind": "dir"
+    }
+  },
+  "declaration": {
+    "id": "approvals",
+    "source": "file",
+    "ref": ".vfy/../../root/.vfy/approvals.json"
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "adapter_error",
+    "reason_code": "evidence_path_invalid"
+  }
+}

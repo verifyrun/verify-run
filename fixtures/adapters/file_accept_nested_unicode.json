@@ -1,0 +1,40 @@
+{
+  "note": "Nesting, arrays, and non-ASCII text pass through unchanged to canonical form.",
+  "tree": {
+    "docs.json": {
+      "kind": "file",
+      "bytes_base64": "eyJpdGVtcyI6WyJhIiwiw6kiLCLkuK0iXSwibmVzdGVkIjp7InoiOjEsImEiOlt0cnVlLG51bGxdfX0=",
+      "mode": "0644"
+    }
+  },
+  "declaration": {
+    "id": "docs_complete",
+    "source": "file",
+    "ref": "docs.json"
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "acquisition",
+    "acquisition": {
+      "id": "docs_complete",
+      "status": "ok",
+      "acquired_at": "2026-08-04T12:00:00Z",
+      "value": {
+        "items": [
+          "a",
+          "é",
+          "中"
+        ],
+        "nested": {
+          "z": 1,
+          "a": [
+            true,
+            null
+          ]
+        }
+      }
+    },
+    "canonical": "{\"items\":[\"a\",\"é\",\"中\"],\"nested\":{\"a\":[true,null],\"z\":1}}",
+    "sha256": "aed52429bd5434fc34cae485f893ecb74d865a9df3fcab2738571f9f6d6dc41e"
+  }
+}

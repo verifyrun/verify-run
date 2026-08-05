@@ -1,0 +1,8 @@
+{
+  "description": "unknown function",
+  "source": "stale(tests)",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_parse_error"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "description": "Quoted decimal strings stay strings; ordinary punctuated scalars are not reserved",
+  "format": "yaml",
+  "source_base64": "YW1vdW50OiAiMTIuNTAiCnZlcnNpb246IDEuMC4wCnBhdGg6IC4vY2xhaW0vYXV0aG9yaXR5Lmpzb24KaGlkZGVuOiAudmZ5L2FwcHJvdmFscy5qc29uCnVybDogaHR0cHM6Ly9hcGkuaW50ZXJuYWwuZXhhbXBsZS9jb3ZlcmFnZQpnbG9iOiAiKnJtIC1yZioiCmV4cHI6ICdpZGVudGl0eS5icmFuY2ggPT0gIm1haW4iJwpvdXRjb21lOiBBTExPVwo=",
+  "value": {"amount": "12.50", "version": "1.0.0", "path": "./claim/authority.json", "hidden": ".vfy/approvals.json", "url": "https://api.internal.example/coverage", "glob": "*rm -rf*", "expr": "identity.branch == \"main\"", "outcome": "ALLOW"},
+  "canonical": "{\"amount\":\"12.50\",\"expr\":\"identity.branch == \\\"main\\\"\",\"glob\":\"*rm -rf*\",\"hidden\":\".vfy/approvals.json\",\"outcome\":\"ALLOW\",\"path\":\"./claim/authority.json\",\"url\":\"https://api.internal.example/coverage\",\"version\":\"1.0.0\"}",
+  "sha256": "a026b027f3a52c7f00e01c44c3e903d4a6344e2170eef438a68d7ee64cce6850"
+}

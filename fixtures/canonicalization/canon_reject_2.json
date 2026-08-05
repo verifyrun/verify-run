@@ -1,0 +1,5 @@
+{
+  "description": "A lone low surrogate has no UTF-8 representation and is not a canonical input",
+  "input": {"note": "\udd1e"},
+  "expected": {"outcome": "ERROR", "reason_code": "surrogate_not_permitted"}
+}

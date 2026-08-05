@@ -1,0 +1,6 @@
+{"description": "First matching rule ALLOW",
+ "rulebook_ref": "templates/pipeline-gate.yaml", "candidate": {"candidate_id": "c-1",
+ "kind": "command", "action": {"summary": "deploy", "argv": ["./deploy.sh", "v1.2.3"]},
+ "identity": {"branch": "main"}},
+ "evidence_overrides": {"tests": {"status": "ok", "value": "passed", "age_seconds": 30}},
+ "expected": {"outcome": "ALLOW", "matched_rule": "tests-green-on-main"}}

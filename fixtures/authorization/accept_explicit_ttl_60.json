@@ -1,0 +1,95 @@
+{
+  "description": "explicit ttl 60",
+  "TEST_ONLY": "keys in this directory are published constants and authorize nothing",
+  "rulebook": {
+    "rulebook_id": "auth-probe",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "evidence": [
+      {
+        "id": "tests",
+        "source": "exec",
+        "max_age_seconds": 900
+      }
+    ],
+    "rules": [
+      {
+        "id": "green",
+        "when": "identity.branch == \"main\" and fresh(tests) and evidence.tests == \"passed\"",
+        "outcome": "ALLOW",
+        "reason": "Tests green on main."
+      }
+    ],
+    "default_outcome": "HOLD",
+    "authorization": {
+      "ttl_seconds": 60,
+      "single_use": true
+    }
+  },
+  "candidate": {
+    "candidate_id": "c-1",
+    "kind": "command",
+    "action": {
+      "summary": "deploy",
+      "argv": [
+        "./deploy.sh",
+        "v1.2.3"
+      ]
+    },
+    "identity": {
+      "branch": "main"
+    }
+  },
+  "acquisitions": [
+    {
+      "id": "tests",
+      "status": "ok",
+      "value": "passed",
+      "acquired_at": "2026-08-04T23:59:30Z"
+    }
+  ],
+  "frozen_at": "2026-08-05T00:00:00Z",
+  "snapshot_id": "s-1",
+  "authorization_id": "auth-1",
+  "nonce": "nnnnnnnnnnnnnnnn",
+  "runtime_id": "runtime-1",
+  "issued_at": "2026-08-05T00:00:00Z",
+  "expected_expires_at": "2026-08-05T00:01:00Z",
+  "ttl_seconds": 60,
+  "key_id": "test-key",
+  "key_version": 1,
+  "private_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "public_key_hex": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+  "unsigned_payload": {
+    "authorization_id": "auth-1",
+    "nonce": "nnnnnnnnnnnnnnnn",
+    "issued_at": "2026-08-05T00:00:00Z",
+    "expires_at": "2026-08-05T00:01:00Z",
+    "runtime_id": "runtime-1",
+    "action_digest": "sha256:b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "rulebook_digest": "sha256:010cd7d0ef26c96f69b3a6746ffe828199c918edef919af29853269556cea210",
+    "evidence_digest": "sha256:7b36eb549ba35e1297a73b2307fa6ca082a69cdb043b29b6800ff6031e6e55e9"
+  },
+  "unsigned_canonical": "{\"action_digest\":\"sha256:b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb\",\"authorization_id\":\"auth-1\",\"evidence_digest\":\"sha256:7b36eb549ba35e1297a73b2307fa6ca082a69cdb043b29b6800ff6031e6e55e9\",\"expires_at\":\"2026-08-05T00:01:00Z\",\"issued_at\":\"2026-08-05T00:00:00Z\",\"nonce\":\"nnnnnnnnnnnnnnnn\",\"rulebook_digest\":\"sha256:010cd7d0ef26c96f69b3a6746ffe828199c918edef919af29853269556cea210\",\"runtime_id\":\"runtime-1\"}",
+  "signed_bytes_sha256": "cebfb8c3d74ae38c103a7f41515fff600ee09eded2ed7f6ba121e85dc0309675",
+  "signature": "H169OKwZL80gQji7rvjjElJmrUhCjL//S5s3QlhtDKOrkZ3C3UxWxts+pjUsIsA8k3NrnURu1Txvh6enwQqRBA==",
+  "authorization": {
+    "authorization_id": "auth-1",
+    "nonce": "nnnnnnnnnnnnnnnn",
+    "issued_at": "2026-08-05T00:00:00Z",
+    "expires_at": "2026-08-05T00:01:00Z",
+    "runtime_id": "runtime-1",
+    "action_digest": "sha256:b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "rulebook_digest": "sha256:010cd7d0ef26c96f69b3a6746ffe828199c918edef919af29853269556cea210",
+    "evidence_digest": "sha256:7b36eb549ba35e1297a73b2307fa6ca082a69cdb043b29b6800ff6031e6e55e9",
+    "signature": {
+      "alg": "ed25519",
+      "key_id": "test-key",
+      "key_version": 1,
+      "value": "H169OKwZL80gQji7rvjjElJmrUhCjL//S5s3QlhtDKOrkZ3C3UxWxts+pjUsIsA8k3NrnURu1Txvh6enwQqRBA=="
+    }
+  },
+  "authorization_canonical": "{\"action_digest\":\"sha256:b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb\",\"authorization_id\":\"auth-1\",\"evidence_digest\":\"sha256:7b36eb549ba35e1297a73b2307fa6ca082a69cdb043b29b6800ff6031e6e55e9\",\"expires_at\":\"2026-08-05T00:01:00Z\",\"issued_at\":\"2026-08-05T00:00:00Z\",\"nonce\":\"nnnnnnnnnnnnnnnn\",\"rulebook_digest\":\"sha256:010cd7d0ef26c96f69b3a6746ffe828199c918edef919af29853269556cea210\",\"runtime_id\":\"runtime-1\",\"signature\":{\"alg\":\"ed25519\",\"key_id\":\"test-key\",\"key_version\":1,\"value\":\"H169OKwZL80gQji7rvjjElJmrUhCjL//S5s3QlhtDKOrkZ3C3UxWxts+pjUsIsA8k3NrnURu1Txvh6enwQqRBA==\"}}",
+  "verification_time": "2026-08-05T00:00:30Z",
+  "expected": "valid"
+}

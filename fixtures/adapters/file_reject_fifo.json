@@ -1,0 +1,23 @@
+{
+  "note": "A device or pipe is not a regular file and is never read.",
+  "tree": {
+    ".vfy": {
+      "kind": "dir"
+    },
+    ".vfy/approvals.json": {
+      "kind": "fifo"
+    }
+  },
+  "declaration": {
+    "id": "approvals",
+    "source": "file",
+    "ref": ".vfy/approvals.json",
+    "max_age_seconds": 86400,
+    "required": false
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "adapter_error",
+    "reason_code": "evidence_path_invalid"
+  }
+}

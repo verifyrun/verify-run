@@ -1,0 +1,7 @@
+{
+  "note": "Bare vfy is a usage error, not a decision.",
+  "argv": [],
+  "expected": {
+    "exit": 2
+  }
+}

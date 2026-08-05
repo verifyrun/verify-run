@@ -1,0 +1,40 @@
+{
+  "description": "valid instance of rulebook.schema.json",
+  "schema": "https://verifyrun.com/spec/v1/rulebook.schema.json",
+  "value": {
+    "rulebook_id": "r-1",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "evidence": [
+      {
+        "id": "tests",
+        "source": "exec",
+        "ref": "./x.sh",
+        "max_age_seconds": 900,
+        "required": true
+      }
+    ],
+    "rules": [
+      {
+        "id": "a",
+        "when": "true",
+        "outcome": "ALLOW",
+        "reason": "x"
+      }
+    ],
+    "default_outcome": "HOLD",
+    "description": "d",
+    "track": [
+      "branch"
+    ],
+    "authorization": {
+      "ttl_seconds": 300,
+      "single_use": true
+    }
+  },
+  "expected": {
+    "valid": true
+  },
+  "canonical": "{\"adopted_at\":\"2026-08-05T00:00:00Z\",\"authorization\":{\"single_use\":true,\"ttl_seconds\":300},\"default_outcome\":\"HOLD\",\"description\":\"d\",\"evidence\":[{\"id\":\"tests\",\"max_age_seconds\":900,\"ref\":\"./x.sh\",\"required\":true,\"source\":\"exec\"}],\"rulebook_id\":\"r-1\",\"rules\":[{\"id\":\"a\",\"outcome\":\"ALLOW\",\"reason\":\"x\",\"when\":\"true\"}],\"track\":[\"branch\"],\"version\":\"1.0.0\"}",
+  "sha256": "4e7f12ab780240dfc3fa89e1b31b22bc72b6a26cc1b2cb67533449faf97e45db"
+}

@@ -1,0 +1,11 @@
+{
+  "description": "issue for hold outcome",
+  "mutation": {
+    "kind": "hold"
+  },
+  "stage": "issuance",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "authorization_outcome_ineligible"
+  }
+}

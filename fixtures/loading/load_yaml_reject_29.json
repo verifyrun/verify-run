@@ -1,0 +1,6 @@
+{
+  "description": "custom tag",
+  "format": "yaml",
+  "source_base64": "azogIWN1c3RvbSB2Cg==",
+  "expected": {"outcome": "ERROR", "reason_code": "source_construct_unsupported"}
+}

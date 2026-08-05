@@ -1,0 +1,16 @@
+{
+  "description": "valid instance of candidate.schema.json",
+  "schema": "https://verifyrun.com/spec/v1/candidate.schema.json",
+  "value": {
+    "candidate_id": "c-1",
+    "kind": "command",
+    "action": {
+      "summary": "deploy"
+    }
+  },
+  "expected": {
+    "valid": true
+  },
+  "canonical": "{\"action\":{\"summary\":\"deploy\"},\"candidate_id\":\"c-1\",\"kind\":\"command\"}",
+  "sha256": "354b1ad6d9343fac978a2ed650267bb7b5fc466ce18ced316630be71951da50f"
+}

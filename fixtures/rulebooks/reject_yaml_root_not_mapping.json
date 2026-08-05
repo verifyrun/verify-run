@@ -1,0 +1,9 @@
+{
+  "description": "yaml root not mapping",
+  "stage": "source",
+  "source_base64": "LSBhCi0gYgo=",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "source_construct_unsupported"
+  }
+}

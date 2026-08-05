@@ -1,0 +1,12 @@
+{
+  "description": "fresh undeclared",
+  "source": "fresh(nowhere)",
+  "declared_evidence": [
+    "tests"
+  ],
+  "undeclared_id": "nowhere",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "undeclared_evidence_id"
+  }
+}

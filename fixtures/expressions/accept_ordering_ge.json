@@ -1,0 +1,25 @@
+{
+  "description": "ordering ge",
+  "source": "candidate.n >= -1",
+  "declared_evidence": [],
+  "ast": {
+    "type": "compare",
+    "operator": ">=",
+    "left": {
+      "type": "path",
+      "root": "candidate",
+      "segments": [
+        {
+          "member": "n"
+        }
+      ]
+    },
+    "right": {
+      "type": "literal",
+      "value": -1
+    }
+  },
+  "canonical": "{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"n\"}],\"type\":\"path\"},\"operator\":\">=\",\"right\":{\"type\":\"literal\",\"value\":-1},\"type\":\"compare\"}",
+  "sha256": "c379df036c6238f1f66b4511f838e62b2605e17630fed53e94bfd9a613ea4f67",
+  "evidence_ids": []
+}

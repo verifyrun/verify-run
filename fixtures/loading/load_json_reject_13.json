@@ -1,0 +1,6 @@
+{
+  "description": "Two documents in one source",
+  "format": "json",
+  "source_base64": "eyJhIjoxfXsiYiI6Mn0=",
+  "expected": {"outcome": "ERROR", "reason_code": "source_syntax_invalid"}
+}

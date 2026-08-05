@@ -1,0 +1,27 @@
+{
+  "description": "evidence nested missing member",
+  "when": "evidence.e.nope == \"x\"",
+  "declare": [
+    {
+      "id": "e",
+      "source": "file"
+    }
+  ],
+  "items": [
+    {
+      "id": "e",
+      "status": "ok",
+      "value": {
+        "inner": "deep"
+      }
+    }
+  ],
+  "candidate": {
+    "candidate_id": "c",
+    "kind": "command",
+    "action": {
+      "summary": "s"
+    }
+  },
+  "expected": "false"
+}

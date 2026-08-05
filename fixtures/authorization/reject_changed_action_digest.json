@@ -1,0 +1,14 @@
+{
+  "description": "changed action digest",
+  "base": "minimum_valid",
+  "mutation": {
+    "kind": "field",
+    "field": "action_digest",
+    "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signature_invalid"
+  }
+}

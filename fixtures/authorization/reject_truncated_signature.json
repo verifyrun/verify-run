@@ -1,0 +1,14 @@
+{
+  "description": "truncated signature",
+  "base": "minimum_valid",
+  "mutation": {
+    "kind": "signature_field",
+    "field": "value",
+    "value": "AAAA"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signature_invalid"
+  }
+}

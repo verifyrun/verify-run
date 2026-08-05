@@ -1,0 +1,13 @@
+{
+  "description": "verified before issuance",
+  "base": "minimum_valid",
+  "mutation": {
+    "kind": "verification_time",
+    "value": "2026-08-04T23:59:59Z"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "authorization_not_yet_valid"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "description": "altered authorization reference",
+  "base": "allow_with_authorization_and_execution",
+  "mutation": {
+    "kind": "field",
+    "field": "authorization_id",
+    "value": "auth-2"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signature_invalid"
+  }
+}

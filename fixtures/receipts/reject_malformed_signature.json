@@ -1,0 +1,13 @@
+{
+  "description": "malformed signature",
+  "base": "allow_with_authorization_and_execution",
+  "mutation": {
+    "kind": "sig",
+    "value": "not base64!!"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signature_malformed"
+  }
+}

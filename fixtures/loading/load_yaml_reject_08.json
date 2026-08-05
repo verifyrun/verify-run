@@ -1,0 +1,6 @@
+{
+  "description": "hexadecimal",
+  "format": "yaml",
+  "source_base64": "bjogMHgxRgo=",
+  "expected": {"outcome": "ERROR", "reason_code": "source_construct_unsupported"}
+}

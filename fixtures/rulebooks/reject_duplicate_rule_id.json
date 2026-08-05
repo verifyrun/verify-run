@@ -1,0 +1,9 @@
+{
+  "description": "duplicate rule id",
+  "stage": "semantic",
+  "source_base64": "cnVsZWJvb2tfaWQ6IHItMQp2ZXJzaW9uOiAxLjAuMAphZG9wdGVkX2F0OiAiMjAyNi0wOC0wNVQwMDowMDowMFoiCmV2aWRlbmNlOiBbXQpydWxlczoKICAtIGlkOiByCiAgICB3aGVuOiAndHJ1ZScKICAgIG91dGNvbWU6IEFMTE9XCiAgICByZWFzb246IGEKICAtIGlkOiByCiAgICB3aGVuOiAnZmFsc2UnCiAgICBvdXRjb21lOiBCTE9DSwogICAgcmVhc29uOiBiCmRlZmF1bHRfb3V0Y29tZTogSE9MRAo=",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "rulebook_semantic_invalid"
+  }
+}

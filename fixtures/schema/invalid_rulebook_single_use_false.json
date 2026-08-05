@@ -1,0 +1,29 @@
+{
+  "description": "rulebook single use false",
+  "schema": "https://verifyrun.com/spec/v1/rulebook.schema.json",
+  "value": {
+    "rulebook_id": "r-1",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "evidence": [],
+    "rules": [
+      {
+        "id": "a",
+        "when": "true",
+        "outcome": "ALLOW",
+        "reason": "x"
+      }
+    ],
+    "default_outcome": "HOLD",
+    "authorization": {
+      "single_use": false
+    }
+  },
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "rulebook_schema_invalid",
+    "instance_path": "$.authorization.single_use",
+    "schema_path": "$.properties.authorization.properties.single_use.const",
+    "keyword": "const"
+  }
+}

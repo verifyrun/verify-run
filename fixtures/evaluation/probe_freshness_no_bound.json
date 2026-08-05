@@ -1,0 +1,26 @@
+{
+  "description": "freshness no bound",
+  "when": "fresh(e)",
+  "declare": [
+    {
+      "id": "e",
+      "source": "file"
+    }
+  ],
+  "items": [
+    {
+      "id": "e",
+      "status": "ok",
+      "value": "v",
+      "age_seconds": 100000
+    }
+  ],
+  "candidate": {
+    "candidate_id": "c",
+    "kind": "command",
+    "action": {
+      "summary": "s"
+    }
+  },
+  "expected": "true"
+}

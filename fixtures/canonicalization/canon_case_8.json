@@ -1,0 +1,6 @@
+{
+  "description": "Canonicalization never coerces or validates decimal strings. Well-formed and malformed decimal text alike pass through as ordinary strings, byte for byte.",
+  "input": {"a": "0", "b": "-0", "c": "12", "d": "-12", "e": "12.50", "f": "0.001", "g": "01", "h": "-01", "i": "+1", "j": ".5", "k": "1.", "l": "1e3", "m": "NaN", "n": "Infinity", "o": " 1 "},
+  "canonical": "{\"a\":\"0\",\"b\":\"-0\",\"c\":\"12\",\"d\":\"-12\",\"e\":\"12.50\",\"f\":\"0.001\",\"g\":\"01\",\"h\":\"-01\",\"i\":\"+1\",\"j\":\".5\",\"k\":\"1.\",\"l\":\"1e3\",\"m\":\"NaN\",\"n\":\"Infinity\",\"o\":\" 1 \"}",
+  "sha256": "43b9e904bd5d5a18a2be2f1993a8fb346877eb835b89efdca62a727efddec65a"
+}

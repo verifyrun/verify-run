@@ -1,0 +1,14 @@
+{
+  "description": "unknown field",
+  "base": "minimum_valid",
+  "mutation": {
+    "kind": "field",
+    "field": "surprise",
+    "value": 1
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "authorization_schema_invalid"
+  }
+}

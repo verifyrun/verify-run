@@ -1,0 +1,6 @@
+{
+  "description": "nesting beyond the declared limit",
+  "format": "yaml",
+  "source_base64": "YTogW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tdXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXQo=",
+  "expected": {"outcome": "ERROR", "reason_code": "source_too_deep"}
+}

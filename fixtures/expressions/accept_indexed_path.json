@@ -1,0 +1,31 @@
+{
+  "description": "indexed path",
+  "source": "candidate.action.argv[0] == \"rm\"",
+  "declared_evidence": [],
+  "ast": {
+    "type": "compare",
+    "operator": "==",
+    "left": {
+      "type": "path",
+      "root": "candidate",
+      "segments": [
+        {
+          "member": "action"
+        },
+        {
+          "member": "argv"
+        },
+        {
+          "index": 0
+        }
+      ]
+    },
+    "right": {
+      "type": "literal",
+      "value": "rm"
+    }
+  },
+  "canonical": "{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"action\"},{\"member\":\"argv\"},{\"index\":0}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"rm\"},\"type\":\"compare\"}",
+  "sha256": "9d8282b81e8222f5fd1a3c20671a5b3d660b78abff5cbb59c92a5836fceb7241",
+  "evidence_ids": []
+}

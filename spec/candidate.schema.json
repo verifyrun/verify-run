@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verifyrun.com/spec/v1/candidate.schema.json",
+  "title": "Candidate action",
+  "type": "object",
+  "required": ["candidate_id", "kind", "action"],
+  "additionalProperties": false,
+  "properties": {
+    "candidate_id": {"type": "string"},
+    "kind": {"type": "string", "enum": ["command", "tool_call", "http_request", "custom"]},
+    "action": {"type": "object", "required": ["summary"], "properties": {
+      "summary": {"type": "string"},
+      "argv": {"type": "array", "items": {"type": "string"}},
+      "tool": {"type": "string"},
+      "params": {"type": "object",
+        "description": "No floats. Non-integer numbers must be canonical decimal strings per spec/canonicalization.md."},
+      "targets": {"type": "array", "items": {"type": "string"}}
+    }},
+    "identity": {"type": "object",
+      "description": "Values for the rulebook's track fields.",
+      "additionalProperties": {"type": "string"}},
+    "proposed_by": {"type": "string"}
+  }
+}

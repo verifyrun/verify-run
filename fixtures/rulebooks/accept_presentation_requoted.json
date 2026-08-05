@@ -1,0 +1,31 @@
+{
+  "description": "presentation requoted",
+  "source_base64": "cnVsZWJvb2tfaWQ6ICJtaW5pbWFsIgp2ZXJzaW9uOiAiMS4wLjAiCmFkb3B0ZWRfYXQ6ICcyMDI2LTA4LTA1VDAwOjAwOjAwWicKZXZpZGVuY2U6IFtdCnJ1bGVzOgogIC0gaWQ6ICJvbmx5IgogICAgd2hlbjogInRydWUiCiAgICBvdXRjb21lOiAiQUxMT1ciCiAgICByZWFzb246ICJBbGxvd2VkLiIKZGVmYXVsdF9vdXRjb21lOiAiSE9MRCIK",
+  "value": {
+    "rulebook_id": "minimal",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "evidence": [],
+    "rules": [
+      {
+        "id": "only",
+        "when": "true",
+        "outcome": "ALLOW",
+        "reason": "Allowed."
+      }
+    ],
+    "default_outcome": "HOLD"
+  },
+  "canonical": "{\"adopted_at\":\"2026-08-05T00:00:00Z\",\"default_outcome\":\"HOLD\",\"evidence\":[],\"rulebook_id\":\"minimal\",\"rules\":[{\"id\":\"only\",\"outcome\":\"ALLOW\",\"reason\":\"Allowed.\",\"when\":\"true\"}],\"version\":\"1.0.0\"}",
+  "sha256": "1c6435359d8d03bfd25a270723e8c931fc2e72034731e4f003efb17df23bbc51",
+  "digest": "sha256:1c6435359d8d03bfd25a270723e8c931fc2e72034731e4f003efb17df23bbc51",
+  "rulebook_id": "minimal",
+  "version": "1.0.0",
+  "adopted_at": "2026-08-05T00:00:00Z",
+  "applies": [
+    [
+      "2026-08-05T00:00:00Z",
+      true
+    ]
+  ]
+}

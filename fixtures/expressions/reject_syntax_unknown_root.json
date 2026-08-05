@@ -1,0 +1,8 @@
+{
+  "description": "unknown root",
+  "source": "request.kind == \"x\"",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_parse_error"
+  }
+}

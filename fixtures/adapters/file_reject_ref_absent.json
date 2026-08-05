@@ -1,0 +1,13 @@
+{
+  "note": "The schema makes ref optional, so a schema-valid declaration can still name nothing.",
+  "tree": {},
+  "declaration": {
+    "id": "approvals",
+    "source": "file"
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "adapter_error",
+    "reason_code": "evidence_adapter_config_invalid"
+  }
+}

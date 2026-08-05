@@ -1,0 +1,17 @@
+{
+  "note": "A .vfy that is not a real directory is refused.",
+  "template": "pipeline-gate",
+  "tree": {
+    "elsewhere": {
+      "kind": "dir"
+    },
+    ".vfy": {
+      "kind": "symlink",
+      "target": "elsewhere"
+    }
+  },
+  "expected": {
+    "exit": 1,
+    "reason_code": "cli_workspace_invalid"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "description": "null spelling ~",
+  "format": "yaml",
+  "source_base64": "bjogfgo=",
+  "expected": {"outcome": "ERROR", "reason_code": "source_construct_unsupported"}
+}

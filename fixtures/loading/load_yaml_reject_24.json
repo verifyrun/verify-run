@@ -1,0 +1,6 @@
+{
+  "description": "alias use",
+  "format": "yaml",
+  "source_base64": "YTogJkEgMQpiOiAqQQo=",
+  "expected": {"outcome": "ERROR", "reason_code": "source_construct_unsupported"}
+}

@@ -1,0 +1,32 @@
+{
+  "description": "evidence path nested",
+  "source": "evidence.coverage.status == \"ok\"",
+  "declared_evidence": [
+    "coverage"
+  ],
+  "ast": {
+    "type": "compare",
+    "operator": "==",
+    "left": {
+      "type": "path",
+      "root": "evidence",
+      "segments": [
+        {
+          "member": "coverage"
+        },
+        {
+          "member": "status"
+        }
+      ]
+    },
+    "right": {
+      "type": "literal",
+      "value": "ok"
+    }
+  },
+  "canonical": "{\"left\":{\"root\":\"evidence\",\"segments\":[{\"member\":\"coverage\"},{\"member\":\"status\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"ok\"},\"type\":\"compare\"}",
+  "sha256": "5bd8c257484a9a3c4aab5538b7c7d3071faeebb4b7214e507a44585ec0facfd8",
+  "evidence_ids": [
+    "coverage"
+  ]
+}

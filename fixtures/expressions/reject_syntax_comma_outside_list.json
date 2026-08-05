@@ -1,0 +1,8 @@
+{
+  "description": "comma outside list",
+  "source": "candidate.a == \"x\", candidate.b == \"y\"",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_parse_error"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "description": "empty plain scalar",
+  "format": "yaml",
+  "source_base64": "azoK",
+  "expected": {"outcome": "ERROR", "reason_code": "source_construct_unsupported"}
+}

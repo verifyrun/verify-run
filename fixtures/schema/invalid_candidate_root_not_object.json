@@ -1,0 +1,12 @@
+{
+  "description": "candidate root not object",
+  "schema": "https://verifyrun.com/spec/v1/candidate.schema.json",
+  "value": "nope",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "candidate_schema_invalid",
+    "instance_path": "$",
+    "schema_path": "$.type",
+    "keyword": "type"
+  }
+}

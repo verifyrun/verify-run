@@ -1,0 +1,38 @@
+{
+  "description": "malformed acquired time",
+  "rulebook": {
+    "rulebook_id": "snap",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "evidence": [
+      {
+        "id": "a",
+        "source": "file"
+      }
+    ],
+    "rules": [
+      {
+        "id": "r",
+        "when": "candidate.kind == \"command\"",
+        "outcome": "ALLOW",
+        "reason": "ok"
+      }
+    ],
+    "default_outcome": "HOLD"
+  },
+  "snapshot_id": "s-1",
+  "frozen_at": "2026-08-05T00:00:00Z",
+  "acquisitions": [
+    {
+      "id": "a",
+      "status": "ok",
+      "acquired_at": "2026-08-05",
+      "value": "v"
+    }
+  ],
+  "stage": "construction",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "evidence_order_invalid"
+  }
+}

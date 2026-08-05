@@ -1,0 +1,6 @@
+{
+  "description": "boolean spelling True",
+  "format": "yaml",
+  "source_base64": "YjogVHJ1ZQo=",
+  "expected": {"outcome": "ERROR", "reason_code": "source_construct_unsupported"}
+}

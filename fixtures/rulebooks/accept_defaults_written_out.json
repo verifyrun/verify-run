@@ -1,0 +1,41 @@
+{
+  "description": "defaults written out",
+  "source_base64": "cnVsZWJvb2tfaWQ6IGRlZmF1bHRzLWV4cGxpY2l0CnZlcnNpb246IDEuMC4wCmFkb3B0ZWRfYXQ6ICIyMDI2LTA4LTA1VDAwOjAwOjAwWiIKZXZpZGVuY2U6CiAgLSB7aWQ6IGUsIHNvdXJjZTogZmlsZSwgcmVxdWlyZWQ6IHRydWV9CnJ1bGVzOgogIC0gaWQ6IHIKICAgIHdoZW46ICd0cnVlJwogICAgb3V0Y29tZTogQUxMT1cKICAgIHJlYXNvbjogb2sKZGVmYXVsdF9vdXRjb21lOiBIT0xECmF1dGhvcml6YXRpb246IHt0dGxfc2Vjb25kczogMzAwLCBzaW5nbGVfdXNlOiB0cnVlfQo=",
+  "value": {
+    "rulebook_id": "defaults-explicit",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "evidence": [
+      {
+        "id": "e",
+        "source": "file",
+        "required": true
+      }
+    ],
+    "rules": [
+      {
+        "id": "r",
+        "when": "true",
+        "outcome": "ALLOW",
+        "reason": "ok"
+      }
+    ],
+    "default_outcome": "HOLD",
+    "authorization": {
+      "ttl_seconds": 300,
+      "single_use": true
+    }
+  },
+  "canonical": "{\"adopted_at\":\"2026-08-05T00:00:00Z\",\"authorization\":{\"single_use\":true,\"ttl_seconds\":300},\"default_outcome\":\"HOLD\",\"evidence\":[{\"id\":\"e\",\"required\":true,\"source\":\"file\"}],\"rulebook_id\":\"defaults-explicit\",\"rules\":[{\"id\":\"r\",\"outcome\":\"ALLOW\",\"reason\":\"ok\",\"when\":\"true\"}],\"version\":\"1.0.0\"}",
+  "sha256": "aefddc357d88c2cf19f2c94f565ed97e5c4bd9b7bd2baa2175d85415ba0c40a8",
+  "digest": "sha256:aefddc357d88c2cf19f2c94f565ed97e5c4bd9b7bd2baa2175d85415ba0c40a8",
+  "rulebook_id": "defaults-explicit",
+  "version": "1.0.0",
+  "adopted_at": "2026-08-05T00:00:00Z",
+  "applies": [
+    [
+      "2026-08-05T00:00:00Z",
+      true
+    ]
+  ]
+}

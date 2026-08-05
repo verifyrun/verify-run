@@ -1,0 +1,18 @@
+{
+  "description": "snapshot digest trailing newline",
+  "schema": "https://verifyrun.com/spec/v1/evidence.schema.json",
+  "value": {
+    "snapshot_id": "s1",
+    "rulebook_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "frozen_at": "2026-08-05T00:00:00Z",
+    "items": [],
+    "snapshot_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+  },
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "snapshot_schema_invalid",
+    "instance_path": "$.snapshot_digest",
+    "schema_path": "$.properties.snapshot_digest.pattern",
+    "keyword": "pattern"
+  }
+}

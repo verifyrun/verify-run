@@ -1,0 +1,14 @@
+{
+  "description": "unknown field",
+  "base": "allow_with_authorization_and_execution",
+  "mutation": {
+    "kind": "field",
+    "field": "surprise",
+    "value": 1
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "receipt_schema_invalid"
+  }
+}

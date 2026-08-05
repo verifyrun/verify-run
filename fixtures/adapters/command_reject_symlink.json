@@ -1,0 +1,28 @@
+{
+  "note": "A symlink may not stand in for an evidence command.",
+  "tree": {
+    "ci": {
+      "kind": "dir"
+    },
+    "ci/real.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCnByaW50ZiAnInBhc3NlZCInCg==",
+      "mode": "0755"
+    },
+    "ci/last-test-result.sh": {
+      "kind": "symlink",
+      "target": "real.sh"
+    }
+  },
+  "declaration": {
+    "id": "tests",
+    "source": "exec",
+    "ref": "./ci/last-test-result.sh",
+    "max_age_seconds": 900
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "adapter_error",
+    "reason_code": "evidence_path_invalid"
+  }
+}

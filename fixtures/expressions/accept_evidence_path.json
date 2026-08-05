@@ -1,0 +1,29 @@
+{
+  "description": "evidence path",
+  "source": "evidence.tests == \"passed\"",
+  "declared_evidence": [
+    "tests"
+  ],
+  "ast": {
+    "type": "compare",
+    "operator": "==",
+    "left": {
+      "type": "path",
+      "root": "evidence",
+      "segments": [
+        {
+          "member": "tests"
+        }
+      ]
+    },
+    "right": {
+      "type": "literal",
+      "value": "passed"
+    }
+  },
+  "canonical": "{\"left\":{\"root\":\"evidence\",\"segments\":[{\"member\":\"tests\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"passed\"},\"type\":\"compare\"}",
+  "sha256": "d80bbbdbfe32efeb722fea53fad11876a870829f1b78d489856ffa7b98d8745f",
+  "evidence_ids": [
+    "tests"
+  ]
+}

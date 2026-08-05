@@ -1,0 +1,8 @@
+{
+  "description": "chained comparison",
+  "source": "candidate.a == candidate.b == candidate.c",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_parse_error"
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "description": "hold decision",
+  "TEST_ONLY": "keys here are published constants and authorize nothing",
+  "template": "claims-gate.yaml",
+  "rulebook_source": "rulebook_id: claims-gate\nversion: 1.0.0\nadopted_at: \"2026-08-05T00:00:00Z\"\ndescription: >\n  Insurance claims workflow gate: auto-approval only under declared authority, fresh\n  documentation, and coverage; everything unsettled escalates instead of guessing.\ntrack: [claim_id, adjuster_id]\nevidence:\n  - {id: coverage, source: http, ref: \"https://api.internal.example/coverage\", max_age_seconds: 3600}\n  - {id: docs_complete, source: file, ref: ./claim/docs-manifest.json, max_age_seconds: 86400}\n  - {id: authority_limit, source: file, ref: ./claim/authority.json, max_age_seconds: 604800}\nrules:\n  - id: over-authority\n    when: 'candidate.action.params.amount > evidence.authority_limit'\n    outcome: HOLD\n    reason: Amount exceeds this adjuster's declared authority; route to named escalation.\n  - id: coverage-denies\n    when: 'fresh(coverage) and evidence.coverage == \"excluded\"'\n    outcome: BLOCK\n    reason: Coverage determination excludes this claim category. This is a denial, not an unknown.\n  - id: auto-approve-in-authority\n    when: 'fresh(coverage) and evidence.coverage == \"covered\" and present(docs_complete) and candidate.action.params.amount <= evidence.authority_limit'\n    outcome: ALLOW\n    reason: Covered, documented, within declared authority.\ndefault_outcome: HOLD\nauthorization: {ttl_seconds: 600, single_use: true}\n",
+  "candidate": {
+    "candidate_id": "c-3",
+    "kind": "custom",
+    "action": {
+      "summary": "settle",
+      "params": {
+        "amount": "900.00"
+      }
+    },
+    "identity": {
+      "claim_id": "k",
+      "adjuster_id": "a"
+    }
+  },
+  "acquisitions": [
+    {
+      "id": "coverage",
+      "status": "ok",
+      "value": "covered",
+      "acquired_at": "2026-08-05T00:00:00Z"
+    },
+    {
+      "id": "docs_complete",
+      "status": "ok",
+      "value": true,
+      "acquired_at": "2026-08-05T00:00:00Z"
+    },
+    {
+      "id": "authority_limit",
+      "status": "ok",
+      "value": "500.00",
+      "acquired_at": "2026-08-05T00:00:00Z"
+    }
+  ],
+  "frozen_at": "2026-08-05T00:00:00Z",
+  "snapshot": {
+    "frozen_at": "2026-08-05T00:00:00Z",
+    "items": [
+      {
+        "acquired_at": "2026-08-05T00:00:00Z",
+        "id": "coverage",
+        "order": 0,
+        "status": "ok",
+        "value": "covered"
+      },
+      {
+        "acquired_at": "2026-08-05T00:00:00Z",
+        "id": "docs_complete",
+        "order": 1,
+        "status": "ok",
+        "value": true
+      },
+      {
+        "acquired_at": "2026-08-05T00:00:00Z",
+        "id": "authority_limit",
+        "order": 2,
+        "status": "ok",
+        "value": "500.00"
+      }
+    ],
+    "rulebook_digest": "sha256:623eb952567e387fa8f713c9a70a12de9764d2a05e6cb5a528998f4336aba922",
+    "snapshot_digest": "sha256:9d76fb43cf84953594609534e198a1d597ac75ee385f4e635f48f9ebd869a461",
+    "snapshot_id": "s-1"
+  },
+  "authorization": null,
+  "unsigned_payload": {
+    "receipt_id": "r-1",
+    "spec_version": "1",
+    "created_at": "2026-08-05T00:00:06Z",
+    "rulebook": {
+      "rulebook_id": "claims-gate",
+      "version": "1.0.0",
+      "digest": "sha256:623eb952567e387fa8f713c9a70a12de9764d2a05e6cb5a528998f4336aba922"
+    },
+    "candidate_digest": "sha256:686e03dc2e7d6bd1e33cae7fcd9c973012914ee2a7bef06734f94d4e0521db5e",
+    "evidence_digest": "sha256:9d76fb43cf84953594609534e198a1d597ac75ee385f4e635f48f9ebd869a461",
+    "result": {
+      "matched_rule": "over-authority",
+      "outcome": "HOLD",
+      "reasons": [
+        {
+          "code": "rule_hold",
+          "message": "Amount exceeds this adjuster's declared authority; route to named escalation.",
+          "rule_id": "over-authority"
+        }
+      ],
+      "trace": [
+        "0:over-authority:true"
+      ]
+    },
+    "replay": {
+      "mode": "recompute-decision"
+    }
+  },
+  "unsigned_canonical": "{\"candidate_digest\":\"sha256:686e03dc2e7d6bd1e33cae7fcd9c973012914ee2a7bef06734f94d4e0521db5e\",\"created_at\":\"2026-08-05T00:00:06Z\",\"evidence_digest\":\"sha256:9d76fb43cf84953594609534e198a1d597ac75ee385f4e635f48f9ebd869a461\",\"receipt_id\":\"r-1\",\"replay\":{\"mode\":\"recompute-decision\"},\"result\":{\"matched_rule\":\"over-authority\",\"outcome\":\"HOLD\",\"reasons\":[{\"code\":\"rule_hold\",\"message\":\"Amount exceeds this adjuster's declared authority; route to named escalation.\",\"rule_id\":\"over-authority\"}],\"trace\":[\"0:over-authority:true\"]},\"rulebook\":{\"digest\":\"sha256:623eb952567e387fa8f713c9a70a12de9764d2a05e6cb5a528998f4336aba922\",\"rulebook_id\":\"claims-gate\",\"version\":\"1.0.0\"},\"spec_version\":\"1\"}",
+  "signature": "7TpLTfhK+Ev7CmYerDtC6XUpMzk/nufkRu9uEOETiH827W5SpgbwbT6j9lVAaTYrzJhfq3V/HtjT6V9Z6uRbBQ==",
+  "receipt": {
+    "receipt_id": "r-1",
+    "spec_version": "1",
+    "created_at": "2026-08-05T00:00:06Z",
+    "rulebook": {
+      "rulebook_id": "claims-gate",
+      "version": "1.0.0",
+      "digest": "sha256:623eb952567e387fa8f713c9a70a12de9764d2a05e6cb5a528998f4336aba922"
+    },
+    "candidate_digest": "sha256:686e03dc2e7d6bd1e33cae7fcd9c973012914ee2a7bef06734f94d4e0521db5e",
+    "evidence_digest": "sha256:9d76fb43cf84953594609534e198a1d597ac75ee385f4e635f48f9ebd869a461",
+    "result": {
+      "matched_rule": "over-authority",
+      "outcome": "HOLD",
+      "reasons": [
+        {
+          "code": "rule_hold",
+          "message": "Amount exceeds this adjuster's declared authority; route to named escalation.",
+          "rule_id": "over-authority"
+        }
+      ],
+      "trace": [
+        "0:over-authority:true"
+      ]
+    },
+    "replay": {
+      "mode": "recompute-decision"
+    },
+    "signature": {
+      "alg": "ed25519",
+      "key_id": "receipt-key",
+      "key_version": 1,
+      "value": "7TpLTfhK+Ev7CmYerDtC6XUpMzk/nufkRu9uEOETiH827W5SpgbwbT6j9lVAaTYrzJhfq3V/HtjT6V9Z6uRbBQ=="
+    }
+  },
+  "receipt_canonical": "{\"candidate_digest\":\"sha256:686e03dc2e7d6bd1e33cae7fcd9c973012914ee2a7bef06734f94d4e0521db5e\",\"created_at\":\"2026-08-05T00:00:06Z\",\"evidence_digest\":\"sha256:9d76fb43cf84953594609534e198a1d597ac75ee385f4e635f48f9ebd869a461\",\"receipt_id\":\"r-1\",\"replay\":{\"mode\":\"recompute-decision\"},\"result\":{\"matched_rule\":\"over-authority\",\"outcome\":\"HOLD\",\"reasons\":[{\"code\":\"rule_hold\",\"message\":\"Amount exceeds this adjuster's declared authority; route to named escalation.\",\"rule_id\":\"over-authority\"}],\"trace\":[\"0:over-authority:true\"]},\"rulebook\":{\"digest\":\"sha256:623eb952567e387fa8f713c9a70a12de9764d2a05e6cb5a528998f4336aba922\",\"rulebook_id\":\"claims-gate\",\"version\":\"1.0.0\"},\"signature\":{\"alg\":\"ed25519\",\"key_id\":\"receipt-key\",\"key_version\":1,\"value\":\"7TpLTfhK+Ev7CmYerDtC6XUpMzk/nufkRu9uEOETiH827W5SpgbwbT6j9lVAaTYrzJhfq3V/HtjT6V9Z6uRbBQ==\"},\"spec_version\":\"1\"}",
+  "receipt_public_key_hex": "2543b92ff1095511476adc8369db6ddc933665a11978dda1404ee1066ca9559d",
+  "receipt_private_key_hex": "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f",
+  "authorization_public_key_hex": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+  "expected_outcome": "HOLD"
+}

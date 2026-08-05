@@ -1,0 +1,6 @@
+{
+  "description": "Trailing non-whitespace content after the document",
+  "format": "json",
+  "source_base64": "eyJhIjoxfSB0cmFpbGluZw==",
+  "expected": {"outcome": "ERROR", "reason_code": "source_syntax_invalid"}
+}

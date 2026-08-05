@@ -1,0 +1,9 @@
+{
+  "description": "empty rules",
+  "stage": "schema",
+  "source_base64": "cnVsZWJvb2tfaWQ6IHItMQp2ZXJzaW9uOiAxLjAuMAphZG9wdGVkX2F0OiAiMjAyNi0wOC0wNVQwMDowMDowMFoiCmV2aWRlbmNlOiBbXQpydWxlczogW10KZGVmYXVsdF9vdXRjb21lOiBIT0xECg==",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "rulebook_schema_invalid"
+  }
+}

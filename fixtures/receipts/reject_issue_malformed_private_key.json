@@ -1,0 +1,8 @@
+{
+  "description": "malformed private key",
+  "stage": "issuance",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signing_key_invalid"
+  }
+}

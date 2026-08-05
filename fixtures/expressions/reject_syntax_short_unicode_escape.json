@@ -1,0 +1,8 @@
+{
+  "description": "short unicode escape",
+  "source": "candidate.a == \"\\u00\"",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_parse_error"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "description": "precedence not binds tighter than and",
+  "source": "not present(a) and present(b)",
+  "declared_evidence": [
+    "a",
+    "b"
+  ],
+  "ast": {
+    "type": "and",
+    "operands": [
+      {
+        "type": "not",
+        "operand": {
+          "type": "present",
+          "evidence_id": "a"
+        }
+      },
+      {
+        "type": "present",
+        "evidence_id": "b"
+      }
+    ]
+  },
+  "canonical": "{\"operands\":[{\"operand\":{\"evidence_id\":\"a\",\"type\":\"present\"},\"type\":\"not\"},{\"evidence_id\":\"b\",\"type\":\"present\"}],\"type\":\"and\"}",
+  "sha256": "f89c9d5f142ec9336db0b2b66b82f6eaad78fab5847bf93f7bd09742a2359df0",
+  "evidence_ids": [
+    "a",
+    "b"
+  ]
+}

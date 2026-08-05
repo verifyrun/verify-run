@@ -1,0 +1,51 @@
+{
+  "note": "Replay recomputes the decision from the stored bodies and verifies the signature.",
+  "template": "pipeline-gate",
+  "tree": {
+    "bin": {
+      "kind": "dir"
+    },
+    "bin/ok.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCnByaW50ZiAnZG9uZVxuJwpleGl0IDAK",
+      "mode": "0755"
+    },
+    "bin/fail.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCnByaW50ZiAnYnJva2VcbicgPiYyCmV4aXQgNAo=",
+      "mode": "0755"
+    },
+    "bin/args.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCmZvciBhIGluICIkQCI7IGRvIHByaW50ZiAnWyVzXScgIiRhIjsgZG9uZQo=",
+      "mode": "0755"
+    },
+    "bin/env.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCnByaW50ZiAnJXMnICIke1ZGWV9DTElfU0VOVElORUwtYWJzZW50fSIK",
+      "mode": "0755"
+    },
+    "ci": {
+      "kind": "dir"
+    },
+    "ci/last-test-result.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCnByaW50ZiAnInBhc3NlZCInCg==",
+      "mode": "0755"
+    }
+  },
+  "argv": [
+    "bin/ok.sh"
+  ],
+  "identity": [
+    "branch=main"
+  ],
+  "expected": {
+    "exit": 0,
+    "outcome": "ALLOW",
+    "verified": true,
+    "replayed": true,
+    "authorization_verified": true,
+    "launched_during_replay": false
+  }
+}

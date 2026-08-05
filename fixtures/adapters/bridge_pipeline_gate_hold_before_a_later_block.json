@@ -1,0 +1,32 @@
+{
+  "note": "A rule the candidate alone would settle is never reached: the earlier tests-red rule is unsettled by the unavailable command, unsettled is absorbing, and the walk holds there rather than falling through to the wrong-branch BLOCK. Unavailable evidence stops the walk; it does not let a later rule speak for it.",
+  "rulebook_ref": "templates/pipeline-gate.yaml",
+  "tree": {
+    "ci": {
+      "kind": "dir"
+    }
+  },
+  "snapshot_id": "snap-bridge-pipeline-gate-hold-before-a-later-block",
+  "frozen_at": "2026-08-05T00:00:00Z",
+  "acquired_at": "2026-08-04T23:59:30Z",
+  "candidate": {
+    "candidate_id": "c-bridge-4",
+    "kind": "command",
+    "action": {
+      "summary": "deploy",
+      "argv": [
+        "./deploy.sh",
+        "v1.2.3"
+      ]
+    },
+    "identity": {
+      "branch": "release"
+    }
+  },
+  "expected": {
+    "statuses": {
+      "tests": "error"
+    },
+    "outcome": "HOLD"
+  }
+}

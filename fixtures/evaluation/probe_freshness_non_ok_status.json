@@ -1,0 +1,26 @@
+{
+  "description": "freshness non ok status",
+  "when": "fresh(e)",
+  "declare": [
+    {
+      "id": "e",
+      "source": "file",
+      "max_age_seconds": 60
+    }
+  ],
+  "items": [
+    {
+      "id": "e",
+      "status": "stale",
+      "age_seconds": 1
+    }
+  ],
+  "candidate": {
+    "candidate_id": "c",
+    "kind": "command",
+    "action": {
+      "summary": "s"
+    }
+  },
+  "expected": "false"
+}

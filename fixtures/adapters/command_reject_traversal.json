@@ -1,0 +1,18 @@
+{
+  "note": "A ref resolving outside the root is refused.",
+  "tree": {
+    "ci": {
+      "kind": "dir"
+    }
+  },
+  "declaration": {
+    "id": "tests",
+    "source": "exec",
+    "ref": "../outside.sh"
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "adapter_error",
+    "reason_code": "evidence_path_invalid"
+  }
+}

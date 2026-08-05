@@ -1,0 +1,38 @@
+{
+  "note": "The adapter reports what the command said; the rulebook decides it is a denial.",
+  "rulebook_ref": "templates/pipeline-gate.yaml",
+  "tree": {
+    "ci": {
+      "kind": "dir"
+    },
+    "ci/last-test-result.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCnByaW50ZiAnImZhaWxlZCInCg==",
+      "mode": "0755"
+    }
+  },
+  "snapshot_id": "snap-bridge-pipeline-gate-block-failed",
+  "frozen_at": "2026-08-05T00:00:00Z",
+  "acquired_at": "2026-08-04T23:59:30Z",
+  "candidate": {
+    "candidate_id": "c-bridge-2",
+    "kind": "command",
+    "action": {
+      "summary": "deploy",
+      "argv": [
+        "./deploy.sh",
+        "v1.2.3"
+      ]
+    },
+    "identity": {
+      "branch": "main"
+    }
+  },
+  "expected": {
+    "statuses": {
+      "tests": "ok"
+    },
+    "outcome": "BLOCK",
+    "matched_rule": "tests-red"
+  }
+}

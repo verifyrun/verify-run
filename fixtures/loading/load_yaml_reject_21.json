@@ -1,0 +1,6 @@
+{
+  "description": "not-a-number",
+  "format": "yaml",
+  "source_base64": "bjogLm5hbgo=",
+  "expected": {"outcome": "ERROR", "reason_code": "float_not_permitted"}
+}

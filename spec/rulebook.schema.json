@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verifyrun.com/spec/v1/rulebook.schema.json",
+  "title": "Rulebook",
+  "type": "object",
+  "required": ["rulebook_id", "version", "adopted_at", "evidence", "rules", "default_outcome"],
+  "additionalProperties": false,
+  "properties": {
+    "rulebook_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,63}$"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "adopted_at": {"type": "string", "format": "date-time",
+      "description": "Governs runs starting at/after this instant. Never retroactive. Enforced once, at evidence freeze, against the snapshot's frozen_at; the evaluator has no clock. See spec/execution-chain.md."},
+    "description": {"type": "string"},
+    "track": {"type": "array", "items": {"type": "string"},
+      "description": "Identity fields that name what a candidate is about (e.g. claim_id, file_path)."},
+    "evidence": {"type": "array", "minItems": 0, "items": {
+      "type": "object", "required": ["id", "source"], "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string",
+          "description": "Must lex as an identifier ([A-Za-z_][A-Za-z0-9_]*) so expressions can name it."},
+        "source": {"type": "string", "enum": ["file", "exec", "http", "inline"]},
+        "ref": {"type": "string"},
+        "max_age_seconds": {"type": "integer", "minimum": 0,
+          "description": "Freshness bound, acquired_at vs the snapshot's frozen_at. Stale ⇒ value references to this id are unsettled ⇒ HOLD; fresh() returns false."},
+        "required": {"type": "boolean", "default": true,
+          "description": "Snapshot completeness only: true ⇒ the snapshot must carry an item for this id, whatever its status. Settlement is decided by item status, never by this flag."}
+      }}},
+    "rules": {"type": "array", "minItems": 1, "items": {
+      "type": "object", "required": ["id", "when", "outcome", "reason"], "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string"},
+        "when": {"type": "string",
+          "description": "Restricted expression per spec/rulebook-language.md. No arbitrary code."},
+        "outcome": {"type": "string", "enum": ["ALLOW", "BLOCK", "HOLD"]},
+        "reason": {"type": "string"},
+        "requires_evidence": {"type": "array", "items": {"type": "string"},
+          "description": "Ids that must be ok for this rule to be considered. If any is not ok, the rule is unsettled and its when is not evaluated. Every id must be declared above."}
+      }}},
+    "default_outcome": {"type": "string", "enum": ["BLOCK", "HOLD"],
+      "description": "Outcome when no rule matches. ALLOW is never a default."},
+    "authorization": {"type": "object", "additionalProperties": false, "properties": {
+      "ttl_seconds": {"type": "integer", "minimum": 1, "default": 300},
+      "single_use": {"type": "boolean", "const": true}
+    }}
+  }
+}

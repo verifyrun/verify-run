@@ -1,0 +1,70 @@
+{
+  "description": "first false second true",
+  "rulebook": {
+    "rulebook_id": "walk",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "evidence": [
+      {
+        "id": "t",
+        "source": "file"
+      },
+      {
+        "id": "f",
+        "source": "file"
+      },
+      {
+        "id": "u",
+        "source": "file"
+      }
+    ],
+    "rules": [
+      {
+        "id": "r1",
+        "when": "present(f)",
+        "outcome": "ALLOW",
+        "reason": "because"
+      },
+      {
+        "id": "r2",
+        "when": "present(t)",
+        "outcome": "BLOCK",
+        "reason": "because"
+      }
+    ],
+    "default_outcome": "BLOCK"
+  },
+  "items": [
+    {
+      "id": "t",
+      "status": "ok",
+      "value": "x"
+    },
+    {
+      "id": "f",
+      "status": "missing"
+    },
+    {
+      "id": "u",
+      "status": "missing"
+    }
+  ],
+  "candidate": {
+    "candidate_id": "c",
+    "kind": "command",
+    "action": {
+      "summary": "s"
+    }
+  },
+  "expected": {
+    "outcome": "BLOCK",
+    "matched_rule": "r2",
+    "codes": [
+      "rule_block"
+    ],
+    "trace": [
+      "0:r1:false",
+      "1:r2:true"
+    ]
+  }
+}

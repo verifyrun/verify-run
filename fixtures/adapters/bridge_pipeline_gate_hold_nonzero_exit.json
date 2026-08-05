@@ -1,0 +1,37 @@
+{
+  "note": "A failing command is unavailable evidence, not evidence of failure.",
+  "rulebook_ref": "templates/pipeline-gate.yaml",
+  "tree": {
+    "ci": {
+      "kind": "dir"
+    },
+    "ci/last-test-result.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCnByaW50ZiAnImZhaWxlZCInCmV4aXQgMgo=",
+      "mode": "0755"
+    }
+  },
+  "snapshot_id": "snap-bridge-pipeline-gate-hold-nonzero-exit",
+  "frozen_at": "2026-08-05T00:00:00Z",
+  "acquired_at": "2026-08-04T23:59:30Z",
+  "candidate": {
+    "candidate_id": "c-bridge-5",
+    "kind": "command",
+    "action": {
+      "summary": "deploy",
+      "argv": [
+        "./deploy.sh",
+        "v1.2.3"
+      ]
+    },
+    "identity": {
+      "branch": "main"
+    }
+  },
+  "expected": {
+    "statuses": {
+      "tests": "error"
+    },
+    "outcome": "HOLD"
+  }
+}

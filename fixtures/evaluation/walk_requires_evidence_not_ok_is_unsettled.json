@@ -1,0 +1,72 @@
+{
+  "description": "requires evidence not ok is unsettled",
+  "rulebook": {
+    "rulebook_id": "walk",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "evidence": [
+      {
+        "id": "t",
+        "source": "file"
+      },
+      {
+        "id": "f",
+        "source": "file"
+      },
+      {
+        "id": "u",
+        "source": "file"
+      }
+    ],
+    "rules": [
+      {
+        "id": "r1",
+        "when": "present(t)",
+        "outcome": "ALLOW",
+        "reason": "because",
+        "requires_evidence": [
+          "f"
+        ]
+      },
+      {
+        "id": "r2",
+        "when": "present(t)",
+        "outcome": "BLOCK",
+        "reason": "because"
+      }
+    ],
+    "default_outcome": "BLOCK"
+  },
+  "items": [
+    {
+      "id": "t",
+      "status": "ok",
+      "value": "x"
+    },
+    {
+      "id": "f",
+      "status": "missing"
+    },
+    {
+      "id": "u",
+      "status": "missing"
+    }
+  ],
+  "candidate": {
+    "candidate_id": "c",
+    "kind": "command",
+    "action": {
+      "summary": "s"
+    }
+  },
+  "expected": {
+    "outcome": "HOLD",
+    "matched_rule": null,
+    "codes": [
+      "evidence_unsettled"
+    ],
+    "trace": [
+      "0:r1:unsettled"
+    ]
+  }
+}

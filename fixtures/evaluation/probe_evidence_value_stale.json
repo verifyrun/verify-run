@@ -1,0 +1,25 @@
+{
+  "description": "evidence value stale",
+  "when": "evidence.e == \"v\"",
+  "declare": [
+    {
+      "id": "e",
+      "source": "file"
+    }
+  ],
+  "items": [
+    {
+      "id": "e",
+      "status": "stale",
+      "value": "v"
+    }
+  ],
+  "candidate": {
+    "candidate_id": "c",
+    "kind": "command",
+    "action": {
+      "summary": "s"
+    }
+  },
+  "expected": "unsettled"
+}

@@ -1,0 +1,6 @@
+{
+  "description": "Object keys sort by Unicode scalar value, which is identical to UTF-8 byte order. U+FFFD before U+1D11E is the discriminator: UTF-16 code-unit order would invert them.",
+  "input": {"\u00e9": 1, "A": 2, "\ud834\udd1e": 3, "\u00df": 4, "\ufffd": 5, "a": 6, "Z": 7, "e": 8},
+  "canonical": "{\"A\":2,\"Z\":7,\"a\":6,\"e\":8,\"\u00df\":4,\"\u00e9\":1,\"\ufffd\":5,\"\ud834\udd1e\":3}",
+  "sha256": "8531c260be1671a0a70583b2f22d7e0f512661e798fa45c481ccd5ba9687cddf"
+}

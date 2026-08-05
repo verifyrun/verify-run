@@ -1,0 +1,8 @@
+{
+  "description": "unmatched bracket",
+  "source": "candidate.k in [\"a\"",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_parse_error"
+  }
+}

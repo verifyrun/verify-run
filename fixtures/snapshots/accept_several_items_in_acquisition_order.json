@@ -1,0 +1,87 @@
+{
+  "description": "several items in acquisition order",
+  "rulebook": {
+    "rulebook_id": "snap",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "evidence": [
+      {
+        "id": "c",
+        "source": "file"
+      },
+      {
+        "id": "a",
+        "source": "file"
+      },
+      {
+        "id": "b",
+        "source": "file"
+      }
+    ],
+    "rules": [
+      {
+        "id": "r",
+        "when": "candidate.kind == \"command\"",
+        "outcome": "ALLOW",
+        "reason": "ok"
+      }
+    ],
+    "default_outcome": "HOLD"
+  },
+  "snapshot_id": "s-1",
+  "frozen_at": "2026-08-05T00:00:00Z",
+  "acquisitions": [
+    {
+      "id": "c",
+      "status": "ok",
+      "acquired_at": "2026-08-05T00:00:00Z",
+      "value": 3
+    },
+    {
+      "id": "a",
+      "status": "ok",
+      "acquired_at": "2026-08-05T00:00:00Z",
+      "value": 1
+    },
+    {
+      "id": "b",
+      "status": "ok",
+      "acquired_at": "2026-08-05T00:00:00Z",
+      "value": 2
+    }
+  ],
+  "payload": {
+    "snapshot_id": "s-1",
+    "rulebook_digest": "PINNED",
+    "frozen_at": "2026-08-05T00:00:00Z",
+    "items": [
+      {
+        "id": "c",
+        "order": 0,
+        "acquired_at": "2026-08-05T00:00:00Z",
+        "status": "ok",
+        "value": 3
+      },
+      {
+        "id": "a",
+        "order": 1,
+        "acquired_at": "2026-08-05T00:00:00Z",
+        "status": "ok",
+        "value": 1
+      },
+      {
+        "id": "b",
+        "order": 2,
+        "acquired_at": "2026-08-05T00:00:00Z",
+        "status": "ok",
+        "value": 2
+      }
+    ]
+  },
+  "payload_canonical_template": "{\"frozen_at\":\"2026-08-05T00:00:00Z\",\"items\":[{\"acquired_at\":\"2026-08-05T00:00:00Z\",\"id\":\"c\",\"order\":0,\"status\":\"ok\",\"value\":3},{\"acquired_at\":\"2026-08-05T00:00:00Z\",\"id\":\"a\",\"order\":1,\"status\":\"ok\",\"value\":1},{\"acquired_at\":\"2026-08-05T00:00:00Z\",\"id\":\"b\",\"order\":2,\"status\":\"ok\",\"value\":2}],\"rulebook_digest\":\"PINNED\",\"snapshot_id\":\"s-1\"}",
+  "order": [
+    "c",
+    "a",
+    "b"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "description": "unresolvable fragment",
+  "kind": "registry",
+  "documents": [
+    {
+      "$id": "x:1",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/missing"
+        }
+      }
+    }
+  ],
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "schema_registry_invalid"
+  }
+}

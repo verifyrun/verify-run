@@ -1,0 +1,6 @@
+{
+  "description": "Empty containers, nesting, preserved array order, and mixed member types.",
+  "input": {"empty_obj": {}, "empty_arr": [], "nested": [[], {}, [{"a": []}]], "order": ["b", "a", "c"], "mixed": [1, "1", true, null]},
+  "canonical": "{\"empty_arr\":[],\"empty_obj\":{},\"mixed\":[1,\"1\",true,null],\"nested\":[[],{},[{\"a\":[]}]],\"order\":[\"b\",\"a\",\"c\"]}",
+  "sha256": "945c5d1290a20636fa4518621aa027f1d3eec96d46467d86aa43a43b33fc4071"
+}

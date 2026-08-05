@@ -1,0 +1,40 @@
+{
+  "description": "template claims coverage denies",
+  "source": "fresh(coverage) and evidence.coverage == \"excluded\"",
+  "declared_evidence": [
+    "coverage",
+    "docs_complete",
+    "authority_limit"
+  ],
+  "ast": {
+    "type": "and",
+    "operands": [
+      {
+        "type": "fresh",
+        "evidence_id": "coverage"
+      },
+      {
+        "type": "compare",
+        "operator": "==",
+        "left": {
+          "type": "path",
+          "root": "evidence",
+          "segments": [
+            {
+              "member": "coverage"
+            }
+          ]
+        },
+        "right": {
+          "type": "literal",
+          "value": "excluded"
+        }
+      }
+    ]
+  },
+  "canonical": "{\"operands\":[{\"evidence_id\":\"coverage\",\"type\":\"fresh\"},{\"left\":{\"root\":\"evidence\",\"segments\":[{\"member\":\"coverage\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"excluded\"},\"type\":\"compare\"}],\"type\":\"and\"}",
+  "sha256": "9dc630246a94526ffe893ab3481db6038c94a05e57dc42487401bc56eac1da5a",
+  "evidence_ids": [
+    "coverage"
+  ]
+}

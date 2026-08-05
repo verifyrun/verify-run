@@ -1,0 +1,14 @@
+{
+  "description": "altered key version",
+  "base": "allow_with_authorization_and_execution",
+  "mutation": {
+    "kind": "sigfield",
+    "field": "key_version",
+    "value": 2
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signing_key_unknown"
+  }
+}

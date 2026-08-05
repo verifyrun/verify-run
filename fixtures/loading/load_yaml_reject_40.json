@@ -1,0 +1,6 @@
+{
+  "description": "root is not a mapping",
+  "format": "yaml",
+  "source_base64": "LSBhCi0gYgo=",
+  "expected": {"outcome": "ERROR", "reason_code": "source_construct_unsupported"}
+}

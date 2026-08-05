@@ -1,0 +1,6 @@
+{
+  "description": "octal",
+  "format": "yaml",
+  "source_base64": "bjogMG8xNwo=",
+  "expected": {"outcome": "ERROR", "reason_code": "source_construct_unsupported"}
+}

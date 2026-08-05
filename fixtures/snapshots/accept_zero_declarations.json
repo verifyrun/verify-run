@@ -1,0 +1,29 @@
+{
+  "description": "zero declarations",
+  "rulebook": {
+    "rulebook_id": "snap",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "evidence": [],
+    "rules": [
+      {
+        "id": "r",
+        "when": "candidate.kind == \"command\"",
+        "outcome": "ALLOW",
+        "reason": "ok"
+      }
+    ],
+    "default_outcome": "HOLD"
+  },
+  "snapshot_id": "s-1",
+  "frozen_at": "2026-08-05T00:00:00Z",
+  "acquisitions": [],
+  "payload": {
+    "snapshot_id": "s-1",
+    "rulebook_digest": "PINNED",
+    "frozen_at": "2026-08-05T00:00:00Z",
+    "items": []
+  },
+  "payload_canonical_template": "{\"frozen_at\":\"2026-08-05T00:00:00Z\",\"items\":[],\"rulebook_digest\":\"PINNED\",\"snapshot_id\":\"s-1\"}",
+  "order": []
+}

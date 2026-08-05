@@ -1,0 +1,63 @@
+{
+  "description": "explicit hold rule",
+  "rulebook": {
+    "rulebook_id": "walk",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "evidence": [
+      {
+        "id": "t",
+        "source": "file"
+      },
+      {
+        "id": "f",
+        "source": "file"
+      },
+      {
+        "id": "u",
+        "source": "file"
+      }
+    ],
+    "rules": [
+      {
+        "id": "r1",
+        "when": "present(t)",
+        "outcome": "HOLD",
+        "reason": "needs a human"
+      }
+    ],
+    "default_outcome": "BLOCK"
+  },
+  "items": [
+    {
+      "id": "t",
+      "status": "ok",
+      "value": "x"
+    },
+    {
+      "id": "f",
+      "status": "missing"
+    },
+    {
+      "id": "u",
+      "status": "missing"
+    }
+  ],
+  "candidate": {
+    "candidate_id": "c",
+    "kind": "command",
+    "action": {
+      "summary": "s"
+    }
+  },
+  "expected": {
+    "outcome": "HOLD",
+    "matched_rule": "r1",
+    "codes": [
+      "rule_hold"
+    ],
+    "trace": [
+      "0:r1:true"
+    ]
+  }
+}

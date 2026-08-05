@@ -1,0 +1,6 @@
+{
+  "description": "empty document",
+  "format": "yaml",
+  "source_base64": "LS0tCg==",
+  "expected": {"outcome": "ERROR", "reason_code": "source_syntax_invalid"}
+}

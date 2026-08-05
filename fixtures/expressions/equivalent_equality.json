@@ -1,0 +1,9 @@
+{
+  "description": "formatting variants of equality",
+  "sources": [
+    "candidate.kind==\"command\"",
+    "  candidate.kind   ==   \"command\"  ",
+    "candidate.kind\t==\n\"command\""
+  ],
+  "canonical": "{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"kind\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"command\"},\"type\":\"compare\"}"
+}

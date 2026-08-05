@@ -1,0 +1,5 @@
+{
+  "description": "An integer below the accepted interval cannot be held exactly by every implementation",
+  "input": {"n": -9007199254740992},
+  "expected": {"outcome": "ERROR", "reason_code": "canonical_form_invalid"}
+}

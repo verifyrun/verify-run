@@ -1,0 +1,39 @@
+{
+  "note": "A caller may name what the child sees; nothing else is added.",
+  "tree": {
+    "ci": {
+      "kind": "dir"
+    },
+    "ci/last-test-result.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCnByaW50ZiAneyJzZW50aW5lbCI6IiVzIn0nICIke1ZGWV9GSVhUVVJFX1NFTlRJTkVMLWFic2VudH0iCg==",
+      "mode": "0755"
+    }
+  },
+  "declaration": {
+    "id": "tests",
+    "source": "exec",
+    "ref": "./ci/last-test-result.sh",
+    "max_age_seconds": 900
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "parent_environment": {
+    "VFY_FIXTURE_SENTINEL": "ignored"
+  },
+  "environment": {
+    "VFY_FIXTURE_SENTINEL": "present"
+  },
+  "expected": {
+    "class": "acquisition",
+    "acquisition": {
+      "id": "tests",
+      "status": "ok",
+      "acquired_at": "2026-08-04T12:00:00Z",
+      "value": {
+        "sentinel": "present"
+      }
+    },
+    "canonical": "{\"sentinel\":\"present\"}",
+    "sha256": "9ab29559ccabfb204cf0ddda4f89f9baff5453764915f0d4dd776e2277ebcff7"
+  }
+}

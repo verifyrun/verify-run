@@ -1,0 +1,18 @@
+{
+  "note": "A ref that resolves outside the root is refused by resolution, not by string matching.",
+  "tree": {
+    ".vfy": {
+      "kind": "dir"
+    }
+  },
+  "declaration": {
+    "id": "approvals",
+    "source": "file",
+    "ref": "../outside.json"
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "adapter_error",
+    "reason_code": "evidence_path_invalid"
+  }
+}

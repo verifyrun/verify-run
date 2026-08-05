@@ -1,0 +1,8 @@
+{
+  "description": "assignment",
+  "source": "candidate.a = 1",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_parse_error"
+  }
+}

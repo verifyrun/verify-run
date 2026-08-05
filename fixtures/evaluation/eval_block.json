@@ -1,0 +1,4 @@
+{"description": "Destructive command blocked by rule",
+ "rulebook_ref": "templates/agent-guard.yaml", "candidate": {"candidate_id": "c-2",
+ "kind": "command", "action": {"summary": "rm", "argv": ["rm", "-rf", "/home"]}},
+ "expected": {"outcome": "BLOCK", "matched_rule": "no-destructive-shell"}}

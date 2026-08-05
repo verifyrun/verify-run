@@ -1,0 +1,31 @@
+{
+  "description": "double negation via parentheses",
+  "source": "not (not (candidate.a == \"x\"))",
+  "declared_evidence": [],
+  "ast": {
+    "type": "not",
+    "operand": {
+      "type": "not",
+      "operand": {
+        "type": "compare",
+        "operator": "==",
+        "left": {
+          "type": "path",
+          "root": "candidate",
+          "segments": [
+            {
+              "member": "a"
+            }
+          ]
+        },
+        "right": {
+          "type": "literal",
+          "value": "x"
+        }
+      }
+    }
+  },
+  "canonical": "{\"operand\":{\"operand\":{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"a\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"x\"},\"type\":\"compare\"},\"type\":\"not\"},\"type\":\"not\"}",
+  "sha256": "7a936f2ae4ec2d26e1621b25cc1041cd4bdfb02e036c1fb20acf8643238790e8",
+  "evidence_ids": []
+}

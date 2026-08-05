@@ -1,0 +1,25 @@
+{
+  "description": "string escapes",
+  "source": "candidate.s == \"q\\\"b\\\\s\\tt\\nn\u00e9\"",
+  "declared_evidence": [],
+  "ast": {
+    "type": "compare",
+    "operator": "==",
+    "left": {
+      "type": "path",
+      "root": "candidate",
+      "segments": [
+        {
+          "member": "s"
+        }
+      ]
+    },
+    "right": {
+      "type": "literal",
+      "value": "q\"b\\s\tt\nn\u00e9"
+    }
+  },
+  "canonical": "{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"s\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"q\\\"b\\\\s\\tt\\nn\u00e9\"},\"type\":\"compare\"}",
+  "sha256": "36c033a388eab234046092eaf8e3f047025ffec370fc809124e68d33f02f292a",
+  "evidence_ids": []
+}

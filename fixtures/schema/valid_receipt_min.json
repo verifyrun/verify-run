@@ -1,0 +1,39 @@
+{
+  "description": "valid instance of receipt.schema.json",
+  "schema": "https://verifyrun.com/spec/v1/receipt.schema.json",
+  "value": {
+    "receipt_id": "r1",
+    "spec_version": "1",
+    "created_at": "2026-08-05T00:00:00Z",
+    "rulebook": {
+      "rulebook_id": "r-1",
+      "version": "1.0.0",
+      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "candidate_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "evidence_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "result": {
+      "outcome": "ALLOW",
+      "reasons": [
+        {
+          "code": "rule_allow",
+          "message": "ok"
+        }
+      ]
+    },
+    "replay": {
+      "mode": "recompute-decision"
+    },
+    "signature": {
+      "alg": "ed25519",
+      "key_id": "k1",
+      "key_version": 1,
+      "value": "AAAA"
+    }
+  },
+  "expected": {
+    "valid": true
+  },
+  "canonical": "{\"candidate_digest\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"created_at\":\"2026-08-05T00:00:00Z\",\"evidence_digest\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"receipt_id\":\"r1\",\"replay\":{\"mode\":\"recompute-decision\"},\"result\":{\"outcome\":\"ALLOW\",\"reasons\":[{\"code\":\"rule_allow\",\"message\":\"ok\"}]},\"rulebook\":{\"digest\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"rulebook_id\":\"r-1\",\"version\":\"1.0.0\"},\"signature\":{\"alg\":\"ed25519\",\"key_id\":\"k1\",\"key_version\":1,\"value\":\"AAAA\"},\"spec_version\":\"1\"}",
+  "sha256": "762c6b756f1782fcaa9786b7024593c1db8c7f055c38ae278f00b0af732610c7"
+}

@@ -1,0 +1,8 @@
+{
+  "description": "membership right not a list",
+  "source": "candidate.k in \"abc\"",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_type_error"
+  }
+}

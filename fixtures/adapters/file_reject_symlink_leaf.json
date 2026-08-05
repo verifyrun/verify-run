@@ -1,0 +1,29 @@
+{
+  "note": "A symlink may not stand in for evidence, even one pointing inside the root.",
+  "tree": {
+    ".vfy": {
+      "kind": "dir"
+    },
+    ".vfy/real.json": {
+      "kind": "file",
+      "bytes_base64": "eyJhcHByb3ZlZCI6dHJ1ZX0=",
+      "mode": "0644"
+    },
+    ".vfy/approvals.json": {
+      "kind": "symlink",
+      "target": "real.json"
+    }
+  },
+  "declaration": {
+    "id": "approvals",
+    "source": "file",
+    "ref": ".vfy/approvals.json",
+    "max_age_seconds": 86400,
+    "required": false
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "adapter_error",
+    "reason_code": "evidence_path_invalid"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "description": "missing id",
+  "kind": "registry",
+  "documents": [
+    {
+      "type": "object"
+    }
+  ],
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "schema_registry_invalid"
+  }
+}

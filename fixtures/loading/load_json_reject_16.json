@@ -1,0 +1,6 @@
+{
+  "description": "Nesting deeper than the declared maximum of 64",
+  "format": "json",
+  "source_base64": "W1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tdXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXQ==",
+  "expected": {"outcome": "ERROR", "reason_code": "source_too_deep"}
+}

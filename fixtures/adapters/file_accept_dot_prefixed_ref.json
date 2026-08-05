@@ -1,0 +1,30 @@
+{
+  "note": "Template refs are written './claim/authority.json' and resolve under the root.",
+  "tree": {
+    "claim": {
+      "kind": "dir"
+    },
+    "claim/authority.json": {
+      "kind": "file",
+      "bytes_base64": "MjUwMDA=",
+      "mode": "0644"
+    }
+  },
+  "declaration": {
+    "id": "authority_limit",
+    "source": "file",
+    "ref": "./claim/authority.json"
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "acquisition",
+    "acquisition": {
+      "id": "authority_limit",
+      "status": "ok",
+      "acquired_at": "2026-08-04T12:00:00Z",
+      "value": 25000
+    },
+    "canonical": "25000",
+    "sha256": "0812a4ef4ea9e800e2cb87a311317fdb06f80ab8700c7185b35588b3d6953739"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "description": "missing candidate body",
+  "base": "allow_with_authorization_and_execution",
+  "mutation": {
+    "kind": "omit",
+    "body": "candidate"
+  },
+  "stage": "replay",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "replay_body_missing"
+  }
+}

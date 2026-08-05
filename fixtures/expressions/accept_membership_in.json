@@ -1,0 +1,28 @@
+{
+  "description": "membership in",
+  "source": "candidate.kind in [\"command\",\"tool_call\"]",
+  "declared_evidence": [],
+  "ast": {
+    "type": "membership",
+    "operator": "in",
+    "operand": {
+      "type": "path",
+      "root": "candidate",
+      "segments": [
+        {
+          "member": "kind"
+        }
+      ]
+    },
+    "list": {
+      "type": "literal",
+      "value": [
+        "command",
+        "tool_call"
+      ]
+    }
+  },
+  "canonical": "{\"list\":{\"type\":\"literal\",\"value\":[\"command\",\"tool_call\"]},\"operand\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"kind\"}],\"type\":\"path\"},\"operator\":\"in\",\"type\":\"membership\"}",
+  "sha256": "dd04c17fa325234315b66af3b9d62ea1cf6aaeaf8fea069cc7963231017006b4",
+  "evidence_ids": []
+}

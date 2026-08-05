@@ -1,0 +1,5 @@
+{
+  "description": "A whole-valued float is still a float and is refused, never narrowed to an integer",
+  "input": {"n": 2.0},
+  "expected": {"outcome": "ERROR", "reason_code": "float_not_permitted"}
+}

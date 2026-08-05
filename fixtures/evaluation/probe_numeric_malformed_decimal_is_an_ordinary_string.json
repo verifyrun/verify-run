@@ -1,0 +1,44 @@
+{
+  "description": "numeric malformed decimal is an ordinary string",
+  "when": "candidate.action.params.amount > \"1\"",
+  "declare": [
+    {
+      "id": "t",
+      "source": "file"
+    },
+    {
+      "id": "f",
+      "source": "file"
+    },
+    {
+      "id": "u",
+      "source": "file"
+    }
+  ],
+  "items": [
+    {
+      "id": "t",
+      "status": "ok",
+      "value": "x"
+    },
+    {
+      "id": "f",
+      "status": "missing"
+    },
+    {
+      "id": "u",
+      "status": "missing"
+    }
+  ],
+  "candidate": {
+    "candidate_id": "c",
+    "kind": "command",
+    "action": {
+      "summary": "s",
+      "params": {
+        "amount": "12.5.0"
+      }
+    }
+  },
+  "expected": "unsettled"
+}

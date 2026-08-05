@@ -1,0 +1,8 @@
+{
+  "description": "regex operator",
+  "source": "candidate.a =~ \"x\"",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_parse_error"
+  }
+}

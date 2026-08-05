@@ -1,0 +1,45 @@
+{
+  "note": "init creates one usable workspace and pins the copied rulebook before reporting success.",
+  "template": "claims-gate",
+  "expected": {
+    "exit": 0,
+    "paths": [
+      ".vfy",
+      ".vfy/config.json",
+      ".vfy/consumed",
+      ".vfy/keys",
+      ".vfy/keys/authorization.key",
+      ".vfy/keys/receipt.key",
+      ".vfy/keys/trust.json",
+      ".vfy/receipts",
+      ".vfy/store.json",
+      ".vfy/tmp",
+      "rulebook.yaml"
+    ],
+    "key_mode": "0600",
+    "config": {
+      "config_version": 1,
+      "template": "claims-gate",
+      "rulebook": "rulebook.yaml",
+      "evidence": {
+        "file_root": ".",
+        "command_working_directory": ".",
+        "command_timeout_seconds": 30
+      },
+      "keys": {
+        "authorization": ".vfy/keys/authorization.key",
+        "receipt": ".vfy/keys/receipt.key",
+        "trust": ".vfy/keys/trust.json"
+      },
+      "execution": {
+        "working_directory": ".",
+        "timeout_seconds": 300,
+        "environment": {}
+      },
+      "search_path": [
+        "bin"
+      ]
+    },
+    "rulebook_matches_template": true
+  }
+}

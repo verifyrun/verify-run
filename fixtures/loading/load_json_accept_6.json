@@ -1,0 +1,8 @@
+{
+  "description": "Insignificant whitespace in the source leaves no trace in the canonical bytes",
+  "format": "json",
+  "source_base64": "ewogICJiIiA6IFsgMSAsIDIgXSAsCiAgImEiIDogewogICAgInoiIDogInMiCiAgfQp9Cg==",
+  "value": {"b": [1, 2], "a": {"z": "s"}},
+  "canonical": "{\"a\":{\"z\":\"s\"},\"b\":[1,2]}",
+  "sha256": "e187a7626b7e968a24588b64c643411fdc9fa879dd8527702f7b57967c99800e"
+}

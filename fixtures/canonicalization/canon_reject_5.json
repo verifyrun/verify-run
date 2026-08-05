@@ -1,0 +1,5 @@
+{
+  "description": "A float is never valid input, however it is written",
+  "input": {"amount": 12.5},
+  "expected": {"outcome": "ERROR", "reason_code": "float_not_permitted"}
+}

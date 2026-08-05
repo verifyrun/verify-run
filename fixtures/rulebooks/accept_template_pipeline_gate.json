@@ -1,0 +1,62 @@
+{
+  "description": "template pipeline gate",
+  "source_base64": "cnVsZWJvb2tfaWQ6IHBpcGVsaW5lLWdhdGUKdmVyc2lvbjogMS4wLjAKYWRvcHRlZF9hdDogIjIwMjYtMDgtMDVUMDA6MDA6MDBaIgpkZXNjcmlwdGlvbjogR2F0ZSBhIGRlcGxveW1lbnQgb24gZGVjbGFyZWQgYnJhbmNoIGFuZCBmcmVzaCB0ZXN0IGV2aWRlbmNlLgp0cmFjazogW2JyYW5jaF0KZXZpZGVuY2U6CiAgLSB7aWQ6IHRlc3RzLCBzb3VyY2U6IGV4ZWMsIHJlZjogIi4vY2kvbGFzdC10ZXN0LXJlc3VsdC5zaCIsIG1heF9hZ2Vfc2Vjb25kczogOTAwfQpydWxlczoKICAtIGlkOiB0ZXN0cy1ncmVlbi1vbi1tYWluCiAgICB3aGVuOiAnaWRlbnRpdHkuYnJhbmNoID09ICJtYWluIiBhbmQgZnJlc2godGVzdHMpIGFuZCBldmlkZW5jZS50ZXN0cyA9PSAicGFzc2VkIicKICAgIG91dGNvbWU6IEFMTE9XCiAgICByZWFzb246IFRlc3RzIGdyZWVuIG9uIG1haW4gd2l0aGluIGZyZXNobmVzcyBib3VuZC4KICAtIGlkOiB0ZXN0cy1yZWQKICAgIHdoZW46ICdmcmVzaCh0ZXN0cykgYW5kIGV2aWRlbmNlLnRlc3RzID09ICJmYWlsZWQiJwogICAgb3V0Y29tZTogQkxPQ0sKICAgIHJlYXNvbjogVGVzdHMgZmFpbGVkLgogIC0gaWQ6IHdyb25nLWJyYW5jaAogICAgd2hlbjogJ2lkZW50aXR5LmJyYW5jaCAhPSAibWFpbiInCiAgICBvdXRjb21lOiBCTE9DSwogICAgcmVhc29uOiBEZXBsb3lzIG9ubHkgZnJvbSBtYWluLgpkZWZhdWx0X291dGNvbWU6IEhPTEQKYXV0aG9yaXphdGlvbjoge3R0bF9zZWNvbmRzOiAzMDAsIHNpbmdsZV91c2U6IHRydWV9Cg==",
+  "value": {
+    "rulebook_id": "pipeline-gate",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "description": "Gate a deployment on declared branch and fresh test evidence.",
+    "track": [
+      "branch"
+    ],
+    "evidence": [
+      {
+        "id": "tests",
+        "source": "exec",
+        "ref": "./ci/last-test-result.sh",
+        "max_age_seconds": 900
+      }
+    ],
+    "rules": [
+      {
+        "id": "tests-green-on-main",
+        "when": "identity.branch == \"main\" and fresh(tests) and evidence.tests == \"passed\"",
+        "outcome": "ALLOW",
+        "reason": "Tests green on main within freshness bound."
+      },
+      {
+        "id": "tests-red",
+        "when": "fresh(tests) and evidence.tests == \"failed\"",
+        "outcome": "BLOCK",
+        "reason": "Tests failed."
+      },
+      {
+        "id": "wrong-branch",
+        "when": "identity.branch != \"main\"",
+        "outcome": "BLOCK",
+        "reason": "Deploys only from main."
+      }
+    ],
+    "default_outcome": "HOLD",
+    "authorization": {
+      "ttl_seconds": 300,
+      "single_use": true
+    }
+  },
+  "canonical": "{\"adopted_at\":\"2026-08-05T00:00:00Z\",\"authorization\":{\"single_use\":true,\"ttl_seconds\":300},\"default_outcome\":\"HOLD\",\"description\":\"Gate a deployment on declared branch and fresh test evidence.\",\"evidence\":[{\"id\":\"tests\",\"max_age_seconds\":900,\"ref\":\"./ci/last-test-result.sh\",\"source\":\"exec\"}],\"rulebook_id\":\"pipeline-gate\",\"rules\":[{\"id\":\"tests-green-on-main\",\"outcome\":\"ALLOW\",\"reason\":\"Tests green on main within freshness bound.\",\"when\":\"identity.branch == \\\"main\\\" and fresh(tests) and evidence.tests == \\\"passed\\\"\"},{\"id\":\"tests-red\",\"outcome\":\"BLOCK\",\"reason\":\"Tests failed.\",\"when\":\"fresh(tests) and evidence.tests == \\\"failed\\\"\"},{\"id\":\"wrong-branch\",\"outcome\":\"BLOCK\",\"reason\":\"Deploys only from main.\",\"when\":\"identity.branch != \\\"main\\\"\"}],\"track\":[\"branch\"],\"version\":\"1.0.0\"}",
+  "sha256": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+  "digest": "sha256:eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+  "rulebook_id": "pipeline-gate",
+  "version": "1.0.0",
+  "adopted_at": "2026-08-05T00:00:00Z",
+  "applies": [
+    [
+      "2026-08-04T23:59:59Z",
+      false
+    ],
+    [
+      "2026-08-05T00:00:00Z",
+      true
+    ]
+  ]
+}

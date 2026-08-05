@@ -1,0 +1,54 @@
+{
+  "description": "path member success",
+  "when": "candidate.kind == \"command\"",
+  "declare": [
+    {
+      "id": "t",
+      "source": "file"
+    },
+    {
+      "id": "f",
+      "source": "file"
+    },
+    {
+      "id": "u",
+      "source": "file"
+    }
+  ],
+  "items": [
+    {
+      "id": "t",
+      "status": "ok",
+      "value": "x"
+    },
+    {
+      "id": "f",
+      "status": "missing"
+    },
+    {
+      "id": "u",
+      "status": "missing"
+    }
+  ],
+  "candidate": {
+    "candidate_id": "c",
+    "kind": "command",
+    "action": {
+      "summary": "s",
+      "argv": [
+        "rm",
+        "-rf"
+      ],
+      "params": {
+        "amount": "12.50",
+        "nested": {
+          "deep": "d"
+        }
+      }
+    },
+    "identity": {
+      "branch": "main"
+    }
+  },
+  "expected": "true"
+}

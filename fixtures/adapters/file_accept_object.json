@@ -1,0 +1,35 @@
+{
+  "note": "The bytes read through one descriptor are the observation.",
+  "tree": {
+    ".vfy": {
+      "kind": "dir"
+    },
+    ".vfy/approvals.json": {
+      "kind": "file",
+      "bytes_base64": "ewogICJhcHByb3ZlZCI6IHRydWUsCiAgImJ5IjogImRhbmEiCn0K",
+      "mode": "0644"
+    }
+  },
+  "declaration": {
+    "id": "approvals",
+    "source": "file",
+    "ref": ".vfy/approvals.json",
+    "max_age_seconds": 86400,
+    "required": false
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "acquisition",
+    "acquisition": {
+      "id": "approvals",
+      "status": "ok",
+      "acquired_at": "2026-08-04T12:00:00Z",
+      "value": {
+        "approved": true,
+        "by": "dana"
+      }
+    },
+    "canonical": "{\"approved\":true,\"by\":\"dana\"}",
+    "sha256": "2c737adcfeb10778f2586805725cfc914936de7979343e2969ce3b84a53d6cd3"
+  }
+}

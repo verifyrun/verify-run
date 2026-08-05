@@ -1,0 +1,23 @@
+{
+  "description": "valid instance of outcome.schema.json",
+  "schema": "https://verifyrun.com/spec/v1/outcome.schema.json",
+  "value": {
+    "outcome": "BLOCK",
+    "matched_rule": "r1",
+    "reasons": [
+      {
+        "code": "rule_block",
+        "message": "no",
+        "rule_id": "r1"
+      }
+    ],
+    "trace": [
+      "0:r1:true"
+    ]
+  },
+  "expected": {
+    "valid": true
+  },
+  "canonical": "{\"matched_rule\":\"r1\",\"outcome\":\"BLOCK\",\"reasons\":[{\"code\":\"rule_block\",\"message\":\"no\",\"rule_id\":\"r1\"}],\"trace\":[\"0:r1:true\"]}",
+  "sha256": "471d3c6edc68cd31bd0217db26a7d3547b56333d46c5e02cba871956a6af20d9"
+}

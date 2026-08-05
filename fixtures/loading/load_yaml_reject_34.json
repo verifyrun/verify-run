@@ -1,0 +1,6 @@
+{
+  "description": "empty source",
+  "format": "yaml",
+  "source_base64": "",
+  "expected": {"outcome": "ERROR", "reason_code": "source_syntax_invalid"}
+}

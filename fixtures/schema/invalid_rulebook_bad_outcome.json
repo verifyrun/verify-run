@@ -1,0 +1,26 @@
+{
+  "description": "rulebook bad outcome",
+  "schema": "https://verifyrun.com/spec/v1/rulebook.schema.json",
+  "value": {
+    "rulebook_id": "r-1",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "evidence": [],
+    "rules": [
+      {
+        "id": "a",
+        "when": "true",
+        "outcome": "MAYBE",
+        "reason": "x"
+      }
+    ],
+    "default_outcome": "HOLD"
+  },
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "rulebook_schema_invalid",
+    "instance_path": "$.rules[0].outcome",
+    "schema_path": "$.properties.rules.items.properties.outcome.enum",
+    "keyword": "enum"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "note": "The working directory defaults to the root.",
+  "tree": {
+    "ci": {
+      "kind": "dir"
+    },
+    "marker.txt": {
+      "kind": "file",
+      "bytes_base64": "cm9vdAo=",
+      "mode": "0644"
+    },
+    "ci/marker.txt": {
+      "kind": "file",
+      "bytes_base64": "Y2kK",
+      "mode": "0644"
+    },
+    "ci/last-test-result.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCnJlYWQgbWFya2VyIDwgbWFya2VyLnR4dApwcmludGYgJ3sibWFya2VyIjoiJXMifScgIiRtYXJrZXIiCg==",
+      "mode": "0755"
+    }
+  },
+  "declaration": {
+    "id": "tests",
+    "source": "exec",
+    "ref": "./ci/last-test-result.sh",
+    "max_age_seconds": 900
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "acquisition",
+    "acquisition": {
+      "id": "tests",
+      "status": "ok",
+      "acquired_at": "2026-08-04T12:00:00Z",
+      "value": {
+        "marker": "root"
+      }
+    },
+    "canonical": "{\"marker\":\"root\"}",
+    "sha256": "9d666eefcc40d26649f54d64f3b75f2c05d3740fe61b2e3d6840906101478a66"
+  }
+}

@@ -1,0 +1,99 @@
+{
+  "description": "block decision",
+  "TEST_ONLY": "keys here are published constants and authorize nothing",
+  "template": "agent-guard.yaml",
+  "rulebook_source": "rulebook_id: agent-guard\nversion: 1.0.0\nadopted_at: \"2026-08-05T00:00:00Z\"\ndescription: Gate an AI agent's tool calls and shell commands.\ntrack: [workspace]\nevidence:\n  - {id: approvals, source: file, ref: .vfy/approvals.json, max_age_seconds: 86400, required: false}\nrules:\n  - id: no-destructive-shell\n    when: 'candidate.action.argv[0] in [\"rm\",\"mkfs\",\"dd\",\"shutdown\"] or matches(candidate.action.summary, \"*rm -rf*\")'\n    outcome: BLOCK\n    reason: Destructive shell commands are never allowed.\n  - id: write-inside-workspace\n    when: 'candidate.kind == \"tool_call\" and candidate.action.tool == \"write_file\" and matches(candidate.action.params.path, \"./workspace/*\")'\n    outcome: ALLOW\n    reason: Writes inside the declared workspace are allowed.\n  - id: outbound-email-needs-approval\n    when: 'candidate.action.tool == \"send_email\" and not present(approvals)'\n    outcome: HOLD\n    reason: External email requires a recorded human approval.\n  - id: undeclared-network\n    when: 'candidate.kind == \"http_request\" and not matches(candidate.action.targets[0], \"https://api.internal.example/*\")'\n    outcome: BLOCK\n    reason: Only declared network destinations are allowed.\ndefault_outcome: HOLD\nauthorization: {ttl_seconds: 120, single_use: true}\n",
+  "candidate": {
+    "candidate_id": "c-2",
+    "kind": "command",
+    "action": {
+      "summary": "rm",
+      "argv": [
+        "rm",
+        "-rf",
+        "/home"
+      ]
+    }
+  },
+  "acquisitions": [],
+  "frozen_at": "2026-08-05T00:00:00Z",
+  "snapshot": {
+    "frozen_at": "2026-08-05T00:00:00Z",
+    "items": [],
+    "rulebook_digest": "sha256:dfaeec83d2c67e3c56e0efc330a801edf727dcc0269c2325f81e80e87c8784aa",
+    "snapshot_digest": "sha256:b8871d3df9bed874019901f13bffeb7f7bf992efbfbe7cb8abb4763f163de771",
+    "snapshot_id": "s-1"
+  },
+  "authorization": null,
+  "unsigned_payload": {
+    "receipt_id": "r-1",
+    "spec_version": "1",
+    "created_at": "2026-08-05T00:00:06Z",
+    "rulebook": {
+      "rulebook_id": "agent-guard",
+      "version": "1.0.0",
+      "digest": "sha256:dfaeec83d2c67e3c56e0efc330a801edf727dcc0269c2325f81e80e87c8784aa"
+    },
+    "candidate_digest": "sha256:e5ff039b589b7441d1b587628baa1d843313a7d542be6eda811dd9295cf3a133",
+    "evidence_digest": "sha256:b8871d3df9bed874019901f13bffeb7f7bf992efbfbe7cb8abb4763f163de771",
+    "result": {
+      "matched_rule": "no-destructive-shell",
+      "outcome": "BLOCK",
+      "reasons": [
+        {
+          "code": "rule_block",
+          "message": "Destructive shell commands are never allowed.",
+          "rule_id": "no-destructive-shell"
+        }
+      ],
+      "trace": [
+        "0:no-destructive-shell:true"
+      ]
+    },
+    "replay": {
+      "mode": "recompute-decision"
+    }
+  },
+  "unsigned_canonical": "{\"candidate_digest\":\"sha256:e5ff039b589b7441d1b587628baa1d843313a7d542be6eda811dd9295cf3a133\",\"created_at\":\"2026-08-05T00:00:06Z\",\"evidence_digest\":\"sha256:b8871d3df9bed874019901f13bffeb7f7bf992efbfbe7cb8abb4763f163de771\",\"receipt_id\":\"r-1\",\"replay\":{\"mode\":\"recompute-decision\"},\"result\":{\"matched_rule\":\"no-destructive-shell\",\"outcome\":\"BLOCK\",\"reasons\":[{\"code\":\"rule_block\",\"message\":\"Destructive shell commands are never allowed.\",\"rule_id\":\"no-destructive-shell\"}],\"trace\":[\"0:no-destructive-shell:true\"]},\"rulebook\":{\"digest\":\"sha256:dfaeec83d2c67e3c56e0efc330a801edf727dcc0269c2325f81e80e87c8784aa\",\"rulebook_id\":\"agent-guard\",\"version\":\"1.0.0\"},\"spec_version\":\"1\"}",
+  "signature": "tLwxGTwqsqP/4z8BR4WpcK0caa0C9jiJ+IxTcb1HpOJRytpDMmoq8wNpo0SNt8FkIFkp7CdXMlH+YvLUmm6CDg==",
+  "receipt": {
+    "receipt_id": "r-1",
+    "spec_version": "1",
+    "created_at": "2026-08-05T00:00:06Z",
+    "rulebook": {
+      "rulebook_id": "agent-guard",
+      "version": "1.0.0",
+      "digest": "sha256:dfaeec83d2c67e3c56e0efc330a801edf727dcc0269c2325f81e80e87c8784aa"
+    },
+    "candidate_digest": "sha256:e5ff039b589b7441d1b587628baa1d843313a7d542be6eda811dd9295cf3a133",
+    "evidence_digest": "sha256:b8871d3df9bed874019901f13bffeb7f7bf992efbfbe7cb8abb4763f163de771",
+    "result": {
+      "matched_rule": "no-destructive-shell",
+      "outcome": "BLOCK",
+      "reasons": [
+        {
+          "code": "rule_block",
+          "message": "Destructive shell commands are never allowed.",
+          "rule_id": "no-destructive-shell"
+        }
+      ],
+      "trace": [
+        "0:no-destructive-shell:true"
+      ]
+    },
+    "replay": {
+      "mode": "recompute-decision"
+    },
+    "signature": {
+      "alg": "ed25519",
+      "key_id": "receipt-key",
+      "key_version": 1,
+      "value": "tLwxGTwqsqP/4z8BR4WpcK0caa0C9jiJ+IxTcb1HpOJRytpDMmoq8wNpo0SNt8FkIFkp7CdXMlH+YvLUmm6CDg=="
+    }
+  },
+  "receipt_canonical": "{\"candidate_digest\":\"sha256:e5ff039b589b7441d1b587628baa1d843313a7d542be6eda811dd9295cf3a133\",\"created_at\":\"2026-08-05T00:00:06Z\",\"evidence_digest\":\"sha256:b8871d3df9bed874019901f13bffeb7f7bf992efbfbe7cb8abb4763f163de771\",\"receipt_id\":\"r-1\",\"replay\":{\"mode\":\"recompute-decision\"},\"result\":{\"matched_rule\":\"no-destructive-shell\",\"outcome\":\"BLOCK\",\"reasons\":[{\"code\":\"rule_block\",\"message\":\"Destructive shell commands are never allowed.\",\"rule_id\":\"no-destructive-shell\"}],\"trace\":[\"0:no-destructive-shell:true\"]},\"rulebook\":{\"digest\":\"sha256:dfaeec83d2c67e3c56e0efc330a801edf727dcc0269c2325f81e80e87c8784aa\",\"rulebook_id\":\"agent-guard\",\"version\":\"1.0.0\"},\"signature\":{\"alg\":\"ed25519\",\"key_id\":\"receipt-key\",\"key_version\":1,\"value\":\"tLwxGTwqsqP/4z8BR4WpcK0caa0C9jiJ+IxTcb1HpOJRytpDMmoq8wNpo0SNt8FkIFkp7CdXMlH+YvLUmm6CDg==\"},\"spec_version\":\"1\"}",
+  "receipt_public_key_hex": "2543b92ff1095511476adc8369db6ddc933665a11978dda1404ee1066ca9559d",
+  "receipt_private_key_hex": "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f",
+  "authorization_public_key_hex": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+  "expected_outcome": "BLOCK"
+}

@@ -1,0 +1,19 @@
+{
+  "description": "unknown ref",
+  "kind": "registry",
+  "documents": [
+    {
+      "$id": "x:1",
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "https://example.invalid/s.json"
+        }
+      }
+    }
+  ],
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "schema_registry_invalid"
+  }
+}

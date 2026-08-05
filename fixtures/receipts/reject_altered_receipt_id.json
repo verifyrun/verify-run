@@ -1,0 +1,14 @@
+{
+  "description": "altered receipt id",
+  "base": "allow_with_authorization_and_execution",
+  "mutation": {
+    "kind": "field",
+    "field": "receipt_id",
+    "value": "other"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signature_invalid"
+  }
+}

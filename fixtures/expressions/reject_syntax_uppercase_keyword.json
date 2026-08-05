@@ -1,0 +1,8 @@
+{
+  "description": "uppercase keyword",
+  "source": "candidate.a == \"x\" AND candidate.b == \"y\"",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_parse_error"
+  }
+}

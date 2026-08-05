@@ -1,0 +1,9 @@
+{
+  "description": "unknown top level field",
+  "stage": "schema",
+  "source_base64": "cnVsZWJvb2tfaWQ6IHItMQp2ZXJzaW9uOiAxLjAuMAphZG9wdGVkX2F0OiAiMjAyNi0wOC0wNVQwMDowMDowMFoiCmV2aWRlbmNlOiBbXQpydWxlczoKICAtIGlkOiByCiAgICB3aGVuOiAndHJ1ZScKICAgIG91dGNvbWU6IEFMTE9XCiAgICByZWFzb246IG9rCnN1cnByaXNlOiAxCmRlZmF1bHRfb3V0Y29tZTogSE9MRAo=",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "rulebook_schema_invalid"
+  }
+}

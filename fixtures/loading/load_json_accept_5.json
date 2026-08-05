@@ -1,0 +1,8 @@
+{
+  "description": "Booleans and null survive as booleans and null",
+  "format": "json",
+  "source_base64": "eyJ0Ijp0cnVlLCJmIjpmYWxzZSwibiI6bnVsbH0=",
+  "value": {"t": true, "f": false, "n": null},
+  "canonical": "{\"f\":false,\"n\":null,\"t\":true}",
+  "sha256": "22e00dc2f7b01420f940fbdbfbdf34fa0667cc6500186495023ba37722cbd05e"
+}

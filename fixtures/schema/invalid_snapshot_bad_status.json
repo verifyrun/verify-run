@@ -1,0 +1,25 @@
+{
+  "description": "snapshot bad status",
+  "schema": "https://verifyrun.com/spec/v1/evidence.schema.json",
+  "value": {
+    "snapshot_id": "s1",
+    "rulebook_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "frozen_at": "2026-08-05T00:00:00Z",
+    "items": [
+      {
+        "id": "e",
+        "order": 0,
+        "acquired_at": "2026-08-05T00:00:00Z",
+        "status": "unknown"
+      }
+    ],
+    "snapshot_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "snapshot_schema_invalid",
+    "instance_path": "$.items[0].status",
+    "schema_path": "$.properties.items.items.properties.status.enum",
+    "keyword": "enum"
+  }
+}

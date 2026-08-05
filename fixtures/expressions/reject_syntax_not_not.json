@@ -1,0 +1,8 @@
+{
+  "description": "not not",
+  "source": "not not present(a)",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_parse_error"
+  }
+}

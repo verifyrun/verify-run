@@ -1,0 +1,8 @@
+{
+  "description": "literal newline in string",
+  "source": "candidate.a == \"one\ntwo\"",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_parse_error"
+  }
+}

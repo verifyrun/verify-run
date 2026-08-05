@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verifyrun.com/spec/v1/outcome.schema.json",
+  "title": "Evaluation outcome",
+  "type": "object",
+  "required": ["outcome", "reasons"],
+  "additionalProperties": false,
+  "properties": {
+    "outcome": {"type": "string", "enum": ["ALLOW", "BLOCK", "HOLD", "ERROR"]},
+    "reasons": {"type": "array", "minItems": 1, "items": {
+      "type": "object", "required": ["code", "message"], "additionalProperties": false,
+      "properties": {
+        "code": {"type": "string",
+          "description": "From the closed set in spec/reason-codes.md."},
+        "rule_id": {"type": "string"},
+        "evidence_id": {"type": "string"},
+        "message": {"type": "string",
+          "description": "Byte-stable: the matched rule's reason verbatim, or the fixed text in spec/reason-codes.md. Never interpolated data."}
+      }}},
+    "matched_rule": {"type": "string",
+      "description": "The rule that evaluated true. Absent when no rule matched or the walk stopped on an unsettled rule."},
+    "trace": {"type": "array", "items": {"type": "string"},
+      "description": "Ordered rule evaluation trace for replay comparison. One \"<ordinal>:<rule_id>:<true|false|unsettled>\" entry per rule evaluated; see spec/reason-codes.md."}
+  }
+}

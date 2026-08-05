@@ -1,0 +1,8 @@
+{
+  "description": "float literal",
+  "source": "candidate.n == 1.5",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_parse_error"
+  }
+}

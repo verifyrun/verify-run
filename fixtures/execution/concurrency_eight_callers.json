@@ -1,0 +1,13 @@
+{
+  "note": "Eight processes race for one authorization. Consumption is exclusive creation and precedes launch, so the losers never reach the launcher at all.",
+  "callers": 8,
+  "expected": {
+    "consumptions_succeeded": 1,
+    "processes_launched": 1,
+    "receipts_issued": 1,
+    "stored_records": 1,
+    "callers_refused_before_launch": 7,
+    "refusal_reason_code": "authorization_nonce_reused",
+    "automatic_retry_permitted": false
+  }
+}

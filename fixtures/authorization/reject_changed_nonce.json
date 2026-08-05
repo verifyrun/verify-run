@@ -1,0 +1,14 @@
+{
+  "description": "changed nonce",
+  "base": "minimum_valid",
+  "mutation": {
+    "kind": "field",
+    "field": "nonce",
+    "value": "zzzzzzzzzzzzzzzz"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signature_invalid"
+  }
+}

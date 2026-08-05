@@ -1,0 +1,14 @@
+{
+  "note": "The authorization is spent and nothing ran. The right is gone and irrecoverable: this is the cost of consuming before launching, and it is the safe direction.",
+  "stage": "after-consumption",
+  "state": {
+    "authorization_consumed": true,
+    "process_started": false,
+    "acknowledgment_available": false,
+    "receipt_available": false,
+    "stored_record_available": false,
+    "automatic_retry_permitted": false
+  },
+  "reason_code": null,
+  "recovery": "None. A new authorization is a new decision, not a retry of this one."
+}

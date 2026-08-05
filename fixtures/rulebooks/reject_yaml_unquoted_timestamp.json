@@ -1,0 +1,9 @@
+{
+  "description": "yaml unquoted timestamp",
+  "stage": "source",
+  "source_base64": "cnVsZWJvb2tfaWQ6IHItMQp2ZXJzaW9uOiAxLjAuMAphZG9wdGVkX2F0OiAyMDI2LTA4LTA1VDAwOjAwOjAwWgpldmlkZW5jZTogW10KcnVsZXM6CiAgLSBpZDogcgogICAgd2hlbjogJ3RydWUnCiAgICBvdXRjb21lOiBBTExPVwogICAgcmVhc29uOiBvawpkZWZhdWx0X291dGNvbWU6IEhPTEQK",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "source_construct_unsupported"
+  }
+}

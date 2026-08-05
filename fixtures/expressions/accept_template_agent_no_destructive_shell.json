@@ -1,0 +1,59 @@
+{
+  "description": "template agent no destructive shell",
+  "source": "candidate.action.argv[0] in [\"rm\",\"mkfs\",\"dd\",\"shutdown\"] or matches(candidate.action.summary, \"*rm -rf*\")",
+  "declared_evidence": [
+    "approvals"
+  ],
+  "ast": {
+    "type": "or",
+    "operands": [
+      {
+        "type": "membership",
+        "operator": "in",
+        "operand": {
+          "type": "path",
+          "root": "candidate",
+          "segments": [
+            {
+              "member": "action"
+            },
+            {
+              "member": "argv"
+            },
+            {
+              "index": 0
+            }
+          ]
+        },
+        "list": {
+          "type": "literal",
+          "value": [
+            "rm",
+            "mkfs",
+            "dd",
+            "shutdown"
+          ]
+        }
+      },
+      {
+        "type": "matches",
+        "path": {
+          "type": "path",
+          "root": "candidate",
+          "segments": [
+            {
+              "member": "action"
+            },
+            {
+              "member": "summary"
+            }
+          ]
+        },
+        "pattern": "*rm -rf*"
+      }
+    ]
+  },
+  "canonical": "{\"operands\":[{\"list\":{\"type\":\"literal\",\"value\":[\"rm\",\"mkfs\",\"dd\",\"shutdown\"]},\"operand\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"action\"},{\"member\":\"argv\"},{\"index\":0}],\"type\":\"path\"},\"operator\":\"in\",\"type\":\"membership\"},{\"path\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"action\"},{\"member\":\"summary\"}],\"type\":\"path\"},\"pattern\":\"*rm -rf*\",\"type\":\"matches\"}],\"type\":\"or\"}",
+  "sha256": "341f4d44cf8009ad98b215beb83fcac71f22c44bfe4c125e8f365b7e2df51cfb",
+  "evidence_ids": []
+}

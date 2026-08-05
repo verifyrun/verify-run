@@ -1,0 +1,14 @@
+{
+  "note": "The file adapter refuses a declaration it does not own.",
+  "tree": {},
+  "declaration": {
+    "id": "tests",
+    "source": "exec",
+    "ref": "ci/last-test-result.sh"
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "expected": {
+    "class": "adapter_error",
+    "reason_code": "evidence_adapter_config_invalid"
+  }
+}

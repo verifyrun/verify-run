@@ -1,0 +1,47 @@
+{
+  "description": "boolean literals",
+  "source": "candidate.flag == true and candidate.other != false",
+  "declared_evidence": [],
+  "ast": {
+    "type": "and",
+    "operands": [
+      {
+        "type": "compare",
+        "operator": "==",
+        "left": {
+          "type": "path",
+          "root": "candidate",
+          "segments": [
+            {
+              "member": "flag"
+            }
+          ]
+        },
+        "right": {
+          "type": "literal",
+          "value": true
+        }
+      },
+      {
+        "type": "compare",
+        "operator": "!=",
+        "left": {
+          "type": "path",
+          "root": "candidate",
+          "segments": [
+            {
+              "member": "other"
+            }
+          ]
+        },
+        "right": {
+          "type": "literal",
+          "value": false
+        }
+      }
+    ]
+  },
+  "canonical": "{\"operands\":[{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"flag\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":true},\"type\":\"compare\"},{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"other\"}],\"type\":\"path\"},\"operator\":\"!=\",\"right\":{\"type\":\"literal\",\"value\":false},\"type\":\"compare\"}],\"type\":\"and\"}",
+  "sha256": "8dc459279480d9839be2c8042f8349409456b8c710e4ceaf8a77d7251af4290c",
+  "evidence_ids": []
+}

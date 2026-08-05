@@ -1,0 +1,10 @@
+{
+  "note": "-- with nothing after it is a usage error.",
+  "argv": [
+    "run",
+    "--"
+  ],
+  "expected": {
+    "exit": 2
+  }
+}

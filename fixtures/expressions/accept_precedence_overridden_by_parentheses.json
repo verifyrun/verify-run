@@ -1,0 +1,69 @@
+{
+  "description": "precedence overridden by parentheses",
+  "source": "(candidate.a == \"x\" or candidate.b == \"y\") and candidate.c == \"z\"",
+  "declared_evidence": [],
+  "ast": {
+    "type": "and",
+    "operands": [
+      {
+        "type": "or",
+        "operands": [
+          {
+            "type": "compare",
+            "operator": "==",
+            "left": {
+              "type": "path",
+              "root": "candidate",
+              "segments": [
+                {
+                  "member": "a"
+                }
+              ]
+            },
+            "right": {
+              "type": "literal",
+              "value": "x"
+            }
+          },
+          {
+            "type": "compare",
+            "operator": "==",
+            "left": {
+              "type": "path",
+              "root": "candidate",
+              "segments": [
+                {
+                  "member": "b"
+                }
+              ]
+            },
+            "right": {
+              "type": "literal",
+              "value": "y"
+            }
+          }
+        ]
+      },
+      {
+        "type": "compare",
+        "operator": "==",
+        "left": {
+          "type": "path",
+          "root": "candidate",
+          "segments": [
+            {
+              "member": "c"
+            }
+          ]
+        },
+        "right": {
+          "type": "literal",
+          "value": "z"
+        }
+      }
+    ]
+  },
+  "canonical": "{\"operands\":[{\"operands\":[{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"a\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"x\"},\"type\":\"compare\"},{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"b\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"y\"},\"type\":\"compare\"}],\"type\":\"or\"},{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"c\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"z\"},\"type\":\"compare\"}],\"type\":\"and\"}",
+  "sha256": "e6b9392c96dc0acf8331df7c1d3408e0310d630633996e99a31dd7843f4c99b7",
+  "evidence_ids": []
+}

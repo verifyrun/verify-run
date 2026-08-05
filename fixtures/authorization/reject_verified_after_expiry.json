@@ -1,0 +1,13 @@
+{
+  "description": "verified after expiry",
+  "base": "minimum_valid",
+  "mutation": {
+    "kind": "verification_time",
+    "value": "2026-08-05T00:05:01Z"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "authorization_expired"
+  }
+}

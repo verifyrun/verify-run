@@ -1,0 +1,8 @@
+{
+  "description": "negative index",
+  "source": "candidate.a[-1] == \"x\"",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_parse_error"
+  }
+}

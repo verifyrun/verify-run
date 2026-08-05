@@ -1,0 +1,6 @@
+{
+  "description": "Canonical form: sorted keys, no whitespace variance, decimals as strings",
+  "input": {"b": 2, "a": {"z": "s", "m": ["1", "2"]}, "amount": "12.50"},
+  "canonical": "{\"a\":{\"m\":[\"1\",\"2\"],\"z\":\"s\"},\"amount\":\"12.50\",\"b\":2}",
+  "sha256": "be0cd2fb540544dbaca043e3c57a1503e54c60047d42a7db0bced56d0b7eb83a"
+}

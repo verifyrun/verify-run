@@ -1,0 +1,13 @@
+{
+  "description": "invalid signature",
+  "base": "allow_with_authorization_and_execution",
+  "mutation": {
+    "kind": "sig",
+    "value": "AAAA"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signature_invalid"
+  }
+}

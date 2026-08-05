@@ -1,0 +1,38 @@
+{
+  "description": "template pipeline tests red",
+  "source": "fresh(tests) and evidence.tests == \"failed\"",
+  "declared_evidence": [
+    "tests"
+  ],
+  "ast": {
+    "type": "and",
+    "operands": [
+      {
+        "type": "fresh",
+        "evidence_id": "tests"
+      },
+      {
+        "type": "compare",
+        "operator": "==",
+        "left": {
+          "type": "path",
+          "root": "evidence",
+          "segments": [
+            {
+              "member": "tests"
+            }
+          ]
+        },
+        "right": {
+          "type": "literal",
+          "value": "failed"
+        }
+      }
+    ]
+  },
+  "canonical": "{\"operands\":[{\"evidence_id\":\"tests\",\"type\":\"fresh\"},{\"left\":{\"root\":\"evidence\",\"segments\":[{\"member\":\"tests\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"failed\"},\"type\":\"compare\"}],\"type\":\"and\"}",
+  "sha256": "f5893f128b0d54120f1517c6a64bfd588b6ef76202e736db5970efe336d7d26c",
+  "evidence_ids": [
+    "tests"
+  ]
+}

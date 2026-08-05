@@ -1,0 +1,33 @@
+{
+  "description": "committed on-disk tree for a HOLD decision",
+  "receipt_fixture": "accept_hold_decision.json",
+  "receipt_id": "r-1",
+  "store_format_version": 1,
+  "tree": {
+    "consumed": "dir",
+    "index.json": "sha256:277bed0e55efd39a21481ca2dbef07f86709d4e155125f654a4ed71a93afd6af",
+    "receipts": "dir",
+    "receipts/r-1.inputs": "dir",
+    "receipts/r-1.inputs/candidate.json": "sha256:686e03dc2e7d6bd1e33cae7fcd9c973012914ee2a7bef06734f94d4e0521db5e",
+    "receipts/r-1.inputs/rulebook.json": "sha256:623eb952567e387fa8f713c9a70a12de9764d2a05e6cb5a528998f4336aba922",
+    "receipts/r-1.inputs/snapshot.json": "sha256:1dc4bc4341620ce0de09f9e8914b514c3667e20ea47081afb62fdd3ad89fcb74",
+    "receipts/r-1.json": "sha256:6ffcd69f25500b18c9a416f8ecfa5b92d4c3baa0eb5b2f95e57011480de200d7",
+    "store.json": "sha256:0c4afd0a1349b1822ef61796007c934ccba372b6311d338608488290d8483f2d",
+    "tmp": "dir"
+  },
+  "index": {
+    "receipts": [
+      {
+        "authorization_id": null,
+        "created_at": "2026-08-05T00:00:06Z",
+        "key_id": "receipt-key",
+        "outcome": "HOLD",
+        "receipt_id": "r-1",
+        "rulebook_id": "claims-gate",
+        "rulebook_version": "1.0.0"
+      }
+    ],
+    "store_format_version": 1
+  },
+  "expected_outcome": "HOLD"
+}

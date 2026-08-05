@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "verify-run"
+version = "0.1.0a1"
+description = "A local, deterministic action gate for consequential software."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{name = "Devin Bostick"}]
+keywords = ["gate", "authorization", "receipt", "replay", "determinism", "audit"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Security",
+]
+dependencies = ["PyYAML>=6.0,<7", "cryptography>=42,<52"]
+
+[project.scripts]
+vfy = "vfy.cli:main"
+
+[tool.setuptools]
+# MANIFEST.in exists for the source distribution. Without this, its recursive-includes
+# would also pull the prose specifications into the wheel, which loads only the schemas.
+include-package-data = false
+packages = ["vfy", "vfy.evidence", "vfy._schemas", "vfy._templates"]
+
+[tool.setuptools.package-dir]
+vfy = "vfy"
+"vfy.evidence" = "vfy/evidence"
+"vfy._schemas" = "spec"
+"vfy._templates" = "templates"
+
+[tool.setuptools.package-data]
+"vfy._schemas" = ["*.schema.json"]
+"vfy._templates" = ["*.yaml"]

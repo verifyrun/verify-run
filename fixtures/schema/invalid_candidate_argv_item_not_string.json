@@ -1,0 +1,21 @@
+{
+  "description": "candidate argv item not string",
+  "schema": "https://verifyrun.com/spec/v1/candidate.schema.json",
+  "value": {
+    "candidate_id": "c",
+    "kind": "command",
+    "action": {
+      "summary": "x",
+      "argv": [
+        1
+      ]
+    }
+  },
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "candidate_schema_invalid",
+    "instance_path": "$.action.argv[0]",
+    "schema_path": "$.properties.action.properties.argv.items.type",
+    "keyword": "type"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "description": "same rulebook_id and version, different semantic content",
+  "kind": "collision",
+  "first_base64": "cnVsZWJvb2tfaWQ6IHItMQp2ZXJzaW9uOiAxLjAuMAphZG9wdGVkX2F0OiAiMjAyNi0wOC0wNVQwMDowMDowMFoiCmV2aWRlbmNlOiBbXQpydWxlczoKICAtIGlkOiByCiAgICB3aGVuOiAndHJ1ZScKICAgIG91dGNvbWU6IEFMTE9XCiAgICByZWFzb246IGZpcnN0CmRlZmF1bHRfb3V0Y29tZTogSE9MRAo=",
+  "second_base64": "cnVsZWJvb2tfaWQ6IHItMQp2ZXJzaW9uOiAxLjAuMAphZG9wdGVkX2F0OiAiMjAyNi0wOC0wNVQwMDowMDowMFoiCmV2aWRlbmNlOiBbXQpydWxlczoKICAtIGlkOiByCiAgICB3aGVuOiAndHJ1ZScKICAgIG91dGNvbWU6IEJMT0NLCiAgICByZWFzb246IHNlY29uZApkZWZhdWx0X291dGNvbWU6IEhPTEQK",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "rulebook_version_collision"
+  }
+}

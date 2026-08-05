@@ -1,0 +1,41 @@
+{
+  "note": "claims-gate declares coverage over http. Nothing is acquired, nothing is faked, the rulebook holds, and the CLI names the source.",
+  "template": "claims-gate",
+  "tree": {
+    "claim": {
+      "kind": "dir"
+    },
+    "claim/docs-manifest.json": {
+      "kind": "file",
+      "bytes_base64": "eyJjb21wbGV0ZSI6dHJ1ZX0=",
+      "mode": "0644"
+    },
+    "claim/authority.json": {
+      "kind": "file",
+      "bytes_base64": "MjUwMDA=",
+      "mode": "0644"
+    }
+  },
+  "candidate": {
+    "candidate_id": "c-claim",
+    "kind": "custom",
+    "action": {
+      "summary": "settle claim",
+      "params": {
+        "amount": 1000
+      }
+    },
+    "identity": {
+      "claim_id": "CLM-1",
+      "adjuster_id": "ADJ-7"
+    }
+  },
+  "expected": {
+    "exit": 11,
+    "outcome": "HOLD",
+    "receipts": 0,
+    "consumed": 0,
+    "launched": false,
+    "note_contains": "coverage"
+  }
+}

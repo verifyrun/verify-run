@@ -1,0 +1,36 @@
+{
+  "note": "An empty environment means nothing from the parent reaches the child. It does not mean the child sees no PATH: /bin/sh synthesizes a default when it inherits none, and that default belongs to the interpreter, not to this adapter.",
+  "tree": {
+    "ci": {
+      "kind": "dir"
+    },
+    "ci/last-test-result.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCmNhc2UgIiR7UEFUSC19IiBpbgogICp2ZnktcGFyZW50LW1hcmtlciopIHByaW50ZiAneyJpbmhlcml0ZWQiOnRydWV9JyA7OwogICopIHByaW50ZiAneyJpbmhlcml0ZWQiOmZhbHNlfScgOzsKZXNhYwo=",
+      "mode": "0755"
+    }
+  },
+  "declaration": {
+    "id": "tests",
+    "source": "exec",
+    "ref": "./ci/last-test-result.sh",
+    "max_age_seconds": 900
+  },
+  "acquired_at": "2026-08-04T12:00:00Z",
+  "parent_environment": {
+    "PATH": "/vfy-parent-marker/bin:/usr/bin:/bin"
+  },
+  "expected": {
+    "class": "acquisition",
+    "acquisition": {
+      "id": "tests",
+      "status": "ok",
+      "acquired_at": "2026-08-04T12:00:00Z",
+      "value": {
+        "inherited": false
+      }
+    },
+    "canonical": "{\"inherited\":false}",
+    "sha256": "a0074497ff4fe100d3ffc6c36fba09f63f08d7e87a3159869cc967988f340cae"
+  }
+}

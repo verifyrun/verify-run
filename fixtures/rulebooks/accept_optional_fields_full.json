@@ -1,0 +1,71 @@
+{
+  "description": "optional fields full",
+  "source_base64": "cnVsZWJvb2tfaWQ6IGZ1bGwtZ2F0ZQp2ZXJzaW9uOiAyLjEwLjMKYWRvcHRlZF9hdDogIjIwMjYtMDgtMDVUMTI6MzA6MDArMDE6MDAiCmRlc2NyaXB0aW9uOiBFdmVyeSBvcHRpb25hbCBmaWVsZCBwb3B1bGF0ZWQuCnRyYWNrOiBbY2xhaW1faWQsIGFkanVzdGVyX2lkXQpldmlkZW5jZToKICAtIHtpZDogZG9jcywgc291cmNlOiBmaWxlLCByZWY6IC4vZC5qc29uLCBtYXhfYWdlX3NlY29uZHM6IDYwLCByZXF1aXJlZDogdHJ1ZX0KICAtIHtpZDogY292ZXIsIHNvdXJjZTogaHR0cCwgcmVmOiAiaHR0cHM6Ly94LmV4YW1wbGUvYyIsIG1heF9hZ2Vfc2Vjb25kczogMCwgcmVxdWlyZWQ6IGZhbHNlfQpydWxlczoKICAtIGlkOiByMQogICAgd2hlbjogJ3ByZXNlbnQoZG9jcyknCiAgICBvdXRjb21lOiBIT0xECiAgICByZWFzb246IE5lZWRzIHJldmlldy4KICAgIHJlcXVpcmVzX2V2aWRlbmNlOiBbZG9jcywgY292ZXJdCmRlZmF1bHRfb3V0Y29tZTogQkxPQ0sKYXV0aG9yaXphdGlvbjoge3R0bF9zZWNvbmRzOiAxLCBzaW5nbGVfdXNlOiB0cnVlfQo=",
+  "value": {
+    "rulebook_id": "full-gate",
+    "version": "2.10.3",
+    "adopted_at": "2026-08-05T12:30:00+01:00",
+    "description": "Every optional field populated.",
+    "track": [
+      "claim_id",
+      "adjuster_id"
+    ],
+    "evidence": [
+      {
+        "id": "docs",
+        "source": "file",
+        "ref": "./d.json",
+        "max_age_seconds": 60,
+        "required": true
+      },
+      {
+        "id": "cover",
+        "source": "http",
+        "ref": "https://x.example/c",
+        "max_age_seconds": 0,
+        "required": false
+      }
+    ],
+    "rules": [
+      {
+        "id": "r1",
+        "when": "present(docs)",
+        "outcome": "HOLD",
+        "reason": "Needs review.",
+        "requires_evidence": [
+          "docs",
+          "cover"
+        ]
+      }
+    ],
+    "default_outcome": "BLOCK",
+    "authorization": {
+      "ttl_seconds": 1,
+      "single_use": true
+    }
+  },
+  "canonical": "{\"adopted_at\":\"2026-08-05T12:30:00+01:00\",\"authorization\":{\"single_use\":true,\"ttl_seconds\":1},\"default_outcome\":\"BLOCK\",\"description\":\"Every optional field populated.\",\"evidence\":[{\"id\":\"docs\",\"max_age_seconds\":60,\"ref\":\"./d.json\",\"required\":true,\"source\":\"file\"},{\"id\":\"cover\",\"max_age_seconds\":0,\"ref\":\"https://x.example/c\",\"required\":false,\"source\":\"http\"}],\"rulebook_id\":\"full-gate\",\"rules\":[{\"id\":\"r1\",\"outcome\":\"HOLD\",\"reason\":\"Needs review.\",\"requires_evidence\":[\"docs\",\"cover\"],\"when\":\"present(docs)\"}],\"track\":[\"claim_id\",\"adjuster_id\"],\"version\":\"2.10.3\"}",
+  "sha256": "1d55c74bad49c772841082eadfbcc516e1a1593eafdcf6ae4946d564051977ce",
+  "digest": "sha256:1d55c74bad49c772841082eadfbcc516e1a1593eafdcf6ae4946d564051977ce",
+  "rulebook_id": "full-gate",
+  "version": "2.10.3",
+  "adopted_at": "2026-08-05T12:30:00+01:00",
+  "applies": [
+    [
+      "2026-08-05T11:29:59Z",
+      false
+    ],
+    [
+      "2026-08-05T11:30:00Z",
+      true
+    ],
+    [
+      "2026-08-05T12:30:00+01:00",
+      true
+    ],
+    [
+      "2026-08-06T00:00:00Z",
+      true
+    ]
+  ]
+}

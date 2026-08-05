@@ -1,0 +1,8 @@
+{
+  "description": "malformed integer leading zero",
+  "source": "candidate.n == 01",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_parse_error"
+  }
+}

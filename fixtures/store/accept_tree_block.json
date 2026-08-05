@@ -1,0 +1,33 @@
+{
+  "description": "committed on-disk tree for a BLOCK decision",
+  "receipt_fixture": "accept_block_decision.json",
+  "receipt_id": "r-1",
+  "store_format_version": 1,
+  "tree": {
+    "consumed": "dir",
+    "index.json": "sha256:13c5501fbe2c587ff917b60e1d6f96aeb44ca85a3f7308a19c1f81626b9b95fc",
+    "receipts": "dir",
+    "receipts/r-1.inputs": "dir",
+    "receipts/r-1.inputs/candidate.json": "sha256:e5ff039b589b7441d1b587628baa1d843313a7d542be6eda811dd9295cf3a133",
+    "receipts/r-1.inputs/rulebook.json": "sha256:dfaeec83d2c67e3c56e0efc330a801edf727dcc0269c2325f81e80e87c8784aa",
+    "receipts/r-1.inputs/snapshot.json": "sha256:f56cf908dcdc87230daa9c0c6d658234c2e67e07fedd285bb45d7f59e717d20b",
+    "receipts/r-1.json": "sha256:4264f8a52c1ee1867c72284464d3c8cea9963a612dc5d096c9ee642d81140331",
+    "store.json": "sha256:0c4afd0a1349b1822ef61796007c934ccba372b6311d338608488290d8483f2d",
+    "tmp": "dir"
+  },
+  "index": {
+    "receipts": [
+      {
+        "authorization_id": null,
+        "created_at": "2026-08-05T00:00:06Z",
+        "key_id": "receipt-key",
+        "outcome": "BLOCK",
+        "receipt_id": "r-1",
+        "rulebook_id": "agent-guard",
+        "rulebook_version": "1.0.0"
+      }
+    ],
+    "store_format_version": 1
+  },
+  "expected_outcome": "BLOCK"
+}

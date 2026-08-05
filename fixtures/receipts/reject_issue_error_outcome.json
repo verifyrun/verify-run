@@ -1,0 +1,8 @@
+{
+  "description": "error outcome",
+  "stage": "issuance",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "receipt_outcome_ineligible"
+  }
+}

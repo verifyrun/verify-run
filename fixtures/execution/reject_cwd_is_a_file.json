@@ -1,0 +1,125 @@
+{
+  "note": "A file is not a working directory.",
+  "TEST_ONLY": "the keys here are published constants and authorize nothing",
+  "rulebook_ref": "templates/pipeline-gate.yaml",
+  "candidate": {
+    "candidate_id": "c-exec",
+    "kind": "command",
+    "action": {
+      "summary": "deploy",
+      "argv": [
+        "./bin/ok.sh"
+      ]
+    },
+    "identity": {
+      "branch": "main"
+    }
+  },
+  "frozen_at": "2026-08-05T00:00:00Z",
+  "acquisitions": [
+    {
+      "id": "tests",
+      "status": "ok",
+      "value": "passed",
+      "acquired_at": "2026-08-04T23:59:30Z"
+    }
+  ],
+  "snapshot_id": "snap-exec",
+  "authorization": {
+    "authorization_id": "auth-exec",
+    "nonce": "nonce-exec-0000000",
+    "runtime_id": "runtime-1",
+    "issued_at": "2026-08-05T00:00:00Z"
+  },
+  "authorization_key": {
+    "key_id": "test-key",
+    "key_version": 1,
+    "private_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+    "public_key_hex": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8"
+  },
+  "receipt_key": {
+    "key_id": "receipt-key",
+    "key_version": 1,
+    "private_key_hex": "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f",
+    "public_key_hex": "2543b92ff1095511476adc8369db6ddc933665a11978dda1404ee1066ca9559d"
+  },
+  "runtime_id": "runtime-1",
+  "verification_time": "2026-08-05T00:00:02Z",
+  "acknowledged_at": "2026-08-05T00:00:05Z",
+  "receipt_id": "rcpt-exec",
+  "receipt_created_at": "2026-08-05T00:00:06Z",
+  "tree": {
+    "bin": {
+      "kind": "dir"
+    },
+    "bin/ok.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCnByaW50ZiAnZG9uZVxuJwpleGl0IDAK",
+      "mode": "0755"
+    },
+    "bin/fail.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCnByaW50ZiAnYnJva2VcbicgPiYyCmV4aXQgMwo=",
+      "mode": "0755"
+    },
+    "bin/args.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCmZvciBhIGluICIkQCI7IGRvIHByaW50ZiAnWyVzXVxuJyAiJGEiOyBkb25lCg==",
+      "mode": "0755"
+    },
+    "bin/env.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCnByaW50ZiAnJXNcbicgIiR7VkZZX0VYRUNfU0VOVElORUwtYWJzZW50fSIK",
+      "mode": "0755"
+    },
+    "bin/cwd.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCnJlYWQgbSA8IG1hcmtlci50eHQKcHJpbnRmICclc1xuJyAiJG0iCg==",
+      "mode": "0755"
+    },
+    "bin/slow.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCi9iaW4vc2xlZXAgNjAK",
+      "mode": "0755"
+    },
+    "bin/signal.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCmtpbGwgLVRFUk0gJCQK",
+      "mode": "0755"
+    },
+    "bin/loud.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCmk9MAp3aGlsZSBbICRpIC1sdCA0MCBdOyBkbyBwcmludGYgJyVzJyAnb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vb29vbyc7IHByaW50ZiAnJXMnICdlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlJyA+JjI7IGk9JCgoaSsxKSk7IGRvbmUKZXhpdCAwCg==",
+      "mode": "0755"
+    },
+    "bin/noexec.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCnByaW50ZiAnZG9uZVxuJwo=",
+      "mode": "0644"
+    },
+    "marker.txt": {
+      "kind": "file",
+      "bytes_base64": "cm9vdAo=",
+      "mode": "0644"
+    },
+    "sub": {
+      "kind": "dir"
+    },
+    "sub/marker.txt": {
+      "kind": "file",
+      "bytes_base64": "c3ViCg==",
+      "mode": "0644"
+    }
+  },
+  "cwd": "marker.txt",
+  "environment": null,
+  "timeout_seconds": 30,
+  "expected": {
+    "class": "refused",
+    "reason_code": "execution_configuration_invalid",
+    "consumed": false,
+    "started": false,
+    "receipt_issued": false,
+    "stored": false
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "description": "template agent guard",
+  "source_base64": "cnVsZWJvb2tfaWQ6IGFnZW50LWd1YXJkCnZlcnNpb246IDEuMC4wCmFkb3B0ZWRfYXQ6ICIyMDI2LTA4LTA1VDAwOjAwOjAwWiIKZGVzY3JpcHRpb246IEdhdGUgYW4gQUkgYWdlbnQncyB0b29sIGNhbGxzIGFuZCBzaGVsbCBjb21tYW5kcy4KdHJhY2s6IFt3b3Jrc3BhY2VdCmV2aWRlbmNlOgogIC0ge2lkOiBhcHByb3ZhbHMsIHNvdXJjZTogZmlsZSwgcmVmOiAudmZ5L2FwcHJvdmFscy5qc29uLCBtYXhfYWdlX3NlY29uZHM6IDg2NDAwLCByZXF1aXJlZDogZmFsc2V9CnJ1bGVzOgogIC0gaWQ6IG5vLWRlc3RydWN0aXZlLXNoZWxsCiAgICB3aGVuOiAnY2FuZGlkYXRlLmFjdGlvbi5hcmd2WzBdIGluIFsicm0iLCJta2ZzIiwiZGQiLCJzaHV0ZG93biJdIG9yIG1hdGNoZXMoY2FuZGlkYXRlLmFjdGlvbi5zdW1tYXJ5LCAiKnJtIC1yZioiKScKICAgIG91dGNvbWU6IEJMT0NLCiAgICByZWFzb246IERlc3RydWN0aXZlIHNoZWxsIGNvbW1hbmRzIGFyZSBuZXZlciBhbGxvd2VkLgogIC0gaWQ6IHdyaXRlLWluc2lkZS13b3Jrc3BhY2UKICAgIHdoZW46ICdjYW5kaWRhdGUua2luZCA9PSAidG9vbF9jYWxsIiBhbmQgY2FuZGlkYXRlLmFjdGlvbi50b29sID09ICJ3cml0ZV9maWxlIiBhbmQgbWF0Y2hlcyhjYW5kaWRhdGUuYWN0aW9uLnBhcmFtcy5wYXRoLCAiLi93b3Jrc3BhY2UvKiIpJwogICAgb3V0Y29tZTogQUxMT1cKICAgIHJlYXNvbjogV3JpdGVzIGluc2lkZSB0aGUgZGVjbGFyZWQgd29ya3NwYWNlIGFyZSBhbGxvd2VkLgogIC0gaWQ6IG91dGJvdW5kLWVtYWlsLW5lZWRzLWFwcHJvdmFsCiAgICB3aGVuOiAnY2FuZGlkYXRlLmFjdGlvbi50b29sID09ICJzZW5kX2VtYWlsIiBhbmQgbm90IHByZXNlbnQoYXBwcm92YWxzKScKICAgIG91dGNvbWU6IEhPTEQKICAgIHJlYXNvbjogRXh0ZXJuYWwgZW1haWwgcmVxdWlyZXMgYSByZWNvcmRlZCBodW1hbiBhcHByb3ZhbC4KICAtIGlkOiB1bmRlY2xhcmVkLW5ldHdvcmsKICAgIHdoZW46ICdjYW5kaWRhdGUua2luZCA9PSAiaHR0cF9yZXF1ZXN0IiBhbmQgbm90IG1hdGNoZXMoY2FuZGlkYXRlLmFjdGlvbi50YXJnZXRzWzBdLCAiaHR0cHM6Ly9hcGkuaW50ZXJuYWwuZXhhbXBsZS8qIiknCiAgICBvdXRjb21lOiBCTE9DSwogICAgcmVhc29uOiBPbmx5IGRlY2xhcmVkIG5ldHdvcmsgZGVzdGluYXRpb25zIGFyZSBhbGxvd2VkLgpkZWZhdWx0X291dGNvbWU6IEhPTEQKYXV0aG9yaXphdGlvbjoge3R0bF9zZWNvbmRzOiAxMjAsIHNpbmdsZV91c2U6IHRydWV9Cg==",
+  "value": {
+    "rulebook_id": "agent-guard",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "description": "Gate an AI agent's tool calls and shell commands.",
+    "track": [
+      "workspace"
+    ],
+    "evidence": [
+      {
+        "id": "approvals",
+        "source": "file",
+        "ref": ".vfy/approvals.json",
+        "max_age_seconds": 86400,
+        "required": false
+      }
+    ],
+    "rules": [
+      {
+        "id": "no-destructive-shell",
+        "when": "candidate.action.argv[0] in [\"rm\",\"mkfs\",\"dd\",\"shutdown\"] or matches(candidate.action.summary, \"*rm -rf*\")",
+        "outcome": "BLOCK",
+        "reason": "Destructive shell commands are never allowed."
+      },
+      {
+        "id": "write-inside-workspace",
+        "when": "candidate.kind == \"tool_call\" and candidate.action.tool == \"write_file\" and matches(candidate.action.params.path, \"./workspace/*\")",
+        "outcome": "ALLOW",
+        "reason": "Writes inside the declared workspace are allowed."
+      },
+      {
+        "id": "outbound-email-needs-approval",
+        "when": "candidate.action.tool == \"send_email\" and not present(approvals)",
+        "outcome": "HOLD",
+        "reason": "External email requires a recorded human approval."
+      },
+      {
+        "id": "undeclared-network",
+        "when": "candidate.kind == \"http_request\" and not matches(candidate.action.targets[0], \"https://api.internal.example/*\")",
+        "outcome": "BLOCK",
+        "reason": "Only declared network destinations are allowed."
+      }
+    ],
+    "default_outcome": "HOLD",
+    "authorization": {
+      "ttl_seconds": 120,
+      "single_use": true
+    }
+  },
+  "canonical": "{\"adopted_at\":\"2026-08-05T00:00:00Z\",\"authorization\":{\"single_use\":true,\"ttl_seconds\":120},\"default_outcome\":\"HOLD\",\"description\":\"Gate an AI agent's tool calls and shell commands.\",\"evidence\":[{\"id\":\"approvals\",\"max_age_seconds\":86400,\"ref\":\".vfy/approvals.json\",\"required\":false,\"source\":\"file\"}],\"rulebook_id\":\"agent-guard\",\"rules\":[{\"id\":\"no-destructive-shell\",\"outcome\":\"BLOCK\",\"reason\":\"Destructive shell commands are never allowed.\",\"when\":\"candidate.action.argv[0] in [\\\"rm\\\",\\\"mkfs\\\",\\\"dd\\\",\\\"shutdown\\\"] or matches(candidate.action.summary, \\\"*rm -rf*\\\")\"},{\"id\":\"write-inside-workspace\",\"outcome\":\"ALLOW\",\"reason\":\"Writes inside the declared workspace are allowed.\",\"when\":\"candidate.kind == \\\"tool_call\\\" and candidate.action.tool == \\\"write_file\\\" and matches(candidate.action.params.path, \\\"./workspace/*\\\")\"},{\"id\":\"outbound-email-needs-approval\",\"outcome\":\"HOLD\",\"reason\":\"External email requires a recorded human approval.\",\"when\":\"candidate.action.tool == \\\"send_email\\\" and not present(approvals)\"},{\"id\":\"undeclared-network\",\"outcome\":\"BLOCK\",\"reason\":\"Only declared network destinations are allowed.\",\"when\":\"candidate.kind == \\\"http_request\\\" and not matches(candidate.action.targets[0], \\\"https://api.internal.example/*\\\")\"}],\"track\":[\"workspace\"],\"version\":\"1.0.0\"}",
+  "sha256": "dfaeec83d2c67e3c56e0efc330a801edf727dcc0269c2325f81e80e87c8784aa",
+  "digest": "sha256:dfaeec83d2c67e3c56e0efc330a801edf727dcc0269c2325f81e80e87c8784aa",
+  "rulebook_id": "agent-guard",
+  "version": "1.0.0",
+  "adopted_at": "2026-08-05T00:00:00Z",
+  "applies": [
+    [
+      "2026-08-04T23:59:59Z",
+      false
+    ],
+    [
+      "2026-08-05T00:00:00Z",
+      true
+    ],
+    [
+      "2026-08-05T00:00:01Z",
+      true
+    ]
+  ]
+}

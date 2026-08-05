@@ -1,0 +1,24 @@
+{
+  "description": "matches call",
+  "source": "matches(candidate.action.summary, \"*rm -rf*\")",
+  "declared_evidence": [],
+  "ast": {
+    "type": "matches",
+    "path": {
+      "type": "path",
+      "root": "candidate",
+      "segments": [
+        {
+          "member": "action"
+        },
+        {
+          "member": "summary"
+        }
+      ]
+    },
+    "pattern": "*rm -rf*"
+  },
+  "canonical": "{\"path\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"action\"},{\"member\":\"summary\"}],\"type\":\"path\"},\"pattern\":\"*rm -rf*\",\"type\":\"matches\"}",
+  "sha256": "bb29cbe7e3801c8feb63da0715432e21af13fcd13dc738c31cc459be7dea73aa",
+  "evidence_ids": []
+}

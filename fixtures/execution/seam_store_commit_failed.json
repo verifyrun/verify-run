@@ -1,0 +1,14 @@
+{
+  "note": "The receipt exists and the commit did not. The failure hands the receipt back so a caller can persist it later without running the command again.",
+  "stage": "recording",
+  "state": {
+    "authorization_consumed": true,
+    "process_started": true,
+    "acknowledgment_available": true,
+    "receipt_available": true,
+    "stored_record_available": false,
+    "automatic_retry_permitted": false
+  },
+  "reason_code": "execution_recording_failed",
+  "recovery": "Persist the returned receipt with put_record once the store is usable."
+}

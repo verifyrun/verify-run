@@ -1,0 +1,12 @@
+{
+  "description": "unknown key",
+  "base": "minimum_valid",
+  "mutation": {
+    "kind": "key_absent"
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "signing_key_unknown"
+  }
+}

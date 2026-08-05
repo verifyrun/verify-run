@@ -1,0 +1,43 @@
+{
+  "description": "item unknown field",
+  "rulebook": {
+    "rulebook_id": "snap",
+    "version": "1.0.0",
+    "adopted_at": "2026-08-05T00:00:00Z",
+    "evidence": [
+      {
+        "id": "a",
+        "source": "file"
+      }
+    ],
+    "rules": [
+      {
+        "id": "r",
+        "when": "candidate.kind == \"command\"",
+        "outcome": "ALLOW",
+        "reason": "ok"
+      }
+    ],
+    "default_outcome": "HOLD"
+  },
+  "snapshot": {
+    "snapshot_id": "s",
+    "rulebook_digest": "PINNED",
+    "frozen_at": "2026-08-05T00:00:00Z",
+    "items": [
+      {
+        "id": "a",
+        "order": 0,
+        "acquired_at": "2026-08-05T00:00:00Z",
+        "status": "ok",
+        "value": "v",
+        "extra": 1
+      }
+    ]
+  },
+  "stage": "verification",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "snapshot_schema_invalid"
+  }
+}

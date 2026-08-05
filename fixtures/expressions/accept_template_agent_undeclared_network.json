@@ -1,0 +1,54 @@
+{
+  "description": "template agent undeclared network",
+  "source": "candidate.kind == \"http_request\" and not matches(candidate.action.targets[0], \"https://api.internal.example/*\")",
+  "declared_evidence": [
+    "approvals"
+  ],
+  "ast": {
+    "type": "and",
+    "operands": [
+      {
+        "type": "compare",
+        "operator": "==",
+        "left": {
+          "type": "path",
+          "root": "candidate",
+          "segments": [
+            {
+              "member": "kind"
+            }
+          ]
+        },
+        "right": {
+          "type": "literal",
+          "value": "http_request"
+        }
+      },
+      {
+        "type": "not",
+        "operand": {
+          "type": "matches",
+          "path": {
+            "type": "path",
+            "root": "candidate",
+            "segments": [
+              {
+                "member": "action"
+              },
+              {
+                "member": "targets"
+              },
+              {
+                "index": 0
+              }
+            ]
+          },
+          "pattern": "https://api.internal.example/*"
+        }
+      }
+    ]
+  },
+  "canonical": "{\"operands\":[{\"left\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"kind\"}],\"type\":\"path\"},\"operator\":\"==\",\"right\":{\"type\":\"literal\",\"value\":\"http_request\"},\"type\":\"compare\"},{\"operand\":{\"path\":{\"root\":\"candidate\",\"segments\":[{\"member\":\"action\"},{\"member\":\"targets\"},{\"index\":0}],\"type\":\"path\"},\"pattern\":\"https://api.internal.example/*\",\"type\":\"matches\"},\"type\":\"not\"}],\"type\":\"and\"}",
+  "sha256": "df906777fb0e3547d3baa9bc18a2ed77648585a6f394d7ceb838e1dbfe247db5",
+  "evidence_ids": []
+}

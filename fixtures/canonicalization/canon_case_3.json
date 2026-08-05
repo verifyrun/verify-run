@@ -1,0 +1,6 @@
+{
+  "description": "Escaped source values denoting valid scalars, including a properly paired surrogate escape, survive as scalars and are emitted literally",
+  "input": {"bmp": "\u00e9", "pair": "\ud834\udd1e"},
+  "canonical": "{\"bmp\":\"\u00e9\",\"pair\":\"\ud834\udd1e\"}",
+  "sha256": "9ea91a0d5147d134b0372cb7260a693a82416d83488ea4c2f162bbd76101168e"
+}

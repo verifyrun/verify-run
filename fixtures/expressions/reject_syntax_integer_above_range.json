@@ -1,0 +1,8 @@
+{
+  "description": "integer above range",
+  "source": "candidate.n == 9007199254740992",
+  "expected": {
+    "outcome": "ERROR",
+    "reason_code": "expression_parse_error"
+  }
+}
