@@ -77,6 +77,14 @@ algorithm to confuse; and substituting a different `key_id` makes verification l
 key, under which the signature does not verify. An attacker who could re-sign under another
 registered key would not need to substitute metadata.
 
+That argument has a premise, and since 0.1.0a2 the premise is enforced rather than assumed: **one
+public key carries one identity.** `build_key_registry` refuses the same public key under two
+`(key_id, key_version)` pairs with `signing_key_invalid`. Registered twice, the substitution above
+would look up the *same* key and the relabelled artifact would verify under an identity that never
+signed it — and because status is held per identity while signing authority is held by the key, a
+retired identity could be escaped by relabelling to an active one. Distinct keys under distinct
+identities, and one key under several versions, are unaffected.
+
 ## Time
 Every instant is supplied by the caller and compared as exact integer nanoseconds. No clock.
 

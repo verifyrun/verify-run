@@ -5,6 +5,7 @@ import dataclasses
 import itertools
 import json
 import pathlib
+import sys
 import unittest
 
 from vfy import canon, expr, load, rulebook, schema
@@ -425,3 +426,65 @@ class NoEvaluation(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EveryRecursiveGrammarPathIsBounded(unittest.TestCase):
+    """One declared bound covers every recursive path, not only parentheses.
+
+    spec/expression-language.md bounds nesting at 64 so that a mutable host recursion limit can
+    never decide whether a declared input class is accepted. List literals recurse through
+    `_list_literal` -> `_list_member` -> `_list_literal`, so they are bound by the same number.
+    """
+
+    SHAPES = {
+        "parens": lambda d: "(" * d + 'candidate.kind == "command"' + ")" * d,
+        "empty_lists": lambda d: "candidate.kind in " + "[" * d + "]" * d,
+        "lists_with_a_member": lambda d: "candidate.kind in " + "[" * d + '"x"' + "]" * d,
+    }
+
+    def _classify(self, source):
+        try:
+            parsed = expr.parse_expression(source)
+        except VerifyError as typed:
+            return "typed:" + typed.code
+        except RecursionError:  # pragma: no cover - the defect this test exists to forbid
+            return "RecursionError"
+        try:
+            parsed.ast()
+        except VerifyError as typed:  # pragma: no cover
+            return "accepted-but-unusable:" + typed.code
+        return "accepted"
+
+    def test_no_raw_recursion_error_ever_crosses_parse_expression(self):
+        for name, build in self.SHAPES.items():
+            for depth in (63, 64, 65, 100, 500, 2000, 5000):
+                with self.subTest(shape=name, depth=depth):
+                    self.assertNotEqual(self._classify(build(depth)), "RecursionError")
+
+    def test_acceptance_never_depends_on_the_host_recursion_limit(self):
+        previous = sys.getrecursionlimit()
+        try:
+            for name, build in self.SHAPES.items():
+                for depth in (63, 64, 65, 100, 500, 2000):
+                    source = build(depth)
+                    verdicts = set()
+                    for limit in (1000, 3000, 6000):
+                        sys.setrecursionlimit(limit)
+                        verdicts.add(self._classify(source))
+                    with self.subTest(shape=name, depth=depth):
+                        self.assertEqual(len(verdicts), 1,
+                                         "%s at depth %d: %s" % (name, depth, sorted(verdicts)))
+        finally:
+            sys.setrecursionlimit(previous)
+
+    def test_an_accepted_expression_is_always_usable(self):
+        """`gate` calls `.ast()` on every parse, so an accepted parse must reload."""
+        for name, build in self.SHAPES.items():
+            for depth in range(1, 70):
+                with self.subTest(shape=name, depth=depth):
+                    verdict = self._classify(build(depth))
+                    self.assertFalse(verdict.startswith("accepted-but-unusable"), verdict)
+
+    def test_the_declared_bound_is_not_reduced_for_parentheses(self):
+        self.assertEqual(self._classify(self.SHAPES["parens"](64)), "accepted")
+        self.assertTrue(self._classify(self.SHAPES["parens"](65)).startswith("typed:"))

@@ -64,6 +64,7 @@ class FrozenAuthorization:
 def build_key_registry(entries):
     """Return an immutable mapping from (key_id, key_version) to a verification key."""
     registry = {}
+    identities = {}
     for entry in entries:
         identity = (entry["key_id"], entry["key_version"])
         if identity in registry:
@@ -71,6 +72,17 @@ def build_key_registry(entries):
         public_key = entry["public_key"]
         if not isinstance(public_key, bytes) or len(public_key) != KEY_LENGTH:
             raise SigningKeyInvalid("An Ed25519 public key is 32 bytes.")
+        # `key_id` and `key_version` are lookup metadata outside the signed bytes, and that is
+        # safe only while one public key carries one identity: substituting a `key_id` is then
+        # guaranteed to select a key the signature does not verify under. Registering one key
+        # twice breaks that guarantee — the substitution finds the same key — and it would also
+        # let a retired identity be escaped by relabelling, because status is held per identity
+        # while the signing authority is held by the key.
+        if public_key in identities:
+            raise SigningKeyInvalid(
+                "One public key carries one identity; this key is already registered as %r."
+                % (identities[public_key],))
+        identities[public_key] = identity
         status = entry.get("status", ACTIVE)
         if status not in (ACTIVE, RETIRED):
             raise SigningKeyInvalid("A key status is active or retired.")
@@ -141,6 +153,14 @@ def verify_authorization(value, pinned, candidate, snapshot, result, runtime_id,
 
     With no `consumed_nonces` view this makes **no single-use claim**: a stateless function cannot
     enforce one-time use.
+
+    `verification_time` is the instant this authorization is being checked *for spending*. The
+    validity interval is always checked for internal consistency — issued at or after the freeze,
+    expiring after it was issued — and is additionally compared against that instant when one is
+    supplied. Passing `None` asks the historical question instead: *was this a well-formed
+    authorization over these exact objects?* Replay uses `None`, because replay spends nothing and
+    a receipt must not stop verifying because time passed. A runtime about to consume an
+    authorization must always supply the instant; `runner.execute_authorized_command` does.
     """
     if not isinstance(value, dict):
         raise TypeError("an authorization value must be a mapping")
@@ -196,11 +216,12 @@ def verify_authorization(value, pinned, candidate, snapshot, result, runtime_id,
     if expires <= issued:
         raise AuthorizationExpired("The authorization expires at or before it was issued.")
 
-    now = _instant(verification_time, "verification_time")
-    if now < issued:
-        raise AuthorizationNotYetValid("The authorization is not yet valid.")
-    if now >= expires:
-        raise AuthorizationExpired("The authorization has expired.")
+    if verification_time is not None:
+        now = _instant(verification_time, "verification_time")
+        if now < issued:
+            raise AuthorizationNotYetValid("The authorization is not yet valid.")
+        if now >= expires:
+            raise AuthorizationExpired("The authorization has expired.")
 
     if consumed_nonces is not None and value["nonce"] in consumed_nonces:
         raise AuthorizationNonceReused("This authorization's nonce has already been consumed.")

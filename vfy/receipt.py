@@ -188,6 +188,16 @@ def replay_receipt(value, rulebook_source, candidate, snapshot_value, receipt_ke
 
     Nothing is reacquired, rerun, or re-executed. `replay.mode` is `recompute-decision` and that
     constant is the whole promise.
+
+    A referenced authorization is cross-checked by **content**: its three digests against the
+    receipt's three, its signature, its key identity and status, and the evaluation it rests on.
+    Its validity interval is checked for internal consistency, not against the present clock —
+    replay spends nothing, so whether the authorization is still *spendable* is not a question
+    replay asks.
+    Asking it would make every ALLOW receipt stop replaying once its `ttl_seconds` elapsed, which
+    is the same failure `spec/receipt-and-replay.md` refuses for retired keys. `verification_time`
+    stays available for a caller that genuinely wants "was this valid at instant X"; it defaults
+    to the historical check.
     """
     verified = verify_receipt(value, receipt_keys, registry)
 
@@ -218,10 +228,9 @@ def replay_receipt(value, rulebook_source, candidate, snapshot_value, receipt_ke
     authorization_verified = False
     if value.get("authorization_id") is not None:
         if authorization is not None:
-            if authorization_keys is None or verification_time is None:
+            if authorization_keys is None:
                 raise ReplayBodyMissing(
-                    "Verifying the referenced authorization needs its key registry and an "
-                    "instant to check it against.")
+                    "Verifying the referenced authorization needs its key registry.")
             if authorization.get("authorization_id") != value["authorization_id"]:
                 raise ReceiptBindingMismatch(
                     "The supplied authorization is not the one the receipt names.")

@@ -12,7 +12,7 @@ rulebook_id: minimal-gate           # required
 version: 1.0.0                      # required
 adopted_at: "2026-08-05T00:00:00Z"  # required
 description: The smallest complete rulebook.
-track: [branch]                     # identity fields the receipt binds
+track: [branch]                     # documents which identity fields this rulebook is about
 evidence: []                        # what may be consulted
 rules:                              # tried in order
   - id: only-from-main

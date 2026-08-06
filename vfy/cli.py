@@ -170,7 +170,7 @@ def _run(options, clock, identifiers, out, err):
 
 def _replay(options, clock, identifiers, out, err):
     workspace = workflow.open_workspace(options.workspace, resources.schema_dir())
-    record = workflow.replay(workspace, options.receipt, clock)
+    record = workflow.replay(workspace, options.receipt)
     body = {"command": "replay", "receipt_id": record.receipt_id, "outcome": record.outcome,
             "verified": True, "replayed": record.replay_verified,
             "authorization_verified": record.authorization_verified}
@@ -191,7 +191,7 @@ def _receipts(options, clock, identifiers, out, err):
     workspace = workflow.open_workspace(options.workspace, resources.schema_dir())
     if getattr(options, "action", None) == "show":
         record = workflow.replay(
-            workspace, workspace.vfy / "receipts" / (options.receipt_id + ".json"), clock)
+            workspace, workspace.vfy / "receipts" / (options.receipt_id + ".json"))
         body = {"command": "receipts.show", "receipt_id": record.receipt_id,
                 "outcome": record.outcome, "verified": True,
                 "replayed": record.replay_verified}

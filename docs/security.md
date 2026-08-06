@@ -9,6 +9,12 @@ Keys come from a registry **you** assemble, always. Artifacts carry a `key_id` a
 but never key material, so an artifact can never certify itself. A perfectly formed receipt signed
 by a key nobody trusts is refused.
 
+`key_id`, `key_version`, and `alg` sit outside the signed bytes, which is safe because `alg` is a
+constant and a substituted `key_id` selects a key the signature does not verify under. That holds
+only while one public key carries one identity, so the registry now refuses the same public key
+under two identities — otherwise a relabelled artifact would verify under an identity that never
+signed it, and per-identity retirement could be escaped by relabelling.
+
 `vfy init` generates two distinct Ed25519 keypairs — one for authorizations, one for receipts —
 writes the private seeds mode `0600`, and records the public halves in `.vfy/keys/trust.json`. The
 two registries stay separate: a system that rotates one need not rotate the other.
@@ -28,7 +34,12 @@ validity interval, and a single-use nonce. Verification recomputes every binding
 in hand and **recomputes the evaluation**, requiring it to match the supplied result and to be
 ALLOW. A signature alone establishes nothing about what the bytes describe.
 
-Expiry is exclusive: valid while `now < expires_at`.
+Expiry is exclusive: valid while `now < expires_at`, and it bounds when an authorization may be
+**consumed**. Because `vfy run` issues and consumes at one instant, that check never fires there;
+it exists for an authorization presented later, which this CLI does not yet offer. **Replay does
+not consult it at all** — replay spends nothing, and a receipt that verified yesterday must verify
+today. Everything else about a recorded authorization is still re-checked on replay: signature, key
+identity and status, all three digest bindings, the runtime binding, and the recomputed ALLOW.
 
 ## Single use, and the gap it cannot close
 
@@ -89,12 +100,22 @@ a process follows symlinks by definition.
 **No HTTP.** A rulebook may declare it; nothing is acquired, no socket is opened, and nothing is
 fabricated. The item is recorded as missing and the rulebook holds.
 
+**`vfy check` acquires evidence too.** A preview runs steps 1 to 4 of the chain, and acquisition is
+step 3, so an `exec` declaration means a local child process under `check` exactly as under `run`.
+What `check` never starts is the candidate's own action. Read a rulebook's `evidence` block before
+running `check` against it, on the same footing as `run`.
+
 ## The determinism boundary
 
 Evaluation is a pure function of the pinned rulebook, the candidate, and the frozen snapshot. It
 reads no clock, no randomness, no environment, no filesystem, no network, no locale, and no
 timezone. Integers and canonical decimal strings only — never floating point — so no comparison
 depends on binary rounding.
+
+Its *cost* is bounded too, which matters because a rulebook's patterns are written by you while the
+values they run against are composed by whoever proposes the candidate: expression nesting is
+capped at a declared 64 across every recursive path, and `matches` runs in time bounded by the
+product of the pattern and value lengths rather than exponentially in the number of `*` segments.
 
 Time, key generation, and nonces live at the command-line edge and enter the trusted layers only
 as recorded values. The full suite passes under hostile hash seeds, locales, timezones, and

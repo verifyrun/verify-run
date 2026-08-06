@@ -1,0 +1,31 @@
+{
+  "note": "agent-guard has no ALLOW rule for shell commands, so a harmless one reaches the declared default. HOLD is the answer, and nothing runs.",
+  "template": "agent-guard",
+  "tree": {
+    "bin": {
+      "kind": "dir"
+    },
+    "bin/rm": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+      "mode": "0755"
+    },
+    "bin/ok.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+      "mode": "0755"
+    }
+  },
+  "argv": [
+    "bin/ok.sh"
+  ],
+  "identity": [],
+  "expected": {
+    "exit": 11,
+    "outcome": "HOLD",
+    "executed": false,
+    "receipts": 1,
+    "consumed": 0,
+    "replays": true
+  }
+}

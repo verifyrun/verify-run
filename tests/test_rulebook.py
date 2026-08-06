@@ -23,7 +23,12 @@ TEMPLATES = REPO_ROOT / "templates"
 
 # Frozen in Closure Unit 3A; this unit must not move them.
 TEMPLATE_DIGESTS = {
-    "agent-guard.yaml": "sha256:dfaeec83d2c67e3c56e0efc330a801edf727dcc0269c2325f81e80e87c8784aa",
+    # agent-guard changed in 0.1.0a2: its destructive-command rule compared bare program names,
+    # which `vfy run` never emits, so the rule could not fire on a gated command. A template is a
+    # versioned starting point, not a signed artifact — receipts record the digest that governed
+    # them, and every 0.1.0a1 receipt still replays against the rulebook stored beside it.
+    # 0.1.0a1 was sha256:dfaeec83d2c67e3c56e0efc330a801edf727dcc0269c2325f81e80e87c8784aa.
+    "agent-guard.yaml": "sha256:0a911c0ab2e7224b8a73fc20eb9947061f506fab5301d67304f8d3d11b72131e",
     "pipeline-gate.yaml": "sha256:eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
     "claims-gate.yaml": "sha256:623eb952567e387fa8f713c9a70a12de9764d2a05e6cb5a528998f4336aba922",
 }

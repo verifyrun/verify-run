@@ -515,8 +515,12 @@ def check(workspace, candidate_path, clock):
                         "acquire" % (identifier, source) for identifier, source in unsupported))
 
 
-def replay(workspace, receipt_path, clock):
-    """Through LocalStore.get_record, which re-verifies and replays. No shortcut here."""
+def replay(workspace, receipt_path):
+    """Through LocalStore.get_record, which re-verifies and replays. No shortcut here.
+
+    No clock is read. Replay recomputes a decision from recorded inputs, and every input it needs
+    is on disk; a receipt that verified yesterday verifies today.
+    """
     store = workspace.store()
     path = Path(receipt_path)
     expected = (workspace.vfy / "receipts").resolve()
@@ -527,8 +531,7 @@ def replay(workspace, receipt_path, clock):
     trust = load_trust(workspace)
     return store.get_record(resolved.stem, receipt_keys=trust["receipt"],
                             registry=workspace.registry,
-                            authorization_keys=trust["authorization"],
-                            verification_time=clock.now_utc())
+                            authorization_keys=trust["authorization"])
 
 
 def list_receipts(workspace):

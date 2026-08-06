@@ -6,8 +6,11 @@ track: [workspace]
 evidence:
   - {id: approvals, source: file, ref: .vfy/approvals.json, max_age_seconds: 86400, required: false}
 rules:
+  # `vfy run` resolves argv[0] to a path before the candidate is built (spec/cli.md), so a rule
+  # that only compared bare names would never fire on a gated command. Both shapes are matched:
+  # the bare name a hand-composed candidate may carry, and the resolved path a run always does.
   - id: no-destructive-shell
-    when: 'candidate.action.argv[0] in ["rm","mkfs","dd","shutdown"] or matches(candidate.action.summary, "*rm -rf*")'
+    when: 'candidate.action.argv[0] in ["rm","mkfs","dd","shutdown"] or matches(candidate.action.argv[0], "*/rm") or matches(candidate.action.argv[0], "*/mkfs") or matches(candidate.action.argv[0], "*/dd") or matches(candidate.action.argv[0], "*/shutdown") or matches(candidate.action.summary, "*rm -rf*")'
     outcome: BLOCK
     reason: Destructive shell commands are never allowed.
   - id: write-inside-workspace

@@ -1,0 +1,32 @@
+{
+  "note": "A bare name is resolved along the workspace search path into an absolute path before the candidate is digested; the rule must still fire on that absolute form.",
+  "template": "agent-guard",
+  "tree": {
+    "bin": {
+      "kind": "dir"
+    },
+    "bin/rm": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+      "mode": "0755"
+    },
+    "bin/ok.sh": {
+      "kind": "file",
+      "bytes_base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+      "mode": "0755"
+    }
+  },
+  "argv": [
+    "rm"
+  ],
+  "identity": [],
+  "expected": {
+    "exit": 10,
+    "outcome": "BLOCK",
+    "matched_rule": "no-destructive-shell",
+    "executed": false,
+    "receipts": 1,
+    "consumed": 0,
+    "replays": true
+  }
+}

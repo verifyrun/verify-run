@@ -72,9 +72,15 @@ def parse_expression(source):
     tree = parser.parse()
     referenced = []
     _collect_evidence_ids(tree, referenced)
+    canonical = canon.canonicalize(tree)
+    # The parsed form is a document like every other, and `ast()` reloads it through the strict
+    # loader on every evaluation. Proving it round-trips here means an accepted expression is
+    # always a usable one: the alternative is a parse that succeeds and a rule that fails later,
+    # inside the evaluator, on the loader's depth bound.
+    load.load_json_bytes(canonical.encode("utf-8"))
     return ParsedExpression(
         source=source,
-        canonical=canon.canonicalize(tree),
+        canonical=canonical,
         evidence_ids=tuple(referenced),
     )
 
@@ -437,23 +443,33 @@ class _Parser:
             self.position += 1
 
     def _list_literal(self):
+        # A list holds lists, so this is a recursive path like the parenthesis one and carries
+        # the same declared bound. Without it the host's recursion limit — mutable, and different
+        # on different machines — would decide whether a rulebook is accepted.
+        if self.nesting >= MAX_NESTING:
+            self._fail("Expression nests deeper than the declared maximum of %d." % MAX_NESTING,
+                       "expression")
         self._take_symbol("[", "opening bracket")
-        members = []
-        self._skip_whitespace()
-        if self._peek_symbol("]"):
-            self.position += 1
-            return members
-        while True:
-            members.append(self._list_member())
+        self.nesting += 1
+        try:
+            members = []
             self._skip_whitespace()
-            if self._peek_symbol(","):
+            if self._peek_symbol("]"):
                 self.position += 1
+                return members
+            while True:
+                members.append(self._list_member())
                 self._skip_whitespace()
-                if self._peek_symbol("]"):
-                    self._fail("A trailing comma is not permitted in a list.", "literal")
-                continue
-            self._take_symbol("]", "closing bracket or comma")
-            return members
+                if self._peek_symbol(","):
+                    self.position += 1
+                    self._skip_whitespace()
+                    if self._peek_symbol("]"):
+                        self._fail("A trailing comma is not permitted in a list.", "literal")
+                    continue
+                self._take_symbol("]", "closing bracket or comma")
+                return members
+        finally:
+            self.nesting -= 1
 
     def _list_member(self):
         self._skip_whitespace()

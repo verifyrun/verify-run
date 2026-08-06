@@ -4,7 +4,7 @@ A step is marked done only when it has actually been performed. Nothing below is
 
 ## Ready
 
-- [x] Version `0.1.0a1`, one authoritative source, asserted by test.
+- [x] Version `0.1.0a2`, one authoritative source, asserted by test.
 - [x] License decided (Apache-2.0), `LICENSE` and `NOTICE` present, declared in metadata.
 - [x] Full suite passing, including under hostile locale, timezone, hash-seed, and UTF-8 settings.
 - [x] Vocabulary gate committed and running in the suite.
@@ -33,7 +33,7 @@ A step is marked done only when it has actually been performed. Nothing below is
 - [ ] **TestPyPI upload** and an install from it into a clean environment.
 - [ ] **Real PyPI upload.** Prefer a trusted-publisher configuration over a long-lived token; if a
       token is used it belongs in a repository secret and never in the workflow file.
-- [ ] **Tag** `v0.1.0a1` after the commit exists.
+- [ ] **Tag** `v0.1.0a2` after the commit exists.
 - [ ] **Set repository visibility** deliberately — public alpha or private release candidate.
 - [ ] Verify the CI matrix actually passes on 3.11, 3.12, and 3.13; it has only been reasoned
       about locally, since only 3.14 is installed on the development machine.

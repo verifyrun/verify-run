@@ -16,7 +16,7 @@ vault, fleet, `watch`, `serve`, login, billing, browser interface, robotics devi
 runtime, and generalized plugins.
 
 ## Version
-`0.1.0a1`, PEP 440. One authoritative source: `vfy/__init__.py.__version__`, which
+`0.1.0a2`, PEP 440. One authoritative source: `vfy/__init__.py.__version__`, which
 `pyproject.toml` and `vfy --version` must agree with. A test asserts all three.
 
 The package version and the artifacts' `spec_version` are different things and move

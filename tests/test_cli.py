@@ -815,3 +815,117 @@ class HelpAndVersion(unittest.TestCase):
                 with self.subTest(command=command):
                     code, out, _ = workspace.cli(command, "--help")
                     self.assertEqual(code, cli.EXIT_OK)
+
+
+class ReceiptsStayReplayableAsTimePasses(unittest.TestCase):
+    """Replay is historical recomputation, not a question about present authority.
+
+    spec/receipt-and-replay.md closed this hazard once already, for keys: "If retiring a key made
+    its historical receipts unverifiable, replay would fail exactly when it matters most." An
+    authorization's validity interval bounds when it may be *spent*. Replay spends nothing, so
+    asking whether it is still spendable now would make every ALLOW receipt expire out of the
+    guarantee `CLAUDE.md` states as done: "`vfy replay` on any emitted receipt verifies
+    byte-identical."
+    """
+
+    LONG_AFTER = "2027-01-01T00:00:00Z"          # far past every template's ttl_seconds
+
+    def _allow_workspace(self):
+        case = _case(CLI_DIR / "run_allow_exit_zero.json")
+        workspace = _Workspace(tree=case["tree"], template=case["template"])
+        code, out, err = workspace.cli("run", "--identity", "branch=main", "--", "bin/ok.sh")
+        assert code == 0, out + err
+        return workspace
+
+    def test_an_allow_receipt_replays_long_after_its_authorization_ttl(self):
+        with self._allow_workspace() as workspace:
+            receipt = workspace.receipts()[0]
+            code, out, err = workspace.cli("replay", str(receipt), clock=self.LONG_AFTER)
+            self.assertEqual(code, 0, err)
+            self.assertIn("ALLOW", out)
+            self.assertIn("recomputed and identical", out)
+
+    def test_receipts_show_still_works_long_after_the_ttl(self):
+        with self._allow_workspace() as workspace:
+            receipt_id = workspace.receipts()[0].stem
+            code, out, err = workspace.cli("receipts", "show", receipt_id,
+                                           clock=self.LONG_AFTER)
+            self.assertEqual(code, 0, err)
+            self.assertIn("ALLOW", out)
+
+    def test_the_recorded_authorization_is_still_cross_checked(self):
+        """Dropping the expiry question must not drop the bindings with it."""
+        with self._allow_workspace() as workspace:
+            receipt = workspace.receipts()[0]
+            inputs = receipt.parent / (receipt.stem + ".inputs")
+            authorization = load.load_json_bytes((inputs / "authorization.json").read_bytes())
+            authorization["action_digest"] = "sha256:" + "0" * 64
+            (inputs / "authorization.json").write_bytes(canon.canonical_bytes(authorization))
+            code, _, err = workspace.cli("replay", str(receipt), clock=self.LONG_AFTER)
+            self.assertNotEqual(code, 0, "a mismatched authorization must still be refused")
+
+    def test_a_block_receipt_was_never_affected(self):
+        case = _case(CLI_DIR / "run_agent_guard_blocks_destructive.json")
+        with _Workspace(tree=case["tree"], template=case["template"]) as workspace:
+            workspace.cli("run", "--", *case["argv"])
+            code, out, _ = workspace.cli("replay", str(workspace.receipts()[0]),
+                                         clock=self.LONG_AFTER)
+            self.assertEqual(code, 10)
+            self.assertIn("BLOCK", out)
+
+
+class CorruptHistoryDoesNotFailALaterRun(unittest.TestCase):
+    """One unreadable historical receipt is a cache problem, not this run's problem.
+
+    docs/security.md: the index "can never make a committed record look absent". The run below
+    executes, consumes its nonce, and commits a complete record; reporting that as a recording
+    failure would tell an operator to go looking for a receipt that is already on disk.
+    """
+
+    def _corrupt(self, path):
+        path.write_bytes(b'{"receipt_id": "r-0",   "not": "canonical"}')
+
+    def test_a_later_run_succeeds_and_commits_its_record(self):
+        case = _case(CLI_DIR / "run_allow_exit_zero.json")
+        with _Workspace(tree=case["tree"], template=case["template"]) as workspace:
+            workspace.cli("run", "--identity", "branch=main", "--", "bin/ok.sh")
+            self._corrupt(workspace.receipts()[0])
+
+            code, out, err = workspace.cli("run", "--identity", "branch=main", "--", "bin/ok.sh")
+            self.assertEqual(code, 0, out + err)
+            self.assertNotIn("could not be written", err)
+            self.assertEqual(len(workspace.receipts()), 2)
+
+            fresh = [p for p in workspace.receipts() if b"not" not in p.read_bytes()]
+            self.assertEqual(len(fresh), 1)
+            replay_code, replay_out, _ = workspace.cli("replay", str(fresh[0]))
+            self.assertEqual(replay_code, 0)
+            self.assertIn("recomputed and identical", replay_out)
+
+    def test_the_listing_still_refuses_visibly(self):
+        """Tolerating the cache failure must not turn into serving the corrupt record.
+
+        A listing answers from the index while it names exactly the committed set — corrupting a
+        record's bytes out of band does not change which names are committed, and the store still
+        refuses to hand those bytes to anyone. Once a second record makes the cache disagree, the
+        records govern, and the unreadable one is named rather than skipped.
+        """
+        case = _case(CLI_DIR / "run_allow_exit_zero.json")
+        with _Workspace(tree=case["tree"], template=case["template"]) as workspace:
+            workspace.cli("run", "--identity", "branch=main", "--", "bin/ok.sh")
+            self._corrupt(workspace.receipts()[0])
+            workspace.cli("run", "--identity", "branch=main", "--", "bin/ok.sh")
+            code, _, err = workspace.cli("receipts", "list")
+            self.assertEqual(code, 1)
+            self.assertIn("store_artifact_noncanonical", err)
+
+    def test_the_corrupt_record_is_never_served(self):
+        case = _case(CLI_DIR / "run_allow_exit_zero.json")
+        with _Workspace(tree=case["tree"], template=case["template"]) as workspace:
+            workspace.cli("run", "--identity", "branch=main", "--", "bin/ok.sh")
+            corrupt = workspace.receipts()[0]
+            self._corrupt(corrupt)
+            code, _, err = workspace.cli("replay", str(corrupt))
+            self.assertEqual(code, 1)
+            self.assertIn("store_artifact_noncanonical", err)
+            self.assertTrue(corrupt.exists(), "a corrupt artifact is never silently deleted")

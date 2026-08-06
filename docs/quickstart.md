@@ -10,7 +10,7 @@ vfy --version
 ```
 
 ```
-verify-run 0.1.0a1
+verify-run 0.1.0a2
 ```
 
 ## 2. Create a workspace

@@ -919,3 +919,49 @@ class IndexIsSubordinate(StoreTestCase):
         (self.root / "index.json").write_bytes(canon.canonical_bytes(value))
         self.assertEqual([s.receipt_id for s in self.store.list_receipts()], ["r-1"],
                          "the index named a record that does not exist")
+
+
+class CorruptHistoryDoesNotRevokeACommit(StoreTestCase):
+    """A corrupt historical record is a cache-maintenance problem, never a commit failure.
+
+    spec/local-store.md: "Index maintenance may not revoke a commit ... `put_record` returns the
+    committed record." The refresh scans every committed receipt, so one unreadable historical
+    file must not travel back onto an unrelated record that has already been renamed into place.
+    """
+
+    def _corrupt_a_committed_receipt(self, receipt_id):
+        path = self.root / "receipts" / (receipt_id + ".json")
+        # Valid JSON, deliberately not the canonical bytes: exactly what `_load_canonical` refuses.
+        path.write_bytes(b'{"receipt_id": "r-1",   "not": "canonical"}')
+
+    def test_put_record_succeeds_when_an_unrelated_record_is_corrupt(self):
+        self.build(receipt_id="r-1").put(self.store)
+        self._corrupt_a_committed_receipt("r-1")
+        second = self.build(fixture="accept_hold_decision.json", receipt_id="r-2")
+        stored = second.put(self.store)                     # must not raise
+        self.assertEqual(stored.receipt_id, "r-2")
+        self.assertTrue((self.root / "receipts" / "r-2.json").exists())
+        self.assertTrue((self.root / "receipts" / "r-2.inputs").is_dir())
+
+    def test_the_corrupt_record_is_still_refused_and_still_present(self):
+        self.build(receipt_id="r-1").put(self.store)
+        self._corrupt_a_committed_receipt("r-1")
+        self.build(fixture="accept_hold_decision.json", receipt_id="r-2").put(self.store)
+        with self.assertRaises(VerifyError) as refusal:
+            self.store.get_record("r-1", verify=False)
+        self.assertEqual(refusal.exception.code, "store_artifact_noncanonical")
+        self.assertTrue((self.root / "receipts" / "r-1.json").exists(),
+                        "a corrupt artifact is never silently deleted")
+
+    def test_a_listing_refuses_visibly_rather_than_trusting_the_corrupt_record(self):
+        """Once the index disagrees, the records govern — and one of them is unreadable.
+
+        A listing must not answer from a cache it has just been told is incomplete, and it must
+        not present a corrupt artifact as a record. Refusing names the repair.
+        """
+        self.build(receipt_id="r-1").put(self.store)
+        self._corrupt_a_committed_receipt("r-1")
+        self.build(fixture="accept_hold_decision.json", receipt_id="r-2").put(self.store)
+        with self.assertRaises(VerifyError) as refusal:
+            self.store.list_receipts()
+        self.assertEqual(refusal.exception.code, "store_artifact_noncanonical")

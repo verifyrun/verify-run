@@ -1,0 +1,22 @@
+{
+  "note": "The template's ALLOW path is a tool_call, which `vfy run` never composes; a hand-written candidate reaches it through `check`.",
+  "template": "agent-guard",
+  "candidate": {
+    "candidate_id": "c-agent-guard-allow",
+    "kind": "tool_call",
+    "action": {
+      "summary": "write ./workspace/notes.md",
+      "tool": "write_file",
+      "params": {
+        "path": "./workspace/notes.md"
+      }
+    }
+  },
+  "expected": {
+    "exit": 0,
+    "outcome": "ALLOW",
+    "matched_rule": "write-inside-workspace",
+    "receipts": 0,
+    "consumed": 0
+  }
+}

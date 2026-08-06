@@ -506,3 +506,42 @@ class ExceptionContainment(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class OnePublicKeyIsOneIdentity(unittest.TestCase):
+    """`alg`, `key_id`, and `key_version` sit outside the signed bytes.
+
+    spec/authorization.md argues that is safe because "substituting a different `key_id` makes
+    verification look up a different key, under which the signature does not verify". That holds
+    only while one public key carries one identity. Registering the same key twice makes the
+    substitution look up the *same* key, so the relabelled artifact verifies under an identity
+    that never signed it — and per-identity retirement stops meaning anything.
+    """
+
+    def test_the_same_public_key_under_two_identities_is_refused(self):
+        public = Ed25519PrivateKey.from_private_bytes(SEED_A).public_key().public_bytes_raw()
+        with self.assertRaises(VerifyError) as refusal:
+            authorization.build_key_registry([
+                {"key_id": "signing-identity", "key_version": 1, "public_key": public},
+                {"key_id": "another-identity", "key_version": 1, "public_key": public},
+            ])
+        self.assertEqual(refusal.exception.code, "signing_key_invalid")
+
+    def test_retirement_cannot_be_escaped_by_relabelling(self):
+        public = Ed25519PrivateKey.from_private_bytes(SEED_A).public_key().public_bytes_raw()
+        with self.assertRaises(VerifyError):
+            authorization.build_key_registry([
+                {"key_id": "retired-identity", "key_version": 1,
+                 "public_key": public, "status": "retired"},
+                {"key_id": "active-identity", "key_version": 1,
+                 "public_key": public, "status": "active"},
+            ])
+
+    def test_distinct_keys_and_distinct_versions_are_still_accepted(self):
+        first = Ed25519PrivateKey.from_private_bytes(SEED_A).public_key().public_bytes_raw()
+        second = Ed25519PrivateKey.from_private_bytes(SEED_B).public_key().public_bytes_raw()
+        registry = authorization.build_key_registry([
+            {"key_id": "k", "key_version": 1, "public_key": first},
+            {"key_id": "k", "key_version": 2, "public_key": second},
+        ])
+        self.assertEqual(sorted(registry), [("k", 1), ("k", 2)])

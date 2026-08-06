@@ -5,6 +5,7 @@ import dataclasses
 import itertools
 import json
 import pathlib
+import time
 import unittest
 
 from vfy import canon, gate, load, rulebook, schema
@@ -536,3 +537,80 @@ class NoWallClockOrFloat(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class GlobMatchingIsBoundedWork(unittest.TestCase):
+    """`matches` is reachable from candidate values an adversary controls.
+
+    The matcher's result is fixed by spec/expression-language.md; only its cost is at issue here.
+    A backtracking walk with no memo is exponential in the number of `*` segments, so a short
+    operator-authored pattern and a short attacker-supplied value can stall the evaluator.
+    """
+
+    PATHOLOGICAL = (
+        ("*a" * 8 + "ZZZ", "a" * 200),
+        ("*" * 6 + "z", "a" * 400),
+        ("*[ab]" * 8 + "c", "ab" * 100),
+        ("*a" * 14 + "b", "a" * 28),
+    )
+
+    def test_pathological_pattern_and_value_pairs_complete_promptly(self):
+        for pattern, text in self.PATHOLOGICAL:
+            with self.subTest(pattern=pattern[:24], value_length=len(text)):
+                started = time.perf_counter()
+                self.assertFalse(gate._glob(pattern, text))
+                # Six orders of magnitude of headroom: the unbounded walk does not finish at all.
+                self.assertLess(time.perf_counter() - started, 5.0)
+
+    def test_results_are_unchanged_for_every_declared_shape(self):
+        """Exhaustive differential check that only cost changed, never an answer."""
+        alphabet = "ab"
+        patterns = ["", "*", "?", "a", "*a", "a*", "*a*", "??", "[ab]", "[!a]", "a?b",
+                    "**", "*?*", "[a-b]", "*[ab]*", "a*b", "[]a]", "[", "*a*b*"]
+        values = [""] + ["".join(p) for n in range(1, 5)
+                         for p in itertools.product(alphabet, repeat=n)]
+        expected = {
+            (pattern, value): _reference_glob(pattern, value)
+            for pattern in patterns for value in values}
+        for (pattern, value), answer in expected.items():
+            with self.subTest(pattern=pattern, value=value):
+                self.assertEqual(gate._glob(pattern, value), answer)
+
+
+def _reference_glob(pattern, text):
+    """The released 0.1.0a1 matcher, kept verbatim as the semantic reference."""
+    return _reference_from(pattern, 0, text, 0)
+
+
+def _reference_from(pattern, p, text, t):
+    while p < len(pattern):
+        character = pattern[p]
+        if character == "*":
+            for skip in range(t, len(text) + 1):
+                if _reference_from(pattern, p + 1, text, skip):
+                    return True
+            return False
+        if t >= len(text):
+            return False
+        if character == "?":
+            p += 1
+            t += 1
+            continue
+        if character == "[":
+            end = gate._class_end(pattern, p)
+            if end is None:
+                if text[t] != "[":
+                    return False
+                p += 1
+                t += 1
+                continue
+            if not gate._in_class(pattern[p + 1:end], text[t]):
+                return False
+            p = end + 1
+            t += 1
+            continue
+        if text[t] != character:
+            return False
+        p += 1
+        t += 1
+    return t == len(text)

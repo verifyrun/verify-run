@@ -26,6 +26,7 @@ from vfy.errors import (
     StoreRecordConflict,
     StoreRecordIncomplete,
     StoreRecordMissing,
+    VerifyError,
 )
 
 STORE_FORMAT_VERSION = 1
@@ -377,13 +378,18 @@ class LocalStore:
     def _refresh_index(self):
         """Rebuild the cache from the committed records, tolerating its own failure.
 
-        A committed record must never be reported as uncommitted because a cache write raced or
-        a disk filled, so nothing here propagates. A stale cache is corrected by the next
-        listing, which reconciles against the records.
+        A committed record must never be reported as uncommitted because a cache write raced, a
+        disk filled, or an unrelated historical record turned out to be unreadable, so nothing
+        here propagates. The refresh reads every committed receipt, which means it can fail for a
+        reason that has nothing to do with the record just written — and a `VerifyError` from
+        that scan travelling outward would revoke a commit the rename already made, which
+        `spec/local-store.md` forbids. A stale cache is corrected by the next listing, which
+        reconciles against the records; a corrupt record stays present and is still refused
+        there, by name.
         """
         try:
             self._write_index(self._summaries_from_records())
-        except OSError:
+        except (OSError, VerifyError):
             pass
 
     def _write_index(self, summaries):

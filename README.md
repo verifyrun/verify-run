@@ -108,13 +108,15 @@ merging them is how a gate starts silently guessing.
 
 ```
 vfy init      create a workspace from a template
-vfy check     evaluate a candidate without executing anything
+vfy check     evaluate a candidate without running it (evidence is still acquired)
 vfy run       gate a command
 vfy replay    verify and recompute a stored decision
 vfy receipts  list, or show one with verification and replay
 ```
 
-`check` is a preview: it reaches a decision and writes nothing. `run` is the governed path — it
+`check` is a preview: it reaches a decision and writes nothing. It does acquire the evidence the
+rulebook declares, which for an `exec` declaration means running that evidence command — it is the
+candidate's own action that never starts. `run` is the governed path — it
 evaluates, and on ALLOW it issues a single-use authorization bound to that exact command, consumes
 it, launches, records what happened, signs a receipt, and stores everything replay needs.
 
@@ -209,8 +211,9 @@ and `fixtures/` holds the golden vectors; implementations conform to them, never
 
 ## Alpha status
 
-Version `0.1.0a1`. The decision semantics, canonical form, and receipt format are frozen and
-covered by golden vectors. The command surface is the five commands above. Interfaces may still
+Version `0.1.0a2`. The decision semantics, canonical form, and receipt format are frozen and
+covered by golden vectors — `0.1.0a2` changed none of them, and every `0.1.0a1` receipt still
+verifies and replays. The command surface is the five commands above. Interfaces may still
 change before 1.0; recorded artifacts carry a `spec_version` so a future change cannot silently
 reinterpret an old receipt.
 

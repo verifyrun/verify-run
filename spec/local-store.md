@@ -123,6 +123,14 @@ which the implementation failed until this was written down:
   maintenance follows it, so a failure there is a cache failure, not the record's. `put_record`
   returns the committed record. This is not error suppression: nothing about the committed
   artifact is concealed, and the next listing corrects the cache from the records.
+  The refresh reads **every** committed receipt, so it can fail for a reason belonging to some
+  other record entirely — a historical file that is unreadable or not canonical. That failure is
+  a cache failure too, and since 0.1.0a2 it is tolerated like any other rather than travelling
+  outward onto the record just written. It previously did travel: an unrelated corrupt artifact
+  made a run that had executed, consumed its nonce, and committed a complete record report
+  `execution_recording_failed`, sending an operator to look for a receipt already on disk. The
+  corrupt artifact is still never deleted, still refused by name on any attempt to load it, and
+  still refused by a listing once the index disagrees with the records.
 - **Concurrent writers do not publish over each other.** Every index write stages at
   `index.<n>.staging`, a slot found by the same exclusive creation used elsewhere here, so two
   callers committing different records never rename each other's file. One shared staging name

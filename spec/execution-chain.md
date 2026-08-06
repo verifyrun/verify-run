@@ -18,9 +18,16 @@ The pinned rulebook's full rule list governs the run. v1 has no candidate-sensit
 selection. If selection is ever added, it must be resolved and pinned here — before evidence is
 frozen — and recorded in the receipt, so that replay selects the same rules from the same inputs.
 
-`track` names the identity fields the receipt binds. A track field absent from the candidate's
-`identity` is not an error: it resolves as `absent` (spec/rulebook-language.md), and the binding
-records that it was absent.
+`track` **declares** the identity fields a rulebook is written about. In v1 it is documentation
+for the reader and nothing else: it is schema-validated and then never consulted — not to require a
+field, not to reject an undeclared one, and not to record an absence.
+
+What the receipt binds is the candidate, whole, through `candidate_digest`. Every `identity` value
+present is inside that digest whether or not `track` names it, and a track field absent from
+`identity` is not an error: it resolves as `absent` (spec/rulebook-language.md), so a rule that
+needs it simply cannot settle and the run holds. Giving `track` executable force — requiring its
+fields, or refusing others — would be a new rule about which candidates are admissible, and that
+belongs to a version that states it deliberately.
 
 ## 3. Evidence frozen
 Acquire, then freeze. Validate against spec/evidence.schema.json → ERROR

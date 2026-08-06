@@ -81,6 +81,29 @@ Every digest a receipt carries is recomputed at verification, never read and tru
   `rulebook_digest`, and `evidence_digest` must equal the receipt's three — so a mismatched
   authorization is caught by content and not merely by name.
 
+### Replay does not ask whether the authorization is still spendable
+    receipt_version: 1 — clarified in 0.1.0a2; no artifact and no signed byte changed.
+
+An authorization's validity interval bounds when it may be **consumed**. Replay consumes nothing.
+So replay checks the interval for internal consistency — issued at or after the freeze, expiring
+after it was issued — and does **not** compare it against the present clock.
+
+The alternative was measured, not imagined: checking `now` against `expires_at` during replay made
+every ALLOW receipt stop replaying `ttl_seconds` after it was written, which for the shipped
+templates is two to ten minutes. BLOCK and HOLD receipts were unaffected because they reference no
+authorization, so precisely the records of actions that *happened* were the ones that expired out
+of the guarantee.
+
+This is the same failure the section below refuses for retired keys, arriving by a different road,
+and it is refused here for the same reason: `CLAUDE.md`'s definition of done says "`vfy replay` on
+**any emitted receipt** verifies byte-identical", and a receipt that verified yesterday must verify
+today. Every other authorization check is unchanged — signature, key identity and status, the three
+digest bindings, the runtime binding, and the recomputed ALLOW.
+
+A caller that genuinely wants "was this authorization valid at instant X" may still supply X.
+Nothing that spends an authorization may use the historical form; `runner.execute_authorized_command`
+always supplies the instant it is verifying for.
+
 A signature proves who produced the bytes. It proves nothing about whether those bytes describe
 the objects in front of you, and **a signed mismatch is still invalid**.
 

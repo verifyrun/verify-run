@@ -129,7 +129,14 @@ Steps 1 to 4 of `spec/execution-chain.md`, and then it stops.
 
 It strict-loads the candidate, pins the rulebook, acquires the declared local evidence, freezes a
 snapshot, evaluates, and prints the decision. It **issues no authorization, consumes no nonce,
-starts no process, and writes no receipt.**
+never starts the candidate's action, and writes no receipt.**
+
+Said exactly, because the convenient phrasing is false: **acquiring evidence is not free of side
+effects.** Steps 1 to 4 include acquisition, and an `exec` evidence declaration is a local child
+process by definition — so `vfy check` does run the evidence commands the rulebook declares, with
+the same empty environment and bounded output as `vfy run`. What it never does is start the
+candidate's own action. "Executes nothing" would be a claim about subprocesses that this command
+cannot make; "never executes the candidate" is the claim it can.
 
 That last one is a decision worth stating rather than assuming. `spec/execution-chain.md` says
 every decision emits a receipt — of a *governed run*. A check is a preview: nothing was
@@ -242,8 +249,10 @@ A receipt path outside the workspace store, or one whose id is not storable, is 
 a trust registry that is not this workspace's, which is a decision this unit does not have to make
 to ship.
 
-Replay executes nothing, acquires nothing, opens no socket, and reads no clock beyond the instant
-it must supply to check a referenced authorization's validity interval.
+Replay executes nothing, acquires nothing, opens no socket, and **reads no clock at all**. Every
+input it needs is on disk. A referenced authorization is still cross-checked by content and by
+signature; what is not asked is whether it remains spendable now, because replay spends nothing —
+see `spec/receipt-and-replay.md`. This is why a receipt written months ago still replays.
 
 **Verification and replay are reported separately**, exactly as `spec/receipt-and-replay.md`
 requires: a receipt whose signature verifies but whose bodies are missing is reported as verified
@@ -327,6 +336,18 @@ timezone, no locale-dependent formatting, no floating-point arithmetic. UTC alwa
 `verification_time`, `acknowledged_at`, and the receipt's `created_at`. One run is one instant, so
 a run cannot be internally inconsistent about when it happened, and no clock is read between the
 freeze and the launch where a slow disk could make evidence look stale.
+
+Two consequences follow from that, and both are properties of this design rather than accidents:
+
+- **`acknowledged_at` is the instant the run began, not the instant the command finished.** A
+  command that runs for an hour is acknowledged at the same instant its evidence was frozen. The
+  acknowledgment records *that* the runtime reported back, and the receipt is not a duration
+  measurement; a caller that needs elapsed time measures it around the call.
+- **An authorization issued and verified at one instant cannot expire between the two.** `vfy run`
+  therefore never reaches `authorization_expired`. `ttl_seconds` bounds a *stored* authorization
+  presented later — which is a shape this CLI does not yet offer — so within `vfy run` it is
+  carried into the artifact and does not gate anything. `vfy replay` does not consult it at all
+  (`spec/receipt-and-replay.md`).
 
 **Only `vfy/cli.py` and `vfy/workflow.py` may hold a clock.** Nothing below imports one, and the
 tests inject a fixed instant so no test result depends on the current time.

@@ -58,7 +58,7 @@ As declared in `spec/rulebook-language.md`, with nothing added:
     literal     := string | integer | true | false | list
     list        := "[" [ literal { "," literal } ] "]"
 
-Parenthesis nesting is bounded at **64**, the same number `spec/document-loading.md` declares for
+Nesting is bounded at **64**, the same number `spec/document-loading.md` declares for
 source depth. A deeper expression is refused with `expression_parse_error` rather than exhausting
 the host stack, whose limit is mutable and would otherwise let the same text parse on one machine
 and fail on another.
@@ -181,3 +181,28 @@ instance data beyond the token.
 
 A static failure carries `code` and the same location where one applies, plus the offending
 evidence id or function name. No raw lexer or parser exception ever reaches a caller.
+
+
+## Declared bounds
+    expression_parser_version: 1 — bounds stated explicitly in 0.1.0a2; no accepted expression
+    changed meaning.
+
+A rulebook is written by an operator; the values an expression is evaluated against are composed by
+whoever proposes the candidate. So the cost of parsing and of matching are both part of the
+contract, and neither may depend on the host.
+
+**Nesting — every recursive path, one number.** The bound of 64 applies to parentheses *and* to
+list literals, which nest through `[ [ ] ]` and are the other recursive production in the grammar.
+Before 0.1.0a2 only parentheses were counted, so a deeply nested list was accepted or refused
+according to `sys.setrecursionlimit` — a mutable host setting deciding whether a declared input
+class is admissible, which is exactly what a bound exists to prevent. A parsed expression is also
+required to reload through the strict loader, so an accepted expression is always a usable one
+rather than one that fails later inside the evaluator on the loader's own depth bound. Refusals are
+`expression_parse_error` or `source_too_deep`; a `RecursionError` never crosses the boundary.
+
+**Matching — bounded by the product of the lengths.** `matches` walks the pattern and the value
+iteratively, and its cost is bounded by `|pattern| x |value|`. The natural recursive reading of
+`*` — try every split — is exponential in the number of `*` segments, and both operands are
+reachable from a candidate an adversary composes: measured on the released 0.1.0a1 matcher, an
+eleven-character pattern with four stars against a two-hundred-character value took over nine
+seconds, and a six-star pattern did not finish. Results are unchanged; only the cost is.

@@ -338,42 +338,56 @@ def _compare_numeric(left, right):
 # --- portable glob ----------------------------------------------------------------------------
 
 def _glob(pattern, text):
-    """Whole-string, case-sensitive glob. Implemented directly: no regex, no platform fnmatch."""
-    return _glob_from(pattern, 0, text, 0)
+    """Whole-string, case-sensitive glob. Implemented directly: no regex, no platform fnmatch.
+
+    Iterative, and bounded by |pattern| x |text|. The obvious recursive form — try every split at
+    every `*` — is exponential in the number of `*` segments, and both operands are reachable
+    from a candidate an adversary composes, so a short rulebook pattern and a short argv could
+    stall the evaluator. Every element other than `*` consumes exactly one character, so a walk
+    that remembers only the most recent `*` and the position it last resumed from explores every
+    split that can matter: an earlier `*` can always absorb what a later one gave up.
+
+    Being iterative also keeps the host's recursion limit out of a decision, exactly as the
+    canonicalizer's own hand-carried stack does.
+    """
+    position = consumed = 0
+    star = -1
+    resume = 0
+    while consumed < len(text):
+        step = _single(pattern, position, text[consumed]) if position < len(pattern) else None
+        if step is not None:
+            position = step
+            consumed += 1
+            continue
+        if position < len(pattern) and pattern[position] == "*":
+            star = position
+            resume = consumed
+            position += 1
+            continue
+        if star < 0:
+            return False
+        # Give the most recent `*` one more character and retry everything after it.
+        resume += 1
+        consumed = resume
+        position = star + 1
+    while position < len(pattern) and pattern[position] == "*":
+        position += 1
+    return position == len(pattern)
 
 
-def _glob_from(pattern, p, text, t):
-    while p < len(pattern):
-        character = pattern[p]
-        if character == "*":
-            for skip in range(t, len(text) + 1):
-                if _glob_from(pattern, p + 1, text, skip):
-                    return True
-            return False
-        if t >= len(text):
-            return False
-        if character == "?":
-            p += 1
-            t += 1
-            continue
-        if character == "[":
-            end = _class_end(pattern, p)
-            if end is None:            # an unclosed [ is a literal [
-                if text[t] != "[":
-                    return False
-                p += 1
-                t += 1
-                continue
-            if not _in_class(pattern[p + 1:end], text[t]):
-                return False
-            p = end + 1
-            t += 1
-            continue
-        if text[t] != character:
-            return False
-        p += 1
-        t += 1
-    return t == len(text)
+def _single(pattern, position, character):
+    """Return the next pattern position if the one element at `position` matches, else None."""
+    marker = pattern[position]
+    if marker == "*":
+        return None
+    if marker == "?":
+        return position + 1
+    if marker == "[":
+        end = _class_end(pattern, position)
+        if end is None:                # an unclosed [ is a literal [
+            return position + 1 if character == "[" else None
+        return end + 1 if _in_class(pattern[position + 1:end], character) else None
+    return position + 1 if character == marker else None
 
 
 def _class_end(pattern, start):
