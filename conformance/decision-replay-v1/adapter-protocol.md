@@ -28,6 +28,34 @@ Any language, any transport underneath.
 `accepted` is false for a refusal, and then `error_category` MUST name one of the profile's neutral
 categories and `implementation_reason` SHOULD carry the implementation's own code, unmapped.
 
+### `accepted` is not "the command exited zero"
+
+`accepted` means **the implementation took the artifact and produced a terminal**. A refusal is
+`accepted: false`. Reaching BLOCK or HOLD is `accepted: true` — those are terminals, not errors,
+and an adapter that treats them as refusals collapses two different observations into one and
+fails every negative fixture for the wrong reason.
+
+Most command-line implementations carry the terminal in the exit status, which means the mapping
+from exit status to `accepted` is implementation-specific and belongs in the adapter's declared
+table. For the reference implementation:
+
+| `vfy replay` exit | `accepted` | `terminal` |
+|---|---|---|
+| 0 | true | ALLOW |
+| 10 | true | BLOCK |
+| 11 | true | HOLD |
+| 1 | false | none — `error_category` from the reason code on stderr |
+
+`spec/cli.md` states this for the implementation; it is repeated here because getting it wrong is
+the most common way a new adapter produces a confident and meaningless result.
+
+### An adapter that cannot conduct a call
+
+An adapter that cannot run at all — no implementation installed, wrong interpreter, unreadable
+bundle — MUST NOT report that as a refusal. It emits `{"adapter_error": "<what went wrong>"}` in
+the envelope, and the runner records the run as INCOMPLETE rather than as a failure of the
+implementation. A run that did not happen is not a test that failed.
+
 ## What an adapter may and may not do
 
 An adapter **may** normalize transport shape: locate the implementation, lay a bundle out in

@@ -164,15 +164,16 @@ def write_stub(directory, name):
     return path
 
 
-def run_suite(adapter_command, out_path, profile=PROFILE, environment=None):
+def run_suite(adapter_command, out_path, profile=PROFILE, environment=None, adapter_args=None):
     env = dict(os.environ)
     env.pop("PYTHONPATH", None)
     if environment:
         env.update(environment)
+    selection = ["--adapter", adapter_command] if adapter_args is None else \
+        sum((["--adapter-arg", token] for token in adapter_args), [])
     completed = subprocess.run(
         [sys.executable, str(RUNNER), "--profile", str(profile),
-         "--adapter", adapter_command, "--out", str(out_path),
-         "--adapter-timeout", "5"],
+         "--out", str(out_path), "--adapter-timeout", "5"] + selection,
         capture_output=True, text=True, cwd=tempfile.gettempdir(), env=env, timeout=1200)
     document = None
     if Path(out_path).is_file():
@@ -237,6 +238,123 @@ class RunnerRefusesNonconformingImplementations(unittest.TestCase):
         if document is not None:
             self.assertNotIn("BEGIN PRIVATE KEY",
                              json.dumps(document), "secret material reached the result document")
+
+
+class SetupFailuresAreNotVerdicts(unittest.TestCase):
+    """A run that could not be conducted is INCOMPLETE. It is never FAIL.
+
+    FAIL is a statement about an implementation. An adapter that will not start, times out, or
+    does not speak the protocol says nothing whatever about the implementation behind it, and
+    thirty fixtures reported as errors used to add up to exactly that false statement.
+    """
+
+    def setUp(self):
+        self._directory = tempfile.TemporaryDirectory()
+        self.workspace = Path(self._directory.name)
+        self.addCleanup(self._directory.cleanup)
+
+    def _stub(self, body, name="stub.py", directory=None):
+        path = Path(directory or self.workspace) / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(body, encoding="utf-8")
+        return path
+
+    def _run(self, body, **over):
+        stub = self._stub(body)
+        return run_suite("%s %s" % (sys.executable, stub),
+                         self.workspace / "result.json", **over)
+
+    def test_an_adapter_that_is_not_there_is_a_runner_error_named_in_one_sentence(self):
+        completed, _ = run_suite(str(self.workspace / "absent") + " x",
+                                 self.workspace / "result.json")
+        self.assertEqual(completed.returncode, EXIT_RUNNER_ERROR)
+        self.assertIn("not runnable", completed.stderr)
+        self.assertIn("--adapter-arg", completed.stderr, "the remedy was not named")
+
+    def test_an_adapter_that_says_nothing_is_incomplete_not_failed(self):
+        completed, document = self._run("import sys\nsys.exit(1)\n")
+        self.assertEqual(completed.returncode, EXIT_INCOMPLETE)
+        self.assertEqual(document["overall"], "INCOMPLETE")
+        self.assertEqual(document["counts"]["failed"], 0,
+                         "a harness problem was counted as a failed fixture")
+        self.assertIn("could not be conducted", completed.stderr)
+
+    def test_an_adapter_that_declares_its_own_problem_is_incomplete_and_runs_nothing(self):
+        completed, document = self._run(
+            'import json, sys\n'
+            'sys.stdout.write(json.dumps({"adapter": "stub", "accepted": False,'
+            ' "adapter_error": "vfy is not installed in this environment"}))\n')
+        self.assertEqual(completed.returncode, EXIT_INCOMPLETE)
+        self.assertEqual(document["overall"], "INCOMPLETE")
+        self.assertEqual(document["fixtures"], [],
+                         "fixtures were run against an adapter that had already said it could not")
+        self.assertIn("vfy is not installed", completed.stderr)
+
+    def test_an_adapter_for_another_profile_is_incomplete_rather_than_measured(self):
+        completed, document = self._run(
+            'import json, sys\n'
+            'request = json.loads(sys.stdin.read())\n'
+            'sys.stdout.write(json.dumps({"adapter": "stub", "operation": '
+            'request.get("operation"), "accepted": True, "accepted_profiles": ["something-else"]}))\n')
+        self.assertEqual(completed.returncode, EXIT_INCOMPLETE)
+        self.assertEqual(document["fixtures"], [])
+        self.assertIn("something-else", completed.stderr)
+
+    def test_an_adapter_that_hangs_is_incomplete_not_failed(self):
+        completed, document = self._run("import time\ntime.sleep(600)\n")
+        self.assertEqual(completed.returncode, EXIT_INCOMPLETE)
+        self.assertEqual(document["overall"], "INCOMPLETE")
+
+    def test_a_leaked_secret_is_still_a_failure_and_not_a_setup_problem(self):
+        """The one carve-out: this is a real defect of the thing under test, not a harness fault."""
+        stub = write_stub(self.workspace, "leaks-private-key")
+        completed, document = run_suite("%s %s" % (sys.executable, stub),
+                                        self.workspace / "leak-result.json")
+        self.assertEqual(completed.returncode, EXIT_FAIL)
+        self.assertEqual(document["overall"], "FAIL")
+        self.assertNotIn("BEGIN PRIVATE KEY", json.dumps(document))
+
+    def test_a_path_with_spaces_survives_adapter_arg_and_would_not_survive_adapter(self):
+        directory = self.workspace / "my tools"
+        stub = self._stub(STUB_HEADER + "answer(honest())\n", "honest.py", directory)
+
+        completed, document = run_suite(None, self.workspace / "spaced-result.json",
+                                        adapter_args=[sys.executable, str(stub)])
+        self.assertEqual(completed.returncode, EXIT_PASS, completed.stdout + completed.stderr)
+        self.assertEqual(document["overall"], "PASS")
+
+        # The same command through the split form: the space ends a token, so the adapter is
+        # handed two nonexistent paths instead of one real one. It must not PASS, and it must not
+        # FAIL either — nothing was measured.
+        completed, _ = run_suite("%s %s" % (sys.executable, stub),
+                                 self.workspace / "split-result.json")
+        self.assertEqual(completed.returncode, EXIT_INCOMPLETE)
+        self.assertIn("could not be conducted", completed.stderr)
+
+    def test_the_runner_preflight_names_the_version_it_needs(self):
+        runner = _import_runner()
+        self.assertIsNone(runner.preflight((3, 12, 0)))
+        message = runner.preflight((3, 7, 0))
+        self.assertIn("3.8", message)
+        self.assertIn("3.7", message)
+
+    def test_the_adapter_preflight_names_the_distributions_own_floor(self):
+        completed = subprocess.run(
+            [sys.executable, "-c",
+             "import runpy, sys; sys.argv=['a']; "
+             "module = runpy.run_path(%r); "
+             "print(module['MINIMUM_PYTHON'])" % str(ADAPTER)],
+            capture_output=True, text=True, timeout=60)
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("(3, 11)", completed.stdout)
+
+
+def _import_runner():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("_conformance_runner", RUNNER)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 class ManifestIntegrityIsEnforced(unittest.TestCase):

@@ -35,11 +35,14 @@ in hand and **recomputes the evaluation**, requiring it to match the supplied re
 ALLOW. A signature alone establishes nothing about what the bytes describe.
 
 Expiry is exclusive: valid while `now < expires_at`, and it bounds when an authorization may be
-**consumed**. Because `vfy run` issues and consumes at one instant, that check never fires there;
-it exists for an authorization presented later, which this CLI does not yet offer. **Replay does
-not consult it at all** — replay spends nothing, and a receipt that verified yesterday must verify
-today. Everything else about a recorded authorization is still re-checked on replay: signature, key
-identity and status, all three digest bindings, the runtime binding, and the recomputed ALLOW.
+**consumed**. `vfy run` reads the clock at the spend rather than carrying the issue instant
+forward, so the interval bounds this CLI's own runs as well as an authorization presented later.
+The window between issue and spend is normally microseconds, so a sane `ttl_seconds` never fires
+— but it is a live check, not a decorative field, and a rulebook that sets a one-second interval
+gets one. **Replay does not consult it at all** — replay spends nothing, and a receipt that
+verified yesterday must verify today. Everything else about a recorded authorization is still
+re-checked on replay: signature, key identity and status, all three digest bindings, the runtime
+binding, and the recomputed ALLOW.
 
 ## Single use, and the gap it cannot close
 
@@ -157,6 +160,77 @@ atomicity are weaker, and coordination across machines.
 Developed and fully tested on CPython 3.14, macOS on arm64, APFS. CI covers Python 3.11–3.13 on
 Linux. Windows is not tested; the process-group and file-mode behavior above is POSIX-specific.
 Cross-platform support is not claimed.
+
+## Three bindings this deliberately does not add
+
+Each of these was proposed during the 0.1.x hardening review, evaluated individually, and left
+out. They are recorded here rather than closed quietly, because "we did not think of it" and "we
+decided against it, and here is the reasoning" are different states and a reader deserves to know
+which one applies.
+
+### The executable's bytes are not bound to the authorization
+
+An authorization binds the candidate, and the candidate names `argv[0]` as a **path**. It does not
+bind the digest of the file at that path, so a file replaced between the freeze and the launch is
+launched. The conformance profile states this as a nonclaim in exactly those terms: *attestation
+of the executed program's bytes*.
+
+It stays a nonclaim because the binding could not be honestly kept. Hashing the file and then
+launching it leaves the same window one step later — the file can change between the read and the
+`exec` — and closing it needs a held descriptor executed directly (`fexecve`), which CPython does
+not expose portably. A recorded digest would therefore assert something stronger than what was
+enforced, in a signed artifact, which is the one failure mode this product exists to avoid.
+
+What *is* available, today, with nothing added: **the program's digest is evidence, and evidence
+is what a rulebook gates on.** An `exec` declaration whose script prints the digest as JSON makes
+the bytes a recorded fact that the evaluator reads, the snapshot freezes, the receipt binds, and
+replay recomputes:
+
+```yaml
+evidence:
+  - {id: program, source: exec, ref: "./ci/program-digest.sh", max_age_seconds: 60}
+rules:
+  - id: unknown-program
+    when: 'evidence.program != "<the digest this rulebook is about>"'
+    outcome: BLOCK
+    reason: The program at that path is not the one this rulebook names.
+```
+
+That is strictly more honest than a built-in binding: the digest is dated, frozen, signed, and
+replayable like every other observation, and its `max_age_seconds` states how stale the reading
+may be. It still does not close the window between the reading and the launch, and nothing in this
+product claims to.
+
+### `track` has no executable force
+
+`track` declares the identity fields a rulebook is written about. It is schema-validated and then
+never consulted — not to require a field, not to reject an undeclared one. A mistyped
+`--identity brnach=main` therefore reaches HOLD rather than a refusal, because the rule that needs
+`identity.branch` cannot settle without it.
+
+Requiring declared fields, or rejecting undeclared ones, would be a new rule about which
+candidates are **admissible at all** — a different kind of statement from anything the rulebook
+language currently makes, and one that changes what a valid run is. `spec/execution-chain.md`
+already says that belongs to a version that states it deliberately, and this is not that version.
+HOLD on a typo is the safe direction: nothing is authorized, and the receipt records exactly why.
+
+### The store has no identity of its own
+
+`.vfy/store.json` records a format version and nothing else. A store is not bound to a workspace,
+a runtime id, or a key. Two stores therefore each enforce single use **within themselves**, which
+the profile states as a nonclaim: *uniqueness of a single-use identifier beyond the declared store
+scope*.
+
+Binding an identity into the store would mean a store format change, a migration for every store
+written by 0.1.0a1 and 0.1.0a2, and coupling the store to configuration it is deliberately kept
+away from — for a guarantee that is already unreachable through this CLI's surface, since `vfy run`
+generates its own nonce per run and accepts no externally supplied authorization. The store is
+explicitly not a trust anchor: every load re-verifies signatures and re-runs replay against
+caller-supplied keys, so a file being local proves nothing either way.
+
+If a hosted plane ever hands out authorizations for a runtime to spend later, this is the first
+thing that has to change, and it changes there — with a stated scope for uniqueness — rather than
+being bolted onto a local cache now.
 
 ## What is not claimed
 

@@ -177,8 +177,23 @@ exiting zero proves a process exited zero.
 | started, killed by a signal | `true` | omitted | `terminated by signal` |
 | could not be started | `false` | omitted | `could not start` |
 
-`acknowledged_at` is always present and always caller-supplied. No clock is read here, exactly as
-in every unit before it.
+`acknowledged_at` is always present and always caller-supplied. The runtime holds no clock,
+constructs no timestamp, and reads nothing it was not handed — exactly as in every unit before it.
+The caller supplies the instant one of two ways, never both:
+
+- **as a string**, in `acknowledged_at` and `receipt_created_at`. A caller that already knows the
+  instants — a fixture, a replay harness, anything reproducing a run byte for byte — states them.
+- **as `completion_clock`**, a callable read **once**, after the child has exited, whose single
+  reading dates both the acknowledgment and the receipt that carries it. The instant a command
+  finished is not knowable before it starts, so a caller forced to state one in advance can only
+  state the instant the run began — which is what `vfy run` did until the 0.1.x hardening pass,
+  and why a command that ran for an hour was acknowledged at the instant its evidence was frozen.
+
+Supplying both is refused with `execution_configuration_invalid`, and so is a `completion_clock`
+that is not callable; both refusals happen **above** the consume, so nothing is spent. A clock
+that raises, or returns anything that is not a date-time in the frozen grammar, is read below the
+line — the command has already run and the nonce is already spent — so it is reported as
+`execution_recording_failed` at stage `acknowledge`. Nothing is invented and nothing is retried.
 
 **`exit_status` means the process exited with this code, and nothing else.** POSIX reports signal
 death as a negative return code, and recording `-9` as an exit status would merge "exited with

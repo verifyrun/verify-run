@@ -1,0 +1,59 @@
+{
+  "expected": {
+    "count": 1,
+    "exit": 1,
+    "refused": [
+      "r-000000000000000000000000.json"
+    ],
+    "refused_codes": [
+      "store_artifact_noncanonical"
+    ],
+    "stderr_contains": "could not be read"
+  },
+  "mutation": {
+    "corrupt_receipt": 0
+  },
+  "note": "A damaged committed record is named by filename and never hides the healthy ones.",
+  "runs": [
+    [
+      "branch=main"
+    ],
+    [
+      "branch=release"
+    ]
+  ],
+  "template": "pipeline-gate",
+  "tree": {
+    "bin": {
+      "kind": "dir"
+    },
+    "bin/args.sh": {
+      "bytes_base64": "IyEvYmluL3NoCmZvciBhIGluICIkQCI7IGRvIHByaW50ZiAnWyVzXScgIiRhIjsgZG9uZQo=",
+      "kind": "file",
+      "mode": "0755"
+    },
+    "bin/env.sh": {
+      "bytes_base64": "IyEvYmluL3NoCnByaW50ZiAnJXMnICIke1ZGWV9DTElfU0VOVElORUwtYWJzZW50fSIK",
+      "kind": "file",
+      "mode": "0755"
+    },
+    "bin/fail.sh": {
+      "bytes_base64": "IyEvYmluL3NoCnByaW50ZiAnYnJva2VcbicgPiYyCmV4aXQgNAo=",
+      "kind": "file",
+      "mode": "0755"
+    },
+    "bin/ok.sh": {
+      "bytes_base64": "IyEvYmluL3NoCnByaW50ZiAnZG9uZVxuJwpleGl0IDAK",
+      "kind": "file",
+      "mode": "0755"
+    },
+    "ci": {
+      "kind": "dir"
+    },
+    "ci/last-test-result.sh": {
+      "bytes_base64": "IyEvYmluL3NoCnByaW50ZiAnInBhc3NlZCInCg==",
+      "kind": "file",
+      "mode": "0755"
+    }
+  }
+}

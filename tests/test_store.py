@@ -250,14 +250,33 @@ class Index(StoreTestCase):
         self.assertEqual(self.store.list_receipts(), expected)
         self.assertEqual(self.store.rebuild_index(), expected)
 
-    def test_a_malformed_index_is_refused_then_rebuilt(self):
+    def test_a_malformed_index_is_refused_by_name_then_rebuilt(self):
+        """The cache is never believed — and it never silences the records either.
+
+        This asserted a raised `store_index_invalid` until the 0.1.x hardening pass. A damaged
+        cache making every committed record unlistable is the same availability failure as a
+        damaged record doing it, and the index is the artifact this store is most willing to
+        throw away: rebuilding is the documented repair.
+        """
         self._three()
         expected = self.store.rebuild_index()
         (self.root / "index.json").write_bytes(b'{"nope":1}')
-        with self.assertRaises(VerifyError) as caught:
-            self.store.list_receipts()
-        self.assertEqual(caught.exception.code, "store_index_invalid")
+        listing = self.store.listing()
+        self.assertEqual(listing.summaries, expected)
+        self.assertEqual([(r.filename, r.code) for r in listing.refused],
+                         [("index.json", "store_index_invalid")])
         self.assertEqual(self.store.rebuild_index(), expected)
+        self.assertEqual(self.store.listing().refused, ())
+
+    def test_an_index_entry_with_unexpected_fields_is_refused_by_name(self):
+        self._three()
+        value = load.load_json_bytes((self.root / "index.json").read_bytes())
+        value["receipts"][0]["extra"] = "field"
+        (self.root / "index.json").write_bytes(canon.canonical_bytes(value))
+        listing = self.store.listing()
+        self.assertEqual(len(listing.summaries), 3)
+        self.assertEqual([(r.filename, r.code) for r in listing.refused],
+                         [("index.json", "store_index_invalid")])
 
     def test_records_govern_when_the_index_disagrees(self):
         self._three()
@@ -445,9 +464,19 @@ class FilesystemAttacks(StoreTestCase):
         stolen = self.parent / "index.json"
         shutil.move(str(index), str(stolen))
         index.symlink_to(stolen)
+
+        # A listing names it and still answers from the records: a symlinked cache is one
+        # unusable artifact, not a reason to make every committed record unreachable.
+        listing = self.store.listing()
+        self.assertEqual([s.receipt_id for s in listing.summaries], ["r-1"])
+        self.assertEqual([(r.filename, r.code) for r in listing.refused],
+                         [("index.json", "store_path_invalid")])
+        # Writing is where a symlink is dangerous, and writing still refuses: a rename over this
+        # name would remove the link and put the store's bytes wherever it pointed.
         with self.assertRaises(VerifyError) as caught:
-            self.store.list_receipts()
+            self.store.rebuild_index()
         self.assertEqual(caught.exception.code, "store_path_invalid")
+        self.assertTrue(index.is_symlink(), "the link was followed or removed")
 
     def test_the_root_must_be_a_path_object(self):
         for root in ("/tmp/x", None, 5, b"/tmp/x"):
@@ -953,15 +982,92 @@ class CorruptHistoryDoesNotRevokeACommit(StoreTestCase):
         self.assertTrue((self.root / "receipts" / "r-1.json").exists(),
                         "a corrupt artifact is never silently deleted")
 
-    def test_a_listing_refuses_visibly_rather_than_trusting_the_corrupt_record(self):
+    def test_a_listing_names_the_corrupt_record_and_still_answers_for_the_rest(self):
         """Once the index disagrees, the records govern — and one of them is unreadable.
 
-        A listing must not answer from a cache it has just been told is incomplete, and it must
-        not present a corrupt artifact as a record. Refusing names the repair.
+        A listing must not present a corrupt artifact as a record, and it must not let that one
+        file decide what can be said about every other record. It reports the refusal by
+        filename, which names the repair, and lists the healthy records either way.
+
+        This asserted a raised `store_artifact_noncanonical` until the 0.1.x hardening pass: one
+        damaged file made `receipts list` useless for a whole store, which is an availability
+        failure with no security benefit. Nothing here verifies anything, and `get_record` still
+        refuses the damaged file — see the test above, which is unchanged.
         """
         self.build(receipt_id="r-1").put(self.store)
         self._corrupt_a_committed_receipt("r-1")
         self.build(fixture="accept_hold_decision.json", receipt_id="r-2").put(self.store)
-        with self.assertRaises(VerifyError) as refusal:
-            self.store.list_receipts()
-        self.assertEqual(refusal.exception.code, "store_artifact_noncanonical")
+
+        listing = self.store.listing()
+        self.assertEqual([s.receipt_id for s in listing.summaries], ["r-2"])
+        self.assertEqual([r.filename for r in listing.refused], ["r-1.json"])
+        self.assertEqual([r.code for r in listing.refused], ["store_artifact_noncanonical"])
+        self.assertIn("r-1.json", listing.refused[0].message)
+        # The convenience accessor answers with what it could read, and never raises for a
+        # damaged neighbour.
+        self.assertEqual([s.receipt_id for s in self.store.list_receipts()], ["r-2"])
+
+    def test_a_file_that_is_not_a_receipt_is_refused_by_name_not_by_traceback(self):
+        """Canonical JSON that is structurally something else must not cross as a raw KeyError."""
+        self.build(receipt_id="r-1").put(self.store)
+        (self.root / "receipts" / "r-2.json").write_bytes(canon.canonical_bytes({"nope": 1}))
+        listing = self.store.listing()
+        self.assertEqual([s.receipt_id for s in listing.summaries], ["r-1"])
+        self.assertEqual([(r.filename, r.code) for r in listing.refused],
+                         [("r-2.json", "store_record_incomplete")])
+
+    def test_a_receipt_whose_summary_fields_are_the_wrong_type_is_refused_by_name(self):
+        """A listing sorts and prints these fields; a number where a string belongs is refused."""
+        self.build(receipt_id="r-1").put(self.store)
+        value = load.load_json_bytes((self.root / "receipts" / "r-1.json").read_bytes())
+        value["created_at"] = 17
+        (self.root / "receipts" / "r-2.json").write_bytes(canon.canonical_bytes(value))
+        listing = self.store.listing()
+        self.assertEqual([s.receipt_id for s in listing.summaries], ["r-1"])
+        self.assertEqual([(r.filename, r.code) for r in listing.refused],
+                         [("r-2.json", "store_record_incomplete")])
+
+    def test_every_healthy_record_is_still_listed_when_most_of_the_store_is_damaged(self):
+        for index in range(5):
+            self.build(receipt_id="r-%d" % index).put(self.store)
+        for index in (0, 2, 4):
+            self._corrupt_a_committed_receipt("r-%d" % index)
+        listing = self.store.listing()
+        self.assertEqual([s.receipt_id for s in listing.summaries], ["r-1", "r-3"])
+        self.assertEqual([r.filename for r in listing.refused],
+                         ["r-0.json", "r-2.json", "r-4.json"])
+
+    def test_a_rebuilt_index_holds_the_healthy_records_and_never_the_refused_ones(self):
+        self.build(receipt_id="r-1").put(self.store)
+        self.build(fixture="accept_hold_decision.json", receipt_id="r-2").put(self.store)
+        self._corrupt_a_committed_receipt("r-1")
+        self.assertEqual([s.receipt_id for s in self.store.rebuild_index()], ["r-2"])
+        written = load.load_json_bytes((self.root / "index.json").read_bytes())
+        self.assertEqual([entry["receipt_id"] for entry in written["receipts"]], ["r-2"])
+        # The damaged file is still there, still refused, and still named by the next listing.
+        self.assertTrue((self.root / "receipts" / "r-1.json").exists())
+        self.assertEqual([r.filename for r in self.store.listing().refused], ["r-1.json"])
+
+    def test_a_record_damaged_after_it_was_indexed_is_still_named(self):
+        """The case the old reconciliation could not see: the cache is current and the file is not.
+
+        Identities still agree — nothing was added or removed — so a listing that answered from
+        the cache reported a receipt it had no way of knowing was unreadable.
+        """
+        self.build(receipt_id="r-1").put(self.store)
+        self.build(fixture="accept_hold_decision.json", receipt_id="r-2").put(self.store)
+        indexed = load.load_json_bytes((self.root / "index.json").read_bytes())
+        self.assertEqual(sorted(e["receipt_id"] for e in indexed["receipts"]), ["r-1", "r-2"])
+
+        self._corrupt_a_committed_receipt("r-2")
+        listing = self.store.listing()
+        self.assertEqual([s.receipt_id for s in listing.summaries], ["r-1"])
+        self.assertEqual([r.filename for r in listing.refused], ["r-2.json"])
+
+    def test_a_listing_writes_nothing(self):
+        self.build(receipt_id="r-1").put(self.store)
+        before = (self.root / "index.json").read_bytes()
+        self._corrupt_a_committed_receipt("r-1")
+        self.store.listing()
+        self.assertEqual((self.root / "index.json").read_bytes(), before,
+                         "a read command repaired the cache behind the caller")
