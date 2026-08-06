@@ -1,0 +1,107 @@
+{
+ "adapter_protocol": "adapter-protocol.md",
+ "canonicalization_profile": {
+  "description": "UTF-8, object members sorted by code point, no insignificant whitespace, integers only within plus or minus (2^53 - 1), no floating point, no lone surrogates.",
+  "id": "verify-canonical-json-1",
+  "normative_source": "spec/canonicalization.md"
+ },
+ "capability_flags": {
+  "historical_replay": "Required.",
+  "live_spend": "Optional. An implementation that exposes spending of an externally supplied authorization must bound it by the validity interval. The reference implementation does not expose this surface, so v1 carries no fixture for it."
+ },
+ "compatibility_notes": [
+  "Artifacts written by verify-run 0.1.0a1 verify and replay under 0.1.0a2 unchanged, including after their authorization's validity interval has elapsed.",
+  "Profile versioning is independent of any implementation's package versioning."
+ ],
+ "error_categories": [
+  "signature_invalid",
+  "signature_malformed",
+  "key_untrusted",
+  "artifact_schema_invalid",
+  "artifact_noncanonical",
+  "binding_mismatch",
+  "input_missing",
+  "authorization_not_spendable"
+ ],
+ "fixture_manifest": "fixtures/manifest.json",
+ "nonclaims": [
+  "truth of the declared evidence in the external world",
+  "quality or wisdom of the rulebook",
+  "legitimacy of the declared authority",
+  "sandboxing or confinement of the authorized action",
+  "attestation of the executed program's bytes",
+  "exactly-once external side effects",
+  "uniqueness of a single-use identifier beyond the declared store scope",
+  "correctness of any model that produced the evidence",
+  "proof that the action's external effects occurred",
+  "regulatory, legal, or contractual compliance",
+  "absence of compromise outside the declared boundary"
+ ],
+ "normative_document": "../../docs/conformance/decision-replay-v1.md",
+ "profile_id": "decision-replay-v1",
+ "profile_version": "1.0.0",
+ "reference_implementation": {
+  "distribution": "https://pypi.org/project/verify-run/0.1.0a2/",
+  "name": "verify-run",
+  "note": "First reference implementation. Conformance is defined by the fixtures and the normative document, not by this implementation's behavior.",
+  "source": "https://github.com/verifyrun/verify-run",
+  "version": "0.1.0a2"
+ },
+ "replay_modes": [
+  "recompute-decision"
+ ],
+ "requirements_covered": [
+  "DR-1.1",
+  "DR-1.2",
+  "DR-1.3",
+  "DR-2.1",
+  "DR-2.2",
+  "DR-2.3",
+  "DR-2.4",
+  "DR-2.5",
+  "DR-3.1",
+  "DR-3.2",
+  "DR-3.3",
+  "DR-3.4",
+  "DR-4.1",
+  "DR-4.2",
+  "DR-4.3",
+  "DR-4.4",
+  "DR-4.5",
+  "DR-4.6",
+  "DR-5.1",
+  "DR-5.2",
+  "DR-5.3",
+  "DR-5.4",
+  "DR-5.5",
+  "DR-6.1",
+  "DR-6.2",
+  "DR-6.3",
+  "DR-6.4",
+  "DR-6.5",
+  "DR-6.6",
+  "DR-6.7",
+  "DR-6.8",
+  "DR-7.1",
+  "DR-7.2",
+  "DR-7.3",
+  "DR-8.1",
+  "DR-8.2"
+ ],
+ "result_schema": "result.schema.json",
+ "signing_profile": {
+  "algorithms": [
+   "ed25519"
+  ],
+  "note": "v1 fixes Ed25519 because the reference implementation and every fixture use it. This is a stated limit of v1, not a claim of algorithm neutrality.",
+  "signed_bytes": "the canonical artifact with its own signature member omitted"
+ },
+ "status": "draft",
+ "terminal_classes": [
+  "ALLOW",
+  "BLOCK",
+  "HOLD",
+  "ERROR"
+ ],
+ "title": "Decision Replay Conformance Profile v1"
+}

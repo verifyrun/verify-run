@@ -1,0 +1,1 @@
+{"action":{"argv":["./deploy.sh","v1.2.3"],"summary":"deploy"},"candidate_id":"c-1","identity":{"branch":"main"},"kind":"command"}

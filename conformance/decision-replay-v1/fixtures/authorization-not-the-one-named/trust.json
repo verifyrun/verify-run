@@ -1,0 +1,1 @@
+{"authorization":[{"key_id":"auth-key","key_version":1,"public_key_hex":"03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8","status":"active"}],"receipt":[{"key_id":"receipt-key","key_version":1,"public_key_hex":"2543b92ff1095511476adc8369db6ddc933665a11978dda1404ee1066ca9559d","status":"active"}],"trust_version":1}

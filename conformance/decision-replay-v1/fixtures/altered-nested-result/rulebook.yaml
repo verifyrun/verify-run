@@ -1,0 +1,22 @@
+rulebook_id: pipeline-gate
+version: 1.0.0
+adopted_at: "2026-08-05T00:00:00Z"
+description: Gate a deployment on declared branch and fresh test evidence.
+track: [branch]
+evidence:
+  - {id: tests, source: exec, ref: "./ci/last-test-result.sh", max_age_seconds: 900}
+rules:
+  - id: tests-green-on-main
+    when: 'identity.branch == "main" and fresh(tests) and evidence.tests == "passed"'
+    outcome: ALLOW
+    reason: Tests green on main within freshness bound.
+  - id: tests-red
+    when: 'fresh(tests) and evidence.tests == "failed"'
+    outcome: BLOCK
+    reason: Tests failed.
+  - id: wrong-branch
+    when: 'identity.branch != "main"'
+    outcome: BLOCK
+    reason: Deploys only from main.
+default_outcome: HOLD
+authorization: {ttl_seconds: 300, single_use: true}

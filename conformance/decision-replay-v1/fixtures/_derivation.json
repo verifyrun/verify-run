@@ -1,0 +1,710 @@
+{
+ "base_vector": {
+  "path": "fixtures/receipts/accept_allow_with_authorization_and_execution.json",
+  "sha256": "3956b788b1427e5dddce78d5de8634144aa2a7ece4b6a5c441330156238b2b09"
+ },
+ "bundles": [
+  {
+   "bundle": "allow-with-execution",
+   "derived_from": {
+    "path": "fixtures/receipts/accept_allow_with_authorization_and_execution.json",
+    "sha256": "3956b788b1427e5dddce78d5de8634144aa2a7ece4b6a5c441330156238b2b09"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "d5bc05a0e9072b044126202b27b0cae650b3a0c2c0098edbfadba7fb326b4542",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "ALLOW carrying an execution acknowledgment. Its authorization interval elapsed in 2026, so replaying it proves historical recomputation does not depend on present spendability."
+  },
+  {
+   "bundle": "allow-without-execution",
+   "derived_from": {
+    "path": "fixtures/receipts/accept_allow_without_execution.json",
+    "sha256": "b720bacff12358e774b50eef5a9eca07422be8eabbf7564538e3ab2b2080022f"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "d0bca9a03748bdc4e2ce86887d9e985d63147c88ecce27938d2f5ce54c9307a1",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "ALLOW with no execution acknowledgment. Absence of an acknowledgment is not evidence that the action ran."
+  },
+  {
+   "bundle": "block",
+   "derived_from": {
+    "path": "fixtures/receipts/accept_block_decision.json",
+    "sha256": "92ea4c6bc76e5ae86e3a4fc7194d17e3c892b54130d10e1cb75f1c7af86c497c"
+   },
+   "files": {
+    "candidate.json": "e5ff039b589b7441d1b587628baa1d843313a7d542be6eda811dd9295cf3a133",
+    "receipt.json": "4264f8a52c1ee1867c72284464d3c8cea9963a612dc5d096c9ee642d81140331",
+    "rulebook.json": "dfaeec83d2c67e3c56e0efc330a801edf727dcc0269c2325f81e80e87c8784aa",
+    "rulebook.yaml": "c933b43c55634d79c26a05dffa4fa5b89b28b1a2f5009825634b4cbc847ef03f",
+    "snapshot.json": "f56cf908dcdc87230daa9c0c6d658234c2e67e07fedd285bb45d7f59e717d20b",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "BLOCK. A negative decision carries no authorization and no execution record."
+  },
+  {
+   "bundle": "hold",
+   "derived_from": {
+    "path": "fixtures/receipts/accept_hold_decision.json",
+    "sha256": "c1a15d1a245e80004c5fcd49474db46c9410c428abafbe0ef3c1db2e9ba9cbcc"
+   },
+   "files": {
+    "candidate.json": "686e03dc2e7d6bd1e33cae7fcd9c973012914ee2a7bef06734f94d4e0521db5e",
+    "receipt.json": "6ffcd69f25500b18c9a416f8ecfa5b92d4c3baa0eb5b2f95e57011480de200d7",
+    "rulebook.json": "623eb952567e387fa8f713c9a70a12de9764d2a05e6cb5a528998f4336aba922",
+    "rulebook.yaml": "446ba174ade6755155a884a4419b6a6380c15854250e88a93eb582c7f106e3c0",
+    "snapshot.json": "1dc4bc4341620ce0de09f9e8914b514c3667e20ea47081afb62fdd3ad89fcb74",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "HOLD. Unsettled evidence is not a failure and is never reported as BLOCK."
+  },
+  {
+   "bundle": "allow-retired-key",
+   "derived_from": {
+    "path": "fixtures/receipts/accept_allow_with_authorization_and_execution.json",
+    "sha256": "3956b788b1427e5dddce78d5de8634144aa2a7ece4b6a5c441330156238b2b09"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "d5bc05a0e9072b044126202b27b0cae650b3a0c2c0098edbfadba7fb326b4542",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "f0a86acd8626e3fc52910e500d28b0b8bc047177446197d952fc7b0e1b4f7e59"
+   },
+   "note": "The signing key is retired. Retirement stops new signing; it does not repudiate what the key already signed, so historical verification still succeeds."
+  },
+  {
+   "bundle": "altered-candidate-digest",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_altered_candidate_digest.json",
+    "sha256": "f8302e7083906fbacd36d81aec583247d64e891e5ea44a29e674b5457302507e"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "artifact_schema_invalid",
+     "binding_mismatch",
+     "signature_invalid"
+    ],
+    "reference_reason_code": "signature_invalid",
+    "stage": "verification"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "7851d16c799e499070ad43864154a2978e0c28f95ec0d892e75db8c439a71b65",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "altered candidate digest"
+  },
+  {
+   "bundle": "altered-evidence-digest",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_altered_evidence_digest.json",
+    "sha256": "561c7d0a0cc9786027501cfca5ba642e0444a678d492ce3054c9e912eceb7fd4"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "artifact_schema_invalid",
+     "binding_mismatch",
+     "signature_invalid"
+    ],
+    "reference_reason_code": "signature_invalid",
+    "stage": "verification"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "dced382b8aed0576af12f01b03720d7dc2ad074c5bd47a0db3f897f0d71905ec",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "altered evidence digest"
+  },
+  {
+   "bundle": "altered-created-at",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_altered_created_at.json",
+    "sha256": "8d9117e625b09749198ca6b8ac71eb2b4a8a1aadb58137548528b2d13cc81a8c"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "artifact_schema_invalid",
+     "binding_mismatch",
+     "signature_invalid"
+    ],
+    "reference_reason_code": "signature_invalid",
+    "stage": "verification"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "d423ffb4677146929195faa343c094c4a8d60f502896d2b71a9ba36603e00b64",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "altered created at"
+  },
+  {
+   "bundle": "altered-receipt-id",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_altered_receipt_id.json",
+    "sha256": "270eb0508a9410ff7c39b3263fc2addecda5218750ace50e3a5e5c1036acc1a3"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "artifact_schema_invalid",
+     "binding_mismatch",
+     "signature_invalid"
+    ],
+    "reference_reason_code": "signature_invalid",
+    "stage": "verification"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "8d73a7fdfc4fef6f48b5d61e0f5cdfa071e8935de88ea53052f94f3887ecc2de",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "altered receipt id"
+  },
+  {
+   "bundle": "altered-authorization-reference",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_altered_authorization_reference.json",
+    "sha256": "ce59e073e047bb45140f941559dccf47f4e4eb8bc02423b91986b4d06be52f54"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "artifact_schema_invalid",
+     "binding_mismatch",
+     "signature_invalid"
+    ],
+    "reference_reason_code": "signature_invalid",
+    "stage": "verification"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "bae29c7011d411cb3c4484fe22839fa1be2d9d6fcdde5cf19de04f7fc3af0555",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "altered authorization reference"
+  },
+  {
+   "bundle": "altered-nested-result",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_altered_nested_result.json",
+    "sha256": "5bc178aab09804932e649eef4d2a6a719abb37f02515558c390f38d35efc1441"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "artifact_schema_invalid",
+     "binding_mismatch",
+     "signature_invalid"
+    ],
+    "reference_reason_code": "signature_invalid",
+    "stage": "verification"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "0b22226cd6bb79f82049d5ffd3983c1b555e53f4fae3c76ece36f9d18c5ff57b",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "altered nested result"
+  },
+  {
+   "bundle": "altered-execution-acknowledgment",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_altered_execution_acknowledgment.json",
+    "sha256": "d7cf25ee01fa32a89c6712f3b0b08e8a3fe6b1cf5ac7441b7cc6a80458edc52a"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "artifact_schema_invalid",
+     "binding_mismatch",
+     "signature_invalid"
+    ],
+    "reference_reason_code": "signature_invalid",
+    "stage": "verification"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "a5a60e0fdfc13df8976946d4abf3c33d9ef9df6b610c9e708a4a8e37921956ca",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "altered execution acknowledgment"
+  },
+  {
+   "bundle": "unknown-field",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_unknown_field.json",
+    "sha256": "5f6150719f7fbf3634eb1991fc93c6ea3b72cec3de23ef84aa308c68ee1e8949"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "artifact_schema_invalid",
+     "binding_mismatch",
+     "signature_invalid"
+    ],
+    "reference_reason_code": "receipt_schema_invalid",
+    "stage": "verification"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "6cab6564f82e4b14c3b1f545f0ccd30be8d11d8cb369f9b5ee7fcfb06b224295",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "unknown field"
+  },
+  {
+   "bundle": "unsupported-replay-mode",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_unsupported_replay_mode.json",
+    "sha256": "0f6eb29ec2264da73bb6d3282e3ec6b4d4ad8d924e352d750d647f3a2e92cdac"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "artifact_schema_invalid"
+    ],
+    "reference_reason_code": "receipt_schema_invalid",
+    "stage": "verification"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "704a75449a92412367dc37c646fa65ae90407d59ebe58ec4fa40b8f6c07ce1f3",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "unsupported replay mode"
+  },
+  {
+   "bundle": "no-signature",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_no_signature.json",
+    "sha256": "b2bca10a8caa6019294e6de584601b1b5a88786a4a961bc4820125b728028aac"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "artifact_schema_invalid",
+     "signature_invalid"
+    ],
+    "reference_reason_code": "receipt_schema_invalid",
+    "stage": "verification"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "f6a4441779ac59733c062b002a050a843f6cf6a6b90e7d8621cb8aca3b729fb9",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "no signature"
+  },
+  {
+   "bundle": "malformed-signature",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_malformed_signature.json",
+    "sha256": "5ca4a2942d9b87647fc6c0d665462cb7990c345ea6d68c1eaad9f7d2e2a87517"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "signature_invalid",
+     "signature_malformed"
+    ],
+    "reference_reason_code": "signature_malformed",
+    "stage": "verification"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "4701f28d2fdbd5ede13a64c5eb29b5212ca3a7ad48287dd704d368d6addfb505",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "malformed signature"
+  },
+  {
+   "bundle": "invalid-signature",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_invalid_signature.json",
+    "sha256": "6a4fdf34ec0544c6d5fd4a9ab1c83838b661fd040bbc2e00bf1e2c9f32b5912f"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "signature_invalid",
+     "signature_malformed"
+    ],
+    "reference_reason_code": "signature_invalid",
+    "stage": "verification"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "06486ceac575e9f5f85a62635240e13669762c84298ef66943ab1f764580d8ec",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "invalid signature"
+  },
+  {
+   "bundle": "copied-signature",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_copied_signature.json",
+    "sha256": "3427943c3ecea3c0a50e4eeebccaa43d29a4b178b4debd34feda139353f7cb97"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "signature_invalid"
+    ],
+    "reference_reason_code": "signature_invalid",
+    "stage": "verification"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "c0b62d6f6a32180943122707511c41329a68af5f5169f7a7b9d5c45477a9d458",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "copied signature"
+  },
+  {
+   "bundle": "altered-key-id",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_altered_key_id.json",
+    "sha256": "5ea9ce6e380232dbfe5c28dd11d41c418aa2a454a0fc930b7befb566205cd32a"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "key_untrusted",
+     "signature_invalid"
+    ],
+    "reference_reason_code": "signing_key_unknown",
+    "stage": "verification"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "a46ace57cb879a4c84e3ebeedc2d1447379cde893bc479ce6999a84aab249fe5",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "altered key id"
+  },
+  {
+   "bundle": "altered-key-version",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_altered_key_version.json",
+    "sha256": "d3c792d42b1bdf1e11d57c458488caf4d8c26c3448e73aaaf80b4aad26fd7eff"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "key_untrusted",
+     "signature_invalid"
+    ],
+    "reference_reason_code": "signing_key_unknown",
+    "stage": "verification"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "3df3f2921b61c9ed14de9d8834288dd7e9cc56c98d42c4e950ad18d4ff607ce0",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "altered key version"
+  },
+  {
+   "bundle": "unknown-receipt-key",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_unknown_receipt_key.json",
+    "sha256": "a37d91cf4ef7039e51a5fb7c80e1359083a5dbd6118d252f75b1b4e617f91dc3"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "key_untrusted"
+    ],
+    "reference_reason_code": "signing_key_unknown",
+    "stage": "verification"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "d5bc05a0e9072b044126202b27b0cae650b3a0c2c0098edbfadba7fb326b4542",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "a6a510e3ae45d96e55c785f12d7d0fa272670e65e390cd1176506515defc0d24"
+   },
+   "note": "unknown receipt key"
+  },
+  {
+   "bundle": "untrusted-key-valid-signature",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_untrusted_key_valid_signature.json",
+    "sha256": "c00461b55ac9be34dd1d991b66ec72ac612913be717d285a72ed015913d9dd16"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "key_untrusted"
+    ],
+    "reference_reason_code": "signing_key_unknown",
+    "stage": "verification"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "b0a763ced7c56c5930709ebbe6b4c61d6303f68fe6ba4547b74347f52f82e77b",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "untrusted key valid signature"
+  },
+  {
+   "bundle": "missing-rulebook-body",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_missing_rulebook_body.json",
+    "sha256": "f751823cbe854e7f27d965cdb27a50550bb73649ddf32ee36b0f522240c40bfa"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "input_missing"
+    ],
+    "reference_reason_code": "replay_body_missing",
+    "stage": "replay"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "d5bc05a0e9072b044126202b27b0cae650b3a0c2c0098edbfadba7fb326b4542",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "missing rulebook body"
+  },
+  {
+   "bundle": "missing-candidate-body",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_missing_candidate_body.json",
+    "sha256": "4a73e66749df01918f739a81479252f21047316d8c95a7d74d95060f246559ac"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "input_missing"
+    ],
+    "reference_reason_code": "replay_body_missing",
+    "stage": "replay"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "receipt.json": "d5bc05a0e9072b044126202b27b0cae650b3a0c2c0098edbfadba7fb326b4542",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "missing candidate body"
+  },
+  {
+   "bundle": "missing-snapshot-body",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_missing_snapshot_body.json",
+    "sha256": "4d05501dd1bf3c95a991ae3947f9862d322415f43b2b59f8153e5dbe7b22c38e"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "input_missing"
+    ],
+    "reference_reason_code": "replay_body_missing",
+    "stage": "replay"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "d5bc05a0e9072b044126202b27b0cae650b3a0c2c0098edbfadba7fb326b4542",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "missing snapshot body"
+  },
+  {
+   "bundle": "wrong-rulebook-body",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_wrong_rulebook_body.json",
+    "sha256": "d0fade3c94c6399f91052b4733b414c74fc173d0b15c06d74a7d1c084bc2f2ec"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "binding_mismatch"
+    ],
+    "reference_reason_code": "replay_body_mismatch",
+    "stage": "replay"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "d5bc05a0e9072b044126202b27b0cae650b3a0c2c0098edbfadba7fb326b4542",
+    "rulebook.json": "dfaeec83d2c67e3c56e0efc330a801edf727dcc0269c2325f81e80e87c8784aa",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "wrong rulebook body"
+  },
+  {
+   "bundle": "wrong-candidate-body",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_wrong_candidate_body.json",
+    "sha256": "f6d83547e10d225626952f3d3de32fa22ec0e2e939dc0c941880dfc446b6264a"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "binding_mismatch"
+    ],
+    "reference_reason_code": "replay_body_mismatch",
+    "stage": "replay"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "e5ff039b589b7441d1b587628baa1d843313a7d542be6eda811dd9295cf3a133",
+    "receipt.json": "d5bc05a0e9072b044126202b27b0cae650b3a0c2c0098edbfadba7fb326b4542",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "wrong candidate body"
+  },
+  {
+   "bundle": "wrong-snapshot-body",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_wrong_snapshot_body.json",
+    "sha256": "f649f24b45a1868bee6745c15a111cb3e537a8341b51bf5342410dd8eb2da5ff"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "binding_mismatch"
+    ],
+    "reference_reason_code": "replay_body_mismatch",
+    "stage": "replay"
+   },
+   "files": {
+    "authorization.json": "85b3c7a7fc5fc1dbd00c0698eaaebbdf8ccb3837aab9ea965d08a07e6e0a92d7",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "d5bc05a0e9072b044126202b27b0cae650b3a0c2c0098edbfadba7fb326b4542",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "f56cf908dcdc87230daa9c0c6d658234c2e67e07fedd285bb45d7f59e717d20b",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "wrong snapshot body"
+  },
+  {
+   "bundle": "authorization-not-the-one-named",
+   "derived_from": {
+    "path": "fixtures/receipts/reject_authorization_not_the_one_named.json",
+    "sha256": "268e232f8b8d7656beecc38aa19998ba524327a0c82b234fd71578c1c910062e"
+   },
+   "expected": {
+    "conformance": "refused",
+    "error_category_any_of": [
+     "binding_mismatch"
+    ],
+    "reference_reason_code": "receipt_binding_mismatch",
+    "stage": "replay"
+   },
+   "files": {
+    "authorization.json": "9f5667a74e6d095e271f71b396dac0d9dc548cb417c48742d168d61710c8854e",
+    "candidate.json": "b54967fc908149766c71e5281482981b803069284a104b6458d6efd5dd3bedbb",
+    "receipt.json": "d5bc05a0e9072b044126202b27b0cae650b3a0c2c0098edbfadba7fb326b4542",
+    "rulebook.json": "eb851f1c213105876977484d3f41cd724811819fc65044a0c87cd29c829570ee",
+    "rulebook.yaml": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+    "snapshot.json": "12719c2ce4e46483aad3a093d29e1ea676d005ce86ca29ba05fe3d98902b0eda",
+    "trust.json": "28675b1006c782a3b7c76cdec2f59e4291ac64ece8208fffdaafdf5e7a7d5984"
+   },
+   "note": "authorization not the one named"
+  }
+ ],
+ "note": "Provenance of every bundle. tools/build_conformance_fixtures.py writes this; tools/run_conformance.py re-checks it."
+}

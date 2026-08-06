@@ -209,6 +209,34 @@ python -m venv .venv && .venv/bin/pip install -e .
 Standard-library `unittest`, no test-framework dependency. The `spec/` directory is the authority
 and `fixtures/` holds the golden vectors; implementations conform to them, never the reverse.
 
+## Decision replay conformance
+
+> The same declared inputs deterministically settle to one of four non-collapsible terminal
+> classes; an exact ALLOW creates action-bound authority; and the resulting artifact permits the
+> recorded decision to be independently verified and fully recomputed without trusting the
+> platform database.
+
+That claim is now written down as a public, vendor-neutral contract with fixtures anyone can run:
+[Decision Replay Conformance Profile v1](docs/conformance/decision-replay-v1.md), profile id
+`decision-replay-v1`. `verify-run` is its first reference implementation, not its definition.
+
+```bash
+sh tools/conformance_reference_run.sh
+```
+
+That installs `verify-run==0.1.0a2` from PyPI into a clean environment, runs the 30 fixtures
+against it, and writes a result document.
+
+**Replay recomputes the recorded decision. It does not re-execute the action**, does not reacquire
+evidence, and does not prove the action's effects occurred in the world. A result is a *self-test*,
+not certification: nobody accredits this profile, and a PASS is meaningful only together with the
+profile version and fixture-manifest digest it names. See
+[docs/conformance/claims.md](docs/conformance/claims.md) for exactly what a result lets you say,
+and §16 of the contract for what it deliberately does not establish.
+
+Current reference result: **PASS**, 30/30 fixtures, `verify-run 0.1.0a2`, fixture manifest
+`756029f681ad7587…`.
+
 ## Alpha status
 
 Version `0.1.0a2`. The decision semantics, canonical form, and receipt format are frozen and

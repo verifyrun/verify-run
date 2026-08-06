@@ -1,0 +1,50 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "https://verifyrun.com/conformance/decision-replay-v1/result.schema.json",
+ "title": "Decision Replay conformance result",
+ "description": "A self-reported conformance test result. Not certification. A result is meaningful only together with its profile version, fixture-manifest digest, runner version, and implementation version.",
+ "type": "object",
+ "additionalProperties": false,
+ "required": ["profile_id", "profile_version", "runner_version", "implementation", "implementation_version", "adapter", "environment", "started_at", "completed_at", "fixture_manifest_sha256", "profile_sha256", "manifest_problems", "requirement_status", "requirements_covered", "fixtures", "counts", "overall", "declaration"],
+ "properties": {
+  "profile_id": {"type": "string"},
+  "profile_version": {"type": "string"},
+  "runner_version": {"type": "string"},
+  "implementation": {"type": "string"},
+  "implementation_version": {"type": "string"},
+  "adapter": {"type": "string"},
+  "adapter_capabilities": {"type": "object"},
+  "environment": {"type": "object"},
+  "started_at": {"type": "string"},
+  "completed_at": {"type": "string"},
+  "fixture_manifest_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+  "profile_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+  "manifest_problems": {"type": "array", "items": {"type": "string"}},
+  "requirement_status": {"type": "object", "additionalProperties": {"enum": ["PASS", "FAIL"]}},
+  "requirements_covered": {"type": "array", "items": {"type": "string"}},
+  "fixtures": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["fixture_id", "requirements", "required", "status", "problems"],
+    "properties": {
+     "fixture_id": {"type": "string"},
+     "requirements": {"type": "array", "items": {"type": "string"}},
+     "required": {"type": "boolean"},
+     "status": {"enum": ["PASS", "FAIL", "ERROR", "SKIPPED"]},
+     "problems": {"type": "array", "items": {"type": "string"}},
+     "skip_reason": {"type": ["string", "null"]},
+     "observed_terminal": {"enum": ["ALLOW", "BLOCK", "HOLD", "ERROR", null]},
+     "observed_error_category": {"type": ["string", "null"]},
+     "implementation_reason": {"type": ["string", "null"]},
+     "raw": {"type": ["object", "null"],
+             "description": "Bounded evidence only: exit status and output digests. Never raw private material."}
+    }
+   }
+  },
+  "counts": {"type": "object"},
+  "overall": {"enum": ["PASS", "FAIL", "INCOMPLETE"]},
+  "declaration": {"type": "string"}
+ }
+}

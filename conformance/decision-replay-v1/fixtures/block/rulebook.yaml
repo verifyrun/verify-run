@@ -1,0 +1,26 @@
+rulebook_id: agent-guard
+version: 1.0.0
+adopted_at: "2026-08-05T00:00:00Z"
+description: Gate an AI agent's tool calls and shell commands.
+track: [workspace]
+evidence:
+  - {id: approvals, source: file, ref: .vfy/approvals.json, max_age_seconds: 86400, required: false}
+rules:
+  - id: no-destructive-shell
+    when: 'candidate.action.argv[0] in ["rm","mkfs","dd","shutdown"] or matches(candidate.action.summary, "*rm -rf*")'
+    outcome: BLOCK
+    reason: Destructive shell commands are never allowed.
+  - id: write-inside-workspace
+    when: 'candidate.kind == "tool_call" and candidate.action.tool == "write_file" and matches(candidate.action.params.path, "./workspace/*")'
+    outcome: ALLOW
+    reason: Writes inside the declared workspace are allowed.
+  - id: outbound-email-needs-approval
+    when: 'candidate.action.tool == "send_email" and not present(approvals)'
+    outcome: HOLD
+    reason: External email requires a recorded human approval.
+  - id: undeclared-network
+    when: 'candidate.kind == "http_request" and not matches(candidate.action.targets[0], "https://api.internal.example/*")'
+    outcome: BLOCK
+    reason: Only declared network destinations are allowed.
+default_outcome: HOLD
+authorization: {ttl_seconds: 120, single_use: true}
