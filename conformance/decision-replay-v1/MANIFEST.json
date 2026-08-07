@@ -6,7 +6,7 @@
   },
   {
    "file": "docs/conformance/implementation-guide.md",
-   "sha256": "c9de9d6a8f1b847006547b45341e2035cb3424b06e168a2f9a1ebc8f5ea7a595"
+   "sha256": "30d1010eb7e7ea6bf25e01c38deb1dccd7d59d4e612436c6b171fbb5696d3ccf"
   },
   {
    "file": "docs/conformance/claims.md",
@@ -22,7 +22,7 @@
   },
   {
    "file": "conformance/decision-replay-v1/adapter-protocol.md",
-   "sha256": "d69c6c4240197cc901cd63317516c9a350a762c6f5f6393fc17ba34c369ee4b7"
+   "sha256": "b8a6d4512f6e3cc3fd1b61a915c10cf293b2482658f0813dd7311dea413dedd9"
   },
   {
    "file": "conformance/decision-replay-v1/fixtures/manifest.json",
@@ -30,11 +30,19 @@
   },
   {
    "file": "tools/run_conformance.py",
-   "sha256": "b334f932cecff4cbf280b6394f37f7fee769cf81726dcf0278842905448c1a31"
+   "sha256": "4806023e565d74f7813acc38828620c2cbbfac94e522b9ba172bcf16683f0c5c"
   },
   {
    "file": "tools/conformance_adapter.py",
-   "sha256": "2db52f1a2aa25d645c3f2a0da15a064ce47a2d5f183148419cf816bd46257286"
+   "sha256": "7c69bca2768ae8275968321c4db1dce28d15ff70e8d3d6a9396e05e0c9ead5c3"
+  },
+  {
+   "file": "tools/check_conformance_result.py",
+   "sha256": "b35b38285e9ad996734a6c4b84281766666284db3ece1632b4815935dc65b051"
+  },
+  {
+   "file": "tools/conformance_reference_run.sh",
+   "sha256": "ad9c863392c1ac21a20743d3ce152a1380a41f31d500bbc4117ca203ca1266da"
   },
   {
    "file": "tools/build_conformance_fixtures.py",
@@ -46,11 +54,11 @@
   },
   {
    "file": "tools/build_conformance_manifest_of_record.py",
-   "sha256": "3817471f20629a5b86b57555d3fa70b96ee7a963b50738927698bce41ab94608"
+   "sha256": "7f75587dc67b8d72c06bcd597c8f31b508d0ee66820542e160b60392af761009"
   },
   {
    "file": "tests/test_conformance.py",
-   "sha256": "b045b91f0ded2969947eb4c810c84279a5e569706ca28e03414aa5e52c960133"
+   "sha256": "854bec4f1987fd90bac67c59403aaca3cc6b281a3cbc2a5f1354ab391d7683eb"
   }
  ],
  "fixture_bundles": [

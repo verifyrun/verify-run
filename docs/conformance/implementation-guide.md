@@ -63,6 +63,11 @@ anything.
 
 ## 9. Run the fixtures
 
+The runner needs Python 3.8 or newer and says so plainly if it does not have it. The
+*implementation* under test may need something else entirely; that is your adapter's business, and
+the reference adapter states its own floor — Python 3.11, from `verify-run`'s package metadata —
+the same way.
+
 ```bash
 python3 tools/run_conformance.py \
     --profile conformance/decision-replay-v1/profile.json \
@@ -70,9 +75,39 @@ python3 tools/run_conformance.py \
     --out result.json
 ```
 
-PASS means every required fixture behaved as the manifest says. FAIL means at least one did not.
-INCOMPLETE means the run could not be conducted honestly — a required fixture was skipped, or the
-fixture manifest did not match the bytes on disk. INCOMPLETE is not a soft PASS.
+`--adapter` is split with shell-like quoting rules. If any path in your command contains a space,
+give the command as repeated `--adapter-arg`, one argv token each, which is never split — and use
+the attached form for a token that starts with a dash:
+
+```bash
+python3 tools/run_conformance.py \
+    --profile conformance/decision-replay-v1/profile.json \
+    --adapter-arg "/opt/My Tools/python3" \
+    --adapter-arg "/opt/My Tools/adapter.py" \
+    --adapter-arg=--verbose \
+    --out result.json
+```
+
+Then check the result, and the kit that produced it, in one step:
+
+```bash
+python3 tools/check_conformance_result.py result.json
+```
+
+### Reading the verdict
+
+| Exit | `overall` | What it means |
+|---|---|---|
+| 0 | PASS | every required fixture behaved as the manifest says |
+| 1 | FAIL | at least one did not — that is a statement about your implementation |
+| 2 | INCOMPLETE | the run could not be conducted; **nothing was measured** |
+| 3 | — | the runner itself could not start: no profile, no adapter, wrong interpreter |
+
+**INCOMPLETE is not a soft PASS, and it is not a quiet FAIL.** It means a required fixture was
+skipped, the fixture manifest did not match the bytes on disk, or the harness never actually put
+the fixtures to your implementation — the adapter would not start, timed out, did not speak the
+protocol, or reported an `adapter_error` of its own. The runner prints what stopped it on stderr.
+Fix the harness and run again; there is no verdict to argue with yet.
 
 ## 10. Publish honestly
 

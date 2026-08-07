@@ -67,6 +67,27 @@ over a receipt naming a different rulebook is refused. A signed mismatch is stil
 A receipt presented without its bodies can complete verification only. That is reported as
 verified and not replayed — a distinct state, not a failure in either direction.
 
+### Reading the exit code
+
+`vfy replay` exits with the **decision the receipt records**, not with whether it verified:
+
+| Code | Meaning |
+|---|---|
+| 0 | verified and replayed; the receipt records ALLOW |
+| 10 | verified and replayed; the receipt records BLOCK |
+| 11 | verified and replayed; the receipt records HOLD |
+| 1 | did not verify or did not replay; the reason code is on stderr |
+
+So a BLOCK receipt that verifies perfectly exits `10`, and `vfy replay r.json && echo ok` is the
+wrong question — it asks about the decision while looking like it asks about verification. Ask
+either of these instead:
+
+    vfy replay r.json; test $? -ne 1                # verified, whatever it decided
+    vfy --json replay r.json                        # {"verified":true,"replayed":true,"outcome":"BLOCK",...}
+
+The JSON form is the one to script against: `verified`, `replayed`, `authorization_verified`, and
+`outcome` are four separate answers, and no single exit code can carry four answers.
+
 ## What replay does not do
 
 It does not re-run the command, re-acquire evidence, contact the original system, rerun a model,

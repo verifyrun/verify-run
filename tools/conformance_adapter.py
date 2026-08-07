@@ -30,7 +30,12 @@ import sys
 import tempfile
 from pathlib import Path
 
-ADAPTER_VERSION = "1.0.0"
+ADAPTER_VERSION = "1.1.0"
+
+# This implementation's floor, declared by its own package metadata. The runner has a lower floor
+# of its own and does not care about this one; an adapter is where an implementation's environment
+# requirements belong.
+MINIMUM_PYTHON = (3, 11)
 
 # This implementation's reason codes, mapped onto the profile's neutral categories. A mapping is
 # declared rather than inferred so an auditor can see exactly what was normalized.
@@ -73,15 +78,65 @@ def canonical(value):
                       ensure_ascii=False).encode("utf-8")
 
 
-def vfy_command():
-    """Locate the installed command line. Never a local source tree."""
-    beside = Path(sys.executable).parent / "vfy"
-    if beside.is_file():
-        return str(beside)
-    found = shutil.which("vfy")
-    if not found:
-        raise SystemExit("vfy is not installed in this environment")
-    return found
+class AdapterEnvironmentError(Exception):
+    """This adapter cannot conduct the call. Never a refusal to replay, and never a verdict.
+
+    Reported inside the protocol rather than by dying, so the runner records INCOMPLETE with the
+    reason instead of reading a dead process as thirty failed fixtures.
+    """
+
+
+def preflight():
+    """Return a clear sentence if this interpreter cannot run the implementation, else None."""
+    running = tuple(sys.version_info[:2])
+    if running >= MINIMUM_PYTHON:
+        return None
+    return ("verify-run requires Python %d.%d or newer and this adapter is running on %d.%d. "
+            "Install it into an interpreter that meets that floor and point the runner at it, "
+            "for example --adapter \"/path/to/py311/bin/python tools/conformance_adapter.py\"."
+            % (MINIMUM_PYTHON + running))
+
+
+def version_of(path):
+    """Return what `--version` printed, or None if this is not the implementation under test.
+
+    `vfy` is a short name and this adapter is not the only thing that may have claimed it. A
+    candidate that answers `--version` with anything but this distribution's banner is some other
+    program, and running a conformance suite against some other program is how a kit produces a
+    confident result about nothing.
+    """
+    try:
+        completed = subprocess.run([str(path), "--version"], capture_output=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    text = completed.stdout.decode("utf-8", "replace").strip()
+    if completed.returncode != 0 or not text.startswith("verify-run "):
+        return None
+    return text.split()[-1]
+
+
+def vfy_command(named=None):
+    """Locate the installed command line, and prove it is the right one. Never a source tree."""
+    tried = []
+    candidates = [Path(named)] if named else \
+        [Path(sys.executable).parent / name for name in ("vfy", "vfy.exe")]
+    if not named:
+        found = shutil.which("vfy")
+        if found:
+            candidates.append(Path(found))
+    for candidate in candidates:
+        if not candidate.is_file():
+            continue
+        if version_of(candidate) is not None:
+            return str(candidate)
+        tried.append(str(candidate))
+    raise AdapterEnvironmentError(
+        "no verify-run command line was found for this adapter. Interpreter: %s. %s Install the "
+        "distribution under test into that interpreter — `pip install verify-run` — or name the "
+        "executable with --vfy."
+        % (sys.executable,
+           ("These were found but did not identify as verify-run: %s." % ", ".join(tried))
+           if tried else "Nothing named `vfy` was found beside it or on PATH."))
 
 
 def run(argv, cwd):
@@ -112,8 +167,12 @@ def materialize(bundle, root, vfy):
     """
     completed = run([vfy, "--workspace", str(root), "init", "--template", "pipeline-gate"], root)
     if completed.returncode != 0:
-        raise RuntimeError("workspace setup failed: "
-                           + completed.stderr.decode("utf-8", "replace"))
+        raise AdapterEnvironmentError(
+            "the implementation could not create a workspace to replay into: "
+            + completed.stderr.decode("utf-8", "replace").strip())
+    if not (bundle / "receipt.json").is_file():
+        raise AdapterEnvironmentError(
+            "the fixture bundle has no receipt.json: " + str(bundle))
 
     trust = bundle / "trust.json"
     if trust.is_file():
@@ -212,21 +271,36 @@ OPERATIONS = {"replay": operation_replay, "capabilities": operation_capabilities
 def main():
     parser = argparse.ArgumentParser(description="Reference conformance adapter for verify-run.")
     parser.add_argument("--request", help="path to a JSON request; stdin when absent")
+    parser.add_argument("--vfy", help="path to the vfy executable under test; searched when absent")
     options = parser.parse_args()
 
-    raw = Path(options.request).read_text(encoding="utf-8") if options.request \
-        else sys.stdin.read()
-    request = json.loads(raw)
-    operation = request.get("operation", "replay")
-    if operation not in OPERATIONS:
-        json.dump({"adapter": "verify-run-cli", "operation": operation,
-                   "error_category": "unsupported_operation", "accepted": False}, sys.stdout)
-        return 0
+    operation = "unknown"
+    try:
+        unusable = preflight()
+        if unusable:
+            raise AdapterEnvironmentError(unusable)
+        raw = Path(options.request).read_text(encoding="utf-8") if options.request \
+            else sys.stdin.read()
+        request = json.loads(raw)
+        operation = request.get("operation", "replay")
+        if operation not in OPERATIONS:
+            json.dump({"adapter": "verify-run-cli", "operation": operation,
+                       "error_category": "unsupported_operation", "accepted": False}, sys.stdout)
+            return 0
 
-    vfy = vfy_command()
-    implementation = implementation_identity(vfy)
-    bundle = Path(request["bundle"]) if request.get("bundle") else None
-    result = OPERATIONS[operation](bundle, implementation, vfy)
+        vfy = vfy_command(options.vfy)
+        implementation = implementation_identity(vfy)
+        bundle = Path(request["bundle"]) if request.get("bundle") else None
+        result = OPERATIONS[operation](bundle, implementation, vfy)
+    except AdapterEnvironmentError as failure:
+        result = {"adapter": "verify-run-cli", "adapter_version": ADAPTER_VERSION,
+                  "operation": operation, "accepted": False, "adapter_error": str(failure)}
+    except (OSError, ValueError, KeyError, subprocess.SubprocessError) as failure:
+        # Anything else that stopped the call is still the harness's problem, not a replay
+        # observation. Reported the same way, with the type named and nothing invented.
+        result = {"adapter": "verify-run-cli", "adapter_version": ADAPTER_VERSION,
+                  "operation": operation, "accepted": False,
+                  "adapter_error": "%s: %s" % (type(failure).__name__, failure)}
     sys.stdout.write(json.dumps(result, sort_keys=True))
     return 0
 

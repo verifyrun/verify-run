@@ -79,6 +79,28 @@ class StoredRecord:
 
 
 @dataclass(frozen=True)
+class RefusedRecord:
+    """One artifact in the receipts directory that a listing would not read.
+
+    Named rather than hidden, and never deleted. A damaged artifact is a fact about that file
+    alone: it is reported by filename so the repair is obvious, and it does not decide what the
+    listing may say about every other record.
+    """
+
+    filename: str
+    code: str
+    message: str
+
+
+@dataclass(frozen=True)
+class ReceiptListing:
+    """What a listing found: the records it could read, and the artifacts it refused."""
+
+    summaries: tuple
+    refused: tuple
+
+
+@dataclass(frozen=True)
 class ConsumptionRecord:
     nonce: str
     authorization_id: str
@@ -243,36 +265,50 @@ class LocalStore:
             replay_verified=replay_verified, authorization_verified=authorization_verified)
 
     def list_receipts(self):
-        """Return the index if it is usable, else rebuild. Records always govern."""
+        """The summaries a listing could read. `listing()` also names what it refused."""
+        return self.listing().summaries
+
+    def listing(self):
+        """What the committed records say, and which artifacts could not be read.
+
+        One rule, applied to every file this reads: **no single damaged artifact may make the
+        listing unavailable, and no damaged artifact may pass as healthy.** Each one is named by
+        filename with the code that refused it, the rest of the listing is still answered, and
+        nothing is deleted or repaired here.
+
+        The answer is derived from the records rather than from the index, and that is the
+        correction rather than an oversight. The reconciliation this used to perform compares
+        *identities*, which a record damaged after it was indexed still has — so the cache
+        answered for a file it could not see was unreadable, while a single unreadable file
+        anywhere ended the whole listing. Only a scan can say both things truthfully. The index
+        stays exactly what `spec/local-store.md` calls it, an optimization and never an
+        authority; it is maintained by `put_record` and rebuilt by `rebuild_index`, and a listing
+        neither believes it nor writes it.
+        """
+        listing = self._listing_from_records()
+        problem = self._index_problem()
+        return listing if problem is None else ReceiptListing(
+            summaries=listing.summaries, refused=listing.refused + (problem,))
+
+    def _index_problem(self):
+        """Refuse the cache by name if it is unusable. An absent index is not a fault."""
         index_path = self.root / _INDEX
         if not index_path.exists():
-            return self.rebuild_index()
-        _reject_symlink(index_path)
+            return None                       # a store that has committed nothing has no cache
         try:
-            value = load.load_json_bytes(index_path.read_bytes())
-        except Exception:
-            raise StoreIndexInvalid("The index is not a canonical JSON document.") from None
-        if not isinstance(value, dict) or "receipts" not in value:
-            raise StoreIndexInvalid("The index has no receipts array.")
-        summaries = []
-        for entry in value["receipts"]:
-            if set(entry) != {"receipt_id", "created_at", "outcome", "rulebook_id",
-                              "rulebook_version", "authorization_id", "key_id"}:
-                raise StoreIndexInvalid("An index entry has unexpected fields.")
-            summaries.append(ReceiptSummary(**entry))
-
-        # Records govern. Comparing identities is enough to detect every disagreement: a record
-        # is never overwritten, so an entry naming a committed receipt describes it correctly,
-        # and any other difference is a name present or absent on one side.
-        committed = {path.stem for path in (self.root / _RECEIPTS).glob("*.json")}
-        if {s.receipt_id for s in summaries} != committed:
-            return self._summaries_from_records()
-        return tuple(summaries)
+            _reject_symlink(index_path)
+            _check_index(index_path)
+        except VerifyError as typed:
+            return RefusedRecord(_INDEX, typed.code, str(typed))
+        except OSError as failure:
+            return RefusedRecord(_INDEX, StoreIndexInvalid.code,
+                                 "The index could not be read: " + str(failure))
+        return None
 
     def rebuild_index(self):
-        summaries = self._summaries_from_records()
-        self._write_index(summaries)
-        return summaries
+        listing = self._listing_from_records()
+        self._write_index(listing.summaries)
+        return listing.summaries
 
     def scan(self):
         """Report what is present but not committed. Nothing is deleted."""
@@ -361,38 +397,47 @@ class LocalStore:
     def _consumption_path(self, nonce):
         return self.root / _CONSUMED / (_nonce_digest(nonce) + ".json")
 
-    def _summaries_from_records(self):
-        summaries = []
+    def _listing_from_records(self):
+        """Read every committed receipt, keeping the ones that read and naming the ones that do not.
+
+        A refusal is scoped to its own file. Nothing is deleted, nothing is repaired, and nothing
+        about a damaged artifact is inferred onto its neighbours.
+        """
+        summaries, refused = [], []
         for path in sorted((self.root / _RECEIPTS).glob("*.json")):
-            _reject_symlink(path)
-            value = _load_canonical(path)
-            block = value["signature"]
-            summaries.append(ReceiptSummary(
-                receipt_id=value["receipt_id"], created_at=value["created_at"],
-                outcome=value["result"]["outcome"],
-                rulebook_id=value["rulebook"]["rulebook_id"],
-                rulebook_version=value["rulebook"]["version"],
-                authorization_id=value.get("authorization_id"), key_id=block["key_id"]))
-        return tuple(sorted(summaries, key=lambda s: (s.created_at, s.receipt_id)))
+            try:
+                summaries.append(_summary_of(path))
+            except VerifyError as typed:
+                refused.append(RefusedRecord(path.name, typed.code, str(typed)))
+            except OSError as failure:
+                refused.append(RefusedRecord(
+                    path.name, StoreRecordIncomplete.code,
+                    "The stored receipt file could not be read: " + str(failure)))
+        return ReceiptListing(
+            summaries=tuple(sorted(summaries, key=lambda s: (s.created_at, s.receipt_id))),
+            refused=tuple(refused))
 
     def _refresh_index(self):
         """Rebuild the cache from the committed records, tolerating its own failure.
 
         A committed record must never be reported as uncommitted because a cache write raced, a
         disk filled, or an unrelated historical record turned out to be unreadable, so nothing
-        here propagates. The refresh reads every committed receipt, which means it can fail for a
-        reason that has nothing to do with the record just written — and a `VerifyError` from
-        that scan travelling outward would revoke a commit the rename already made, which
-        `spec/local-store.md` forbids. A stale cache is corrected by the next listing, which
-        reconciles against the records; a corrupt record stays present and is still refused
-        there, by name.
+        here propagates. The scan itself no longer refuses on a damaged historical record — it
+        names it and carries on — but the write can still fail for reasons that have nothing to
+        do with the record just committed, and either failure travelling outward would revoke a
+        commit the rename already made, which `spec/local-store.md` forbids. A stale cache is
+        corrected by the next listing; a damaged record stays present, is named by any listing
+        that scans, and is still refused by `get_record`.
         """
         try:
-            self._write_index(self._summaries_from_records())
+            self._write_index(self._listing_from_records().summaries)
         except (OSError, VerifyError):
             pass
 
     def _write_index(self, summaries):
+        # Checked here rather than only where the cache is read: the publish below renames over
+        # this name, and renaming over a symlink is how a store would be made to remove one.
+        _reject_symlink(self.root / _INDEX)
         document = {"store_format_version": STORE_FORMAT_VERSION,
                     "receipts": [{"receipt_id": s.receipt_id, "created_at": s.created_at,
                                   "outcome": s.outcome, "rulebook_id": s.rulebook_id,
@@ -436,6 +481,56 @@ def _check_storable(receipt_id):
     if not STORABLE_ID.match(receipt_id) or receipt_id in (".", ".."):
         raise StorePathInvalid(
             "This receipt id cannot be stored as a filename: " + repr(receipt_id))
+
+
+def _check_index(path):
+    """Refuse a cache that is not the document this store writes. Nothing is believed from it."""
+    try:
+        value = load.load_json_bytes(path.read_bytes())
+    except VerifyError:
+        raise StoreIndexInvalid("The index is not a canonical JSON document.") from None
+    if not isinstance(value, dict) or "receipts" not in value:
+        raise StoreIndexInvalid("The index has no receipts array.")
+    if not isinstance(value["receipts"], list):
+        raise StoreIndexInvalid("The index has no receipts array.")
+    for entry in value["receipts"]:
+        if not isinstance(entry, dict) or set(entry) != {
+                "receipt_id", "created_at", "outcome", "rulebook_id", "rulebook_version",
+                "authorization_id", "key_id"}:
+            raise StoreIndexInvalid("An index entry has unexpected fields.")
+
+
+def _summary_of(path):
+    """Summarize one committed receipt file, or refuse it.
+
+    Nothing here verifies a signature or replays anything — a summary is a convenience over bytes
+    the store never treats as trustworthy. What it does guarantee is that a file which is not a
+    receipt cannot leave this function as anything but a typed refusal: a raw `KeyError` from a
+    foreign document would cross the store boundary and be reported as an internal defect.
+    """
+    _reject_symlink(path)
+    value = _load_canonical(path)
+    try:
+        summary = ReceiptSummary(
+            receipt_id=value["receipt_id"], created_at=value["created_at"],
+            outcome=value["result"]["outcome"],
+            rulebook_id=value["rulebook"]["rulebook_id"],
+            rulebook_version=value["rulebook"]["version"],
+            authorization_id=value.get("authorization_id"),
+            key_id=value["signature"]["key_id"])
+    except (TypeError, KeyError, IndexError, AttributeError):
+        raise StoreRecordIncomplete(
+            "The stored receipt file is not a receipt: " + path.name) from None
+    for name in ("receipt_id", "created_at", "outcome", "rulebook_id", "rulebook_version",
+                 "key_id"):
+        if not isinstance(getattr(summary, name), str):
+            # Every listed field is ordered, compared, or printed. A number where a string
+            # belongs would sort against its neighbours and fail there instead of here.
+            raise StoreRecordIncomplete(
+                "The stored receipt file is not a receipt: " + path.name)
+    if summary.authorization_id is not None and not isinstance(summary.authorization_id, str):
+        raise StoreRecordIncomplete("The stored receipt file is not a receipt: " + path.name)
+    return summary
 
 
 def _receipt_outcome(value):

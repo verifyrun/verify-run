@@ -104,8 +104,36 @@ Each summary carries only what the signed receipt already states: `receipt_id`, 
 Ordering is by `(created_at, receipt_id)`, both from the receipt, so ties are deterministic and
 insertion order is irrelevant.
 
-If the index disagrees with the records, **the records govern**. A malformed index is refused with
-`store_index_invalid` rather than believed, and rebuilding is always available.
+If the index disagrees with the records, **the records govern**. A malformed index is never
+believed: it is reported by name with `store_index_invalid`, in the `refused` list a listing
+returns, and rebuilding is always available. Reporting it is not the same as raising it — see
+**Listing** below, where the one rule that governs every artifact this store reads is stated.
+
+## Listing
+A listing answers two questions at once, and it answers both from the committed records:
+
+- **which records it could read** — `summaries`, ordered by `(created_at, receipt_id)`;
+- **which artifacts it could not** — `refused`, each naming the artifact's **filename**, the
+  reason code that refused it, and the message.
+
+One rule governs it: **no single damaged artifact makes a listing unavailable, and no damaged
+artifact passes as healthy.** A file that is not canonical, not readable, not a receipt, or not a
+regular file is refused by name; every other record is still listed; nothing is deleted, repaired,
+or written. A caller that sees a non-empty `refused` knows precisely which file to look at.
+
+The index is not consulted, and that is a correction rather than an oversight. Reconciliation
+compares *identities*, which a record damaged after it was indexed still has — so a listing that
+answered from the cache reported a receipt it had no way of knowing was unreadable, while a single
+unreadable file anywhere ended the whole listing and made every healthy record unreachable through
+that command. Only a scan can answer both questions truthfully, so a listing scans. This costs one
+read per committed record, which is what a local store bounded by one workspace's runs can afford;
+`get_record`, which is where anything is actually verified, is unchanged and still refuses a
+damaged record by name.
+
+The index itself is subject to the same rule. A malformed, unreadable, or symlinked `index.json`
+appears in `refused` — it is never believed, and it never silences the records either. Writing is
+where a symlinked cache is dangerous, and writing still refuses: `rebuild_index` raises
+`store_path_invalid` rather than renaming over the link.
 
 ### Subordinate, operationally
     store_format_version: 1 — clarified after Unit 12's concurrency proof; no guarantee changed.
@@ -113,12 +141,11 @@ If the index disagrees with the records, **the records govern**. A malformed ind
 "Never an authority" has to hold at runtime, not only in principle. Three consequences, each of
 which the implementation failed until this was written down:
 
-- **A listing reconciles before it answers.** `list_receipts` compares the index's receipt ids
-  against the committed receipt files and derives from the records when they differ. Comparing
-  identities is sufficient because a record is never overwritten: an entry naming a committed
-  receipt describes it correctly, so every possible disagreement is a name on one side and not
-  the other. A listing therefore never omits a committed record and never names one that does not
-  exist — an index entry may not substitute for a receipt.
+- **A listing derives from the records.** It never omits a readable committed record and never
+  names one that does not exist, because it reads the records themselves — an index entry may not
+  substitute for a receipt. Until the 0.1.x hardening pass a listing reconciled identities against
+  the cache and answered from it when they agreed; see **Listing** above for why comparing
+  identities was not enough.
 - **Index maintenance may not revoke a commit.** The receipt rename is the commit point and index
   maintenance follows it, so a failure there is a cache failure, not the record's. `put_record`
   returns the committed record. This is not error suppression: nothing about the committed
@@ -130,7 +157,7 @@ which the implementation failed until this was written down:
   made a run that had executed, consumed its nonce, and committed a complete record report
   `execution_recording_failed`, sending an operator to look for a receipt already on disk. The
   corrupt artifact is still never deleted, still refused by name on any attempt to load it, and
-  still refused by a listing once the index disagrees with the records.
+  now named by every listing rather than ending one.
 - **Concurrent writers do not publish over each other.** Every index write stages at
   `index.<n>.staging`, a slot found by the same exclusive creation used elsewhere here, so two
   callers committing different records never rename each other's file. One shared staging name
@@ -139,7 +166,7 @@ which the implementation failed until this was written down:
 
 Two writers can still each rebuild from their own scan instant, so a published index may lag the
 records it describes. That is exactly what a subordinate cache is permitted to do, and it is
-invisible to callers because a listing reconciles first.
+invisible to callers because a listing reads the records rather than the cache.
 
 ## Loading
 `get_record` trusts nothing:
@@ -233,9 +260,11 @@ no path outside the caller's root is ever touched.
 
 ## Recovery
 - **abandoned staging** — reported by an explicit scan, never auto-deleted;
-- **committed record missing from the index** — the index is rebuilt; records govern;
-- **index entry with no committed record** — the index is wrong and is rebuilt;
-- **corrupt index** — refused, then rebuilt from records;
+- **committed record missing from the index** — invisible to a listing, which reads the records;
+- **index entry with no committed record** — the index is wrong; `rebuild_index` corrects it;
+- **corrupt index** — named in a listing's `refused`, then rebuilt from records;
+- **corrupt committed record** — named in a listing's `refused` by filename, never deleted, and
+  still refused by `get_record`; every other record is still listed;
 - **interrupted consumption** — the record either exists atomically or does not; there is no
   partial state to recover;
 - **orphaned inputs with no receipt** — not committed, and reported by the same scan.

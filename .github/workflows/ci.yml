@@ -1,8 +1,14 @@
 name: CI
 
 on:
-  push:
   pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+      - "review/**"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -95,3 +101,45 @@ jobs:
           python -m venv /tmp/sdist-env
           /tmp/sdist-env/bin/pip install dist/*.tar.gz
           cd /tmp && /tmp/sdist-env/bin/vfy --version
+
+  conformance:
+    name: Decision Replay Conformance Profile v1
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build the distribution and install it into a clean environment
+        # The implementation under test is a built distribution installed on its own, not this
+        # checkout: an adapter that reached a source tree would be measuring something no one
+        # can download.
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+          python -m venv /tmp/conformance-env
+          /tmp/conformance-env/bin/pip install --quiet dist/*.whl
+          /tmp/conformance-env/bin/vfy --version
+      - name: Run the full conformance suite
+        # Exit 0 PASS, 1 FAIL, 2 INCOMPLETE, 3 runner error. Anything but 0 fails this job:
+        # INCOMPLETE means the run could not be conducted, which is not a pass either.
+        run: |
+          /tmp/conformance-env/bin/python tools/run_conformance.py \
+            --profile conformance/decision-replay-v1/profile.json \
+            --adapter-arg /tmp/conformance-env/bin/python \
+            --adapter-arg "$PWD/tools/conformance_adapter.py" \
+            --adapter-arg=--vfy \
+            --adapter-arg /tmp/conformance-env/bin/vfy \
+            --out /tmp/conformance-result.json
+      - name: The result must be PASS, and every kit digest must still match
+        run: python tools/check_conformance_result.py /tmp/conformance-result.json
+      - name: The kit's own tests
+        run: |
+          python -m pip install -e .
+          python -m unittest tests.test_conformance -v
+      - name: Keep the result document
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conformance-result
+          path: /tmp/conformance-result.json

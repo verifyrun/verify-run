@@ -1,6 +1,7 @@
 """Closure Unit 13 — the public local CLI and the complete developer workflow."""
 
 import base64
+import hashlib
 import io
 import json
 import os
@@ -13,7 +14,7 @@ import tempfile
 import tokenize
 import unittest
 
-from vfy import canon, cli, load, workflow
+from vfy import authorization, canon, cli, load, workflow
 from vfy import store as store_module
 from vfy.errors import VerifyError
 
@@ -23,6 +24,26 @@ TEMPLATE_DIR = REPO_ROOT / "templates"
 
 AT = "2026-08-05T12:00:00Z"
 SEEDS = (bytes(range(1, 33)), bytes(range(33, 65)), bytes(range(65, 97)), bytes(range(97, 129)))
+
+
+class SteppingClock:
+    """A clock that advances a fixed number of seconds on every read.
+
+    Injected and deterministic, so a test can observe *which* instant each stage of a run
+    recorded — without sleeping, and without any result depending on how fast the machine is.
+    Every reading is later than the last, which is the only thing a wall clock normally promises
+    and the only thing the chain's ordering rules rely on.
+    """
+
+    def __init__(self, start=None, step_seconds=1):
+        self.instant = start or AT
+        self.step_seconds = step_seconds
+        self.readings = []
+
+    def now_utc(self):
+        self.readings.append(self.instant)
+        self.instant = authorization._add_seconds(self.instant, self.step_seconds)
+        return self.readings[-1]
 
 
 def _case(path):
@@ -69,8 +90,8 @@ class Cli:
             os.environ[name] = value
         try:
             code = cli.main(["--workspace", str(self.workspace)] + list(argv),
-                            clock=workflow.FixedClock(clock), identifiers=self.identifiers,
-                            out=out, err=err)
+                            clock=workflow.FixedClock(clock) if isinstance(clock, str) else clock,
+                            identifiers=self.identifiers, out=out, err=err)
         finally:
             for name, value in restore.items():
                 if value is None:
@@ -110,6 +131,11 @@ class _Workspace:
 
     def consumed(self):
         return sorted((self.root / ".vfy" / "consumed").glob("*.json"))
+
+    def inputs(self, name, index=0):
+        receipt = self.receipts()[index]
+        return load.load_json_bytes(
+            (receipt.parent / (receipt.stem + ".inputs") / (name + ".json")).read_bytes())
 
     def __enter__(self):
         return self
@@ -472,12 +498,25 @@ class Receipts(unittest.TestCase):
                     value = load.load_json_bytes(index.read_bytes())
                     value["receipts"].append(dict(value["receipts"][0], receipt_id="ghost"))
                     index.write_bytes(canon.canonical_bytes(value))
+                if "corrupt_receipt" in mutation:
+                    # Valid JSON, deliberately not the canonical bytes: exactly what a listing
+                    # refuses. Damaged after the index was written, so the identities still agree.
+                    workspace.receipts()[mutation["corrupt_receipt"]].write_bytes(
+                        b'{"receipt_id": "damaged",   "not": "canonical"}')
 
                 code, out, err = workspace.cli("--json", "receipts", "list")
                 expected = case["expected"]
                 self.assertEqual(code, expected["exit"], path.name)
                 body = load.load_json_bytes(out.strip().encode("utf-8"))
                 self.assertEqual(len(body["receipts"]), expected["count"], path.name)
+                self.assertEqual([r["file"] for r in body["refused"]],
+                                 expected.get("refused", []), path.name)
+                self.assertEqual([r["code"] for r in body["refused"]],
+                                 expected.get("refused_codes", []), path.name)
+                if "stderr_contains" in expected:
+                    self.assertIn(expected["stderr_contains"], err, path.name)
+                    for name in expected["refused"]:
+                        self.assertIn(name, err, "a refused artifact was not named")
                 if "outcomes" in expected:
                     self.assertEqual(sorted(r["outcome"] for r in body["receipts"]),
                                      sorted(expected["outcomes"]), path.name)
@@ -583,6 +622,172 @@ class Configuration(unittest.TestCase):
             (workspace.root / ".vfy" / "keys" / "receipt.key").chmod(0o644)
             code, _, err = workspace.cli("run", "--identity", "branch=main", "--", "bin/ok.sh")
             self.assertIn("readable beyond its owner", err)
+
+
+class RunInstants(unittest.TestCase):
+    """One run is several instants, and each stage records its own.
+
+    `vfy run` captured **one** instant and used it for every recorded time until the 0.1.x
+    hardening pass. Three of the chain's own questions then had no answer that could ever come
+    out any other way: evidence was exactly zero seconds old at the freeze, so `fresh()` was
+    always true; an authorization was verified at the instant it was minted, so `ttl_seconds`
+    could not be reached; and a command that ran for an hour was acknowledged at the instant its
+    evidence was frozen. The instants are still monotone, and a fixed clock still reproduces a
+    run byte for byte — see `Determinism` below, which is unchanged.
+    """
+
+    CASE = "run_allow_exit_zero.json"
+
+    def _workspace(self):
+        case = _case(CLI_DIR / self.CASE)
+        return _Workspace(tree=case["tree"], template=case["template"])
+
+    def _amend_rulebook(self, workspace, version, **changes):
+        """Rewrite the workspace rulebook. A changed rulebook is a new version, always."""
+        path = workspace.root / "rulebook.yaml"
+        text = path.read_text(encoding="utf-8").replace("version: 1.0.0", "version: " + version)
+        for old, new in changes.items():
+            self.assertIn(old, text)
+            text = text.replace(old, new)
+        path.write_text(text, encoding="utf-8")
+
+    def test_each_stage_records_its_own_instant(self):
+        with self._workspace() as workspace:
+            code, _, err = workspace.cli("run", "--identity", "branch=main", "--", "bin/ok.sh",
+                                         clock=SteppingClock(step_seconds=1))
+            self.assertEqual(code, 0, err)
+            receipt = load.load_json_bytes(workspace.receipts()[0].read_bytes())
+            snapshot, granted = workspace.inputs("snapshot"), workspace.inputs("authorization")
+
+            acquired = [item["acquired_at"] for item in snapshot["items"]]
+            self.assertTrue(acquired, "this fixture acquires no evidence")
+            for instant in acquired:
+                self.assertLess(instant, snapshot["frozen_at"],
+                                "the freeze was dated before the acquisition it describes")
+            self.assertLess(snapshot["frozen_at"], granted["issued_at"])
+            self.assertLess(granted["issued_at"], receipt["execution"]["acknowledged_at"])
+            # The receipt is created at the acknowledgment: one stage, one instant.
+            self.assertEqual(receipt["created_at"], receipt["execution"]["acknowledged_at"])
+
+    def test_evidence_older_than_its_freshness_bound_no_longer_passes(self):
+        """`fresh()` had exactly one possible answer while every item was frozen when acquired."""
+        with self._workspace() as workspace:
+            self._amend_rulebook(workspace, "1.0.1", **{"max_age_seconds: 900":
+                                                        "max_age_seconds: 0"})
+            code, out, _ = workspace.cli("run", "--identity", "branch=main", "--", "bin/ok.sh",
+                                         clock=SteppingClock(step_seconds=1))
+            self.assertEqual(code, cli.EXIT_HOLD)
+            self.assertIn("HOLD", out)
+
+        with self._workspace() as workspace:
+            # The same rulebook and the same evidence, with a clock that does not move: fresh.
+            self._amend_rulebook(workspace, "1.0.1", **{"max_age_seconds: 900":
+                                                        "max_age_seconds: 0"})
+            code, _, err = workspace.cli("run", "--identity", "branch=main", "--", "bin/ok.sh")
+            self.assertEqual(code, 0, err)
+
+    def test_an_authorization_is_checked_against_the_instant_it_is_spent(self):
+        """The interval is the rulebook's to set, and it now bounds something."""
+        with self._workspace() as workspace:
+            self._amend_rulebook(workspace, "1.0.1", **{"ttl_seconds: 300": "ttl_seconds: 1"})
+            code, _, err = workspace.cli("run", "--identity", "branch=main", "--", "bin/ok.sh",
+                                         clock=SteppingClock(step_seconds=60))
+            self.assertEqual(code, cli.EXIT_OPERATIONAL)
+            self.assertIn("authorization_expired", err)
+            # Refused above the line: nothing spent, nothing started, nothing recorded.
+            self.assertEqual(workspace.receipts(), [])
+            self.assertEqual(workspace.consumed(), [])
+
+    def test_a_command_is_acknowledged_when_it_finished_not_when_it_started(self):
+        """The one assertion here that a stepping clock cannot make: real elapsed time."""
+        with self._workspace() as workspace:
+            slow = workspace.root / "bin" / "slow.sh"
+            slow.write_text("#!/bin/sh\nsleep 2\nexit 0\n", encoding="utf-8")
+            slow.chmod(0o755)
+            code, _, err = workspace.cli("run", "--identity", "branch=main", "--", "bin/slow.sh",
+                                         clock=workflow.Clock())
+            self.assertEqual(code, 0, err)
+            receipt = load.load_json_bytes(workspace.receipts()[0].read_bytes())
+            frozen_at = workspace.inputs("snapshot")["frozen_at"]
+            self.assertGreaterEqual(receipt["execution"]["acknowledged_at"],
+                                    authorization._add_seconds(frozen_at, 2),
+                                    "the acknowledgment was dated before the command finished")
+
+    def test_the_recorded_instants_replay(self):
+        """Distinct instants are still recorded inputs, and replay recomputes from them."""
+        with self._workspace() as workspace:
+            code, _, err = workspace.cli("run", "--identity", "branch=main", "--", "bin/ok.sh",
+                                         clock=SteppingClock(step_seconds=7))
+            self.assertEqual(code, 0, err)
+            code, out, err = workspace.cli("replay", str(workspace.receipts()[0]))
+            self.assertEqual(code, 0, err)
+            self.assertIn("recomputed and identical", out)
+
+
+class ProgramBytesAsEvidence(unittest.TestCase):
+    """An authorization binds `argv[0]` as a path, not the bytes at that path.
+
+    `docs/security.md` records why that binding is not built in, and points readers at the thing
+    that *is* available: the program's digest as a recorded evidence item, which the evaluator
+    reads, the snapshot freezes, the receipt binds, and replay recomputes. This test keeps that
+    advice honest — if the documented shape ever stops working, this fails rather than the
+    documentation quietly becoming wrong.
+    """
+
+    def _prepare(self, workspace):
+        digest_script = workspace.root / "ci" / "program-digest.sh"
+        # An absolute shebang: an evidence command runs with an empty environment, so
+        # `/usr/bin/env python3` would have no PATH to search.
+        digest_script.write_text(
+            "#!%s\nimport hashlib, pathlib, sys\n"
+            "sys.stdout.write('\"%%s\"' %% "
+            "hashlib.sha256(pathlib.Path('bin/ok.sh').read_bytes()).hexdigest())\n"
+            % sys.executable, encoding="utf-8")
+        digest_script.chmod(0o755)
+        digest = hashlib.sha256((workspace.root / "bin" / "ok.sh").read_bytes()).hexdigest()
+        (workspace.root / "rulebook.yaml").write_text(
+            "rulebook_id: pipeline-gate\n"
+            "version: 1.1.0\n"
+            'adopted_at: "2026-08-05T00:00:00Z"\n'
+            "description: Gate on the exact program bytes, as recorded evidence.\n"
+            "track: [branch]\n"
+            "evidence:\n"
+            '  - {id: tests, source: exec, ref: "./ci/last-test-result.sh", max_age_seconds: 900}\n'
+            '  - {id: program, source: exec, ref: "./ci/program-digest.sh", max_age_seconds: 60}\n'
+            "rules:\n"
+            "  - id: known-program-on-main\n"
+            "    when: 'identity.branch == \"main\" and evidence.tests == \"passed\" "
+            "and evidence.program == \"%s\"'\n"
+            "    outcome: ALLOW\n"
+            "    reason: The program is the one this rulebook names.\n"
+            "  - id: unknown-program\n"
+            "    when: 'evidence.program != \"%s\"'\n"
+            "    outcome: BLOCK\n"
+            "    reason: The program at that path is not the one this rulebook names.\n"
+            "default_outcome: HOLD\n"
+            "authorization: {ttl_seconds: 300, single_use: true}\n" % (digest, digest),
+            encoding="utf-8")
+
+    def test_a_swapped_program_is_blocked_by_a_rulebook_that_names_its_digest(self):
+        case = _case(CLI_DIR / "run_allow_exit_zero.json")
+        with _Workspace(tree=case["tree"], template=case["template"]) as workspace:
+            self._prepare(workspace)
+            code, out, err = workspace.cli("run", "--identity", "branch=main", "--", "bin/ok.sh")
+            self.assertEqual(code, 0, out + err)
+            self.assertIn("known-program-on-main", out)
+
+            replacement = workspace.root / "bin" / "ok.sh"
+            replacement.write_text("#!/bin/sh\nprintf 'pwned\\n'\nexit 0\n", encoding="utf-8")
+            replacement.chmod(0o755)
+            code, out, _ = workspace.cli("run", "--identity", "branch=main", "--", "bin/ok.sh")
+            self.assertEqual(code, cli.EXIT_BLOCK)
+            self.assertIn("unknown-program", out)
+            # The decision is a decision: it is recorded, signed, and replayable like any other.
+            self.assertEqual(len(workspace.receipts()), 2)
+            receipt = sorted(workspace.receipts())[-1]
+            code, replayed, err = workspace.cli("replay", str(receipt))
+            self.assertEqual(code, cli.EXIT_BLOCK, err)
+            self.assertIn("recomputed and identical", replayed)
 
 
 class Determinism(unittest.TestCase):

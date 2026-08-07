@@ -29,6 +29,8 @@ KIT = [
     "conformance/decision-replay-v1/fixtures/manifest.json",
     "tools/run_conformance.py",
     "tools/conformance_adapter.py",
+    "tools/check_conformance_result.py",
+    "tools/conformance_reference_run.sh",
     "tools/build_conformance_fixtures.py",
     "tools/build_conformance_manifest.py",
     "tools/build_conformance_manifest_of_record.py",

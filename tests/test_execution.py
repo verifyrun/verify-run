@@ -16,7 +16,7 @@ import unittest
 from vfy import authorization as auth_module
 from vfy import canon, gate, load, receipt as receipt_module, rulebook, runner, schema, snapshot
 from vfy import store as store_module
-from vfy.errors import VerifyError
+from vfy.errors import ExecutionRecordingFailed, VerifyError
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 SPEC_DIR = REPO_ROOT / "spec"
@@ -683,6 +683,91 @@ def _names(path):
     with tokenize.open(path) as handle:
         return [t.string for t in tokenize.generate_tokens(handle.readline)
                 if t.type == tokenize.NAME]
+
+
+class CompletionInstants(unittest.TestCase):
+    """The two instants a caller cannot know before the child has run.
+
+    A caller either states them, which is what a fixture reproducing a run byte for byte does, or
+    hands over the clock that reads them, which is what a caller running a real command does. The
+    runtime holds no clock either way: it constructs no timestamp and reads only what it is given.
+    """
+
+    def setUp(self):
+        self.case = _case(EXEC_DIR / "accept_exit_zero.json")
+        self.registry = _registry()
+
+    def _execute(self, **over):
+        with _Sandbox(self.case["tree"]) as sandbox:
+            built = _build(self.case, sandbox, self.registry)
+            return _run(self.case, sandbox, self.registry, *built, **over), sandbox
+
+    def test_the_clock_is_read_once_after_the_child_and_dates_both_records(self):
+        readings = []
+
+        def clock():
+            readings.append("2026-08-05T12:00:%02dZ" % (len(readings) + 30))
+            return readings[-1]
+
+        record, _ = self._execute(acknowledged_at=None, receipt_created_at=None,
+                                  completion_clock=clock)
+        self.assertEqual(len(readings), 1, "the completion instant was read more than once")
+        self.assertEqual(record.acknowledgment()["acknowledged_at"], readings[0])
+        self.assertEqual(record.receipt.value()["created_at"], readings[0])
+
+    def test_stated_instants_still_work_exactly_as_before(self):
+        record, _ = self._execute()
+        self.assertEqual(record.acknowledgment()["acknowledged_at"],
+                         self.case["acknowledged_at"])
+        self.assertEqual(record.receipt.value()["created_at"], self.case["receipt_created_at"])
+
+    def test_stating_an_instant_and_supplying_a_clock_is_refused(self):
+        for over in ({"receipt_created_at": None}, {"acknowledged_at": None}, {}):
+            with self.subTest(over=sorted(over)):
+                with self.assertRaises(VerifyError) as caught:
+                    self._execute(completion_clock=lambda: "2026-08-05T12:00:30Z", **over)
+                self.assertEqual(caught.exception.code, "execution_configuration_invalid")
+
+    def test_a_clock_that_is_not_callable_is_refused_before_anything_is_spent(self):
+        with self.assertRaises(VerifyError) as caught:
+            self._execute(acknowledged_at=None, receipt_created_at=None,
+                          completion_clock="2026-08-05T12:00:30Z")
+        self.assertEqual(caught.exception.code, "execution_configuration_invalid")
+
+    def test_neither_a_stated_instant_nor_a_clock_is_a_type_error(self):
+        with self.assertRaises(TypeError):
+            self._execute(acknowledged_at=None, receipt_created_at=None)
+
+    def test_a_clock_that_misbehaves_after_the_spend_is_a_recording_failure(self):
+        """Below the line the command has run and the nonce is spent. Nothing is invented."""
+        broken = {"raises": lambda: 1 / 0,
+                  "returns nothing": lambda: None,
+                  "returns a number": lambda: 12,
+                  "returns prose": lambda: "not an instant",
+                  "returns a local time": lambda: "2026-08-05T12:00:30"}
+        for label, clock in broken.items():
+            with self.subTest(clock=label):
+                with self.assertRaises(ExecutionRecordingFailed) as caught:
+                    self._execute(acknowledged_at=None, receipt_created_at=None,
+                                  completion_clock=clock)
+                self.assertEqual(caught.exception.stage, "acknowledge")
+                self.assertIsNone(caught.exception.receipt)
+
+    def test_the_full_frozen_grammar_is_accepted_exactly_as_a_stated_instant_is(self):
+        """An explicit offset is a date-time in this product's grammar; `Clock` just never emits one."""
+        record, _ = self._execute(acknowledged_at=None, receipt_created_at=None,
+                                  completion_clock=lambda: "2026-08-05T13:00:30+01:00")
+        self.assertEqual(record.acknowledgment()["acknowledged_at"], "2026-08-05T13:00:30+01:00")
+
+    def test_a_spent_nonce_stays_spent_when_the_completion_instant_fails(self):
+        with _Sandbox(self.case["tree"]) as sandbox:
+            built = _build(self.case, sandbox, self.registry)
+            with self.assertRaises(ExecutionRecordingFailed):
+                _run(self.case, sandbox, self.registry, *built,
+                     acknowledged_at=None, receipt_created_at=None,
+                     completion_clock=lambda: "nonsense")
+            self.assertTrue(sandbox.store.is_consumed(built[4].nonce),
+                            "a failure below the line un-spent an authorization")
 
 
 class Purity(unittest.TestCase):

@@ -390,12 +390,16 @@ def resolve_program(workspace, name):
         "%r is not on the workspace search path; write a path or add its directory." % name)
 
 
-def build_candidate(workspace, argv, frozen_at, identity=None):
+def build_candidate(workspace, argv, started_at, identity=None):
     """The exact candidate a command line denotes. Nothing is altered after this."""
     if not argv:
         raise CliExecutableNotFound("No command was given after `--`.")
     resolved = [resolve_program(workspace, argv[0])] + list(argv[1:])
-    seed = canon.canonical_bytes({"argv": resolved, "frozen_at": frozen_at})
+    # The seed's key is `frozen_at` because that is what the released `candidate_id` derivation
+    # is: renaming it would give every future run a different id for the same command at the same
+    # instant. Its value is the run's start instant, which is when the candidate is constructed —
+    # before any evidence is acquired, so no freeze instant exists yet to name.
+    seed = canon.canonical_bytes({"argv": resolved, "frozen_at": started_at})
     candidate = {
         "candidate_id": "c-" + hashlib.sha256(seed).hexdigest()[:32],
         "kind": "command",
@@ -406,46 +410,69 @@ def build_candidate(workspace, argv, frozen_at, identity=None):
     return candidate
 
 
-def acquire(workspace, pinned, instant):
-    """Acquire every declared local source. Unsupported ones are named, never faked."""
+def acquire(workspace, pinned, clock):
+    """Acquire every declared local source. Unsupported ones are named, never faked.
+
+    Each observation carries the instant it was taken, read immediately before the adapter is
+    called. An adapter still constructs no timestamp — it is handed one — but the instant it is
+    handed is now its own rather than the run's, which is what makes `acquired_at` a fact about
+    that observation and `fresh()` a question with an answer. One instant shared by every item
+    made every item exactly zero seconds old at the freeze, whatever it had cost to obtain.
+    """
     acquisitions, unsupported = [], []
     config = workspace.config["evidence"]
     file_root = workspace.path(config["file_root"])
     for declaration in pinned.value()["evidence"]:
         source = declaration["source"]
-        if source == "file":
-            result = evidence.acquire_file(declaration, file_root, instant)
-        elif source == "exec":
-            result = evidence.acquire_command(
-                declaration, file_root, instant,
-                timeout_seconds=config["command_timeout_seconds"],
-                working_directory=workspace.path(config["command_working_directory"]))
-        else:
+        if source not in ("file", "exec"):
             # No adapter, no network, no invention. build_snapshot records it as missing and the
             # rulebook holds on it, which is the honest answer for evidence nobody acquired.
             unsupported.append((declaration["id"], source))
             continue
+        acquired_at = clock.now_utc()
+        if source == "file":
+            result = evidence.acquire_file(declaration, file_root, acquired_at)
+        else:
+            result = evidence.acquire_command(
+                declaration, file_root, acquired_at,
+                timeout_seconds=config["command_timeout_seconds"],
+                working_directory=workspace.path(config["command_working_directory"]))
         acquisitions.append(result.as_acquisition())
     return acquisitions, tuple(unsupported)
 
 
-def evaluate(workspace, pinned, candidate, instant):
-    """Freeze and evaluate. Nothing is authorized, consumed, executed, or written."""
-    acquisitions, unsupported = acquire(workspace, pinned, instant)
+def evaluate(workspace, pinned, candidate, clock):
+    """Acquire, freeze, and evaluate. Nothing is authorized, consumed, executed, or written.
+
+    The freeze instant is read after acquisition has finished, so it is the instant the evidence
+    set was actually complete. Reading it first — and using it for every `acquired_at` as well —
+    dated the freeze before the work it describes and left every item zero seconds old.
+    """
+    acquisitions, unsupported = acquire(workspace, pinned, clock)
+    frozen_at = clock.now_utc()
     snapshot_id = "s-" + hashlib.sha256(
         canon.canonical_bytes({"candidate": candidate["candidate_id"],
-                               "frozen_at": instant})).hexdigest()[:32]
-    frozen = snapshot_module.build_snapshot(pinned, snapshot_id, instant, acquisitions,
+                               "frozen_at": frozen_at})).hexdigest()[:32]
+    frozen = snapshot_module.build_snapshot(pinned, snapshot_id, frozen_at, acquisitions,
                                             workspace.registry)
     return frozen, gate.evaluate(pinned, candidate, frozen.value(), workspace.registry), unsupported
 
 
 def run(workspace, argv, clock, identifiers, identity=None):
-    """The complete gated run, through the closed chain and nothing else."""
-    instant = clock.now_utc()
+    """The complete gated run, through the closed chain and nothing else.
+
+    The clock is read once at each point in the chain where a distinct instant exists: the run's
+    start, each acquisition, the freeze, the issue, the spend, and the completion. Every one of
+    them is a different fact, and one shared reading made three of them unaskable — evidence was
+    always zero seconds old, an authorization was verified at the instant it was minted, and a
+    command that ran for an hour was acknowledged at the instant its evidence was frozen. The
+    instants a run records are still monotone: freeze at or after every acquisition, issue at or
+    after the freeze, spend at or after the issue.
+    """
+    started_at = clock.now_utc()
     pinned = pin_rulebook(workspace)
-    candidate = build_candidate(workspace, argv, instant, identity)
-    frozen, result, unsupported = evaluate(workspace, pinned, candidate, instant)
+    candidate = build_candidate(workspace, argv, started_at, identity)
+    frozen, result, unsupported = evaluate(workspace, pinned, candidate, clock)
     notes = tuple("evidence %s is declared over %s, which this local runtime does not acquire"
                   % (identifier, source) for identifier, source in unsupported)
     outcome = result.outcome
@@ -465,7 +492,7 @@ def run(workspace, argv, clock, identifiers, identity=None):
 
     if outcome in ("BLOCK", "HOLD"):
         signed = receipt_module.issue_receipt(
-            pinned, candidate, frozen, result, None, None, receipt_id, instant,
+            pinned, candidate, frozen, result, None, None, receipt_id, clock.now_utc(),
             "receipt-key", 1, receipt_seed, workspace.registry)
         store.put_record(signed, pinned, candidate, frozen, None)
         return Decision(receipt_id=receipt_id, receipt_path=_receipt_path(workspace, receipt_id),
@@ -475,14 +502,21 @@ def run(workspace, argv, clock, identifiers, identity=None):
     nonce = identifiers.nonce()
     granted = auth_module.issue_authorization(
         pinned, candidate, frozen, result, "a-" + receipt_id[2:], nonce,
-        workspace.config["runtime_id"], instant, "authorization-key", 1, authorization_seed,
-        workspace.registry)
+        workspace.config["runtime_id"], clock.now_utc(), "authorization-key", 1,
+        authorization_seed, workspace.registry)
 
     record = runner.execute_authorized_command(
         pinned, candidate, frozen, result, granted,
-        runtime_id=workspace.config["runtime_id"], verification_time=instant,
-        acknowledged_at=instant, store=store, authorization_keys=trust["authorization"],
-        registry=workspace.registry, receipt_id=receipt_id, receipt_created_at=instant,
+        runtime_id=workspace.config["runtime_id"],
+        # Read at the spend, not carried from the issue. An authorization checked against the
+        # instant it was minted cannot be found expired, which makes its own validity interval
+        # decorative — and this is the one place in the product that spends one.
+        verification_time=clock.now_utc(),
+        store=store, authorization_keys=trust["authorization"],
+        registry=workspace.registry, receipt_id=receipt_id,
+        # The runtime holds no clock; it is handed the one this layer holds and reads it once,
+        # after the child has exited, for the acknowledgment and the receipt it carries.
+        completion_clock=clock.now_utc,
         receipt_key_id="receipt-key", receipt_key_version=1, receipt_private_key=receipt_seed,
         cwd=workspace.path(workspace.config["execution"]["working_directory"]),
         environment=workspace.config["execution"]["environment"],
@@ -494,14 +528,13 @@ def run(workspace, argv, clock, identifiers, identity=None):
 
 def check(workspace, candidate_path, clock):
     """Steps 1 to 4, and then stop. Nothing is authorized, consumed, started, or written."""
-    instant = clock.now_utc()
     pinned = pin_rulebook(workspace)
     path = Path(candidate_path)
     if path.is_symlink() or not path.is_file():
         raise CliWorkspaceInvalid("The candidate must be a regular file: " + str(path))
     try:
         candidate = load.load_json_bytes(path.read_bytes())
-        frozen, result, unsupported = evaluate(workspace, pinned, candidate, instant)
+        frozen, result, unsupported = evaluate(workspace, pinned, candidate, clock)
     except VerifyError as failure:
         return Decision(outcome="ERROR", matched_rule=None,
                         reasons=({"code": failure.code, "message": str(failure)},),
@@ -535,8 +568,8 @@ def replay(workspace, receipt_path):
 
 
 def list_receipts(workspace):
-    """The store's own listing, which reconciles against the committed records."""
-    return workspace.store().list_receipts()
+    """The store's own listing: what it read, and what it refused, by filename."""
+    return workspace.store().listing()
 
 
 def _receipt_path(workspace, receipt_id):

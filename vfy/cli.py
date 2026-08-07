@@ -202,23 +202,34 @@ def _receipts(options, clock, identifiers, out, err):
                   file=out)
         return _DECISION_EXIT[record.outcome]
 
-    summaries = workflow.list_receipts(workspace)
+    listing = workflow.list_receipts(workspace)
+    summaries, refused = listing.summaries, listing.refused
     body = {"command": "receipts.list",
             "receipts": [{"receipt_id": s.receipt_id, "created_at": s.created_at,
                           "outcome": s.outcome, "rulebook_id": s.rulebook_id,
                           "rulebook_version": s.rulebook_version,
                           "authorization_id": s.authorization_id, "key_id": s.key_id}
-                         for s in summaries]}
+                         for s in summaries],
+            "refused": [{"file": r.filename, "code": r.code} for r in refused]}
     if options.as_json:
         _emit(body, out)
     elif not summaries:
-        print("no receipts yet", file=out)
+        print("no receipts yet" if not refused else "no receipt in this store could be read",
+              file=out)
     else:
         for summary in summaries:
             print("%-7s %-28s %s  %s@%s"
                   % (summary.outcome, summary.receipt_id, summary.created_at,
                      summary.rulebook_id, summary.rulebook_version), file=out)
         print("listed from the committed records, which govern", file=out)
+    # A damaged artifact is named on the diagnostic stream and never silently dropped. The
+    # healthy records above are still listed: one unreadable file is a fact about that file.
+    for entry in refused:
+        print("refused %s (%s): %s" % (entry.filename, entry.code, entry.message), file=err)
+    if refused:
+        print("%d artifact(s) in the store could not be read; nothing was deleted"
+              % len(refused), file=err)
+        return EXIT_OPERATIONAL
     return EXIT_OK
 
 

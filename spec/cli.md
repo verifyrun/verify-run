@@ -154,11 +154,11 @@ Everything after `--` is the command, verbatim. The first argument that could be
 option is protected by `--` itself, so `vfy run -- ./tool --force` passes `--force` to the tool.
 
 1. resolve the workspace, load and validate the configuration, load the keys;
-2. capture **one** run instant from the clock;
+2. capture the run's **start instant** from the clock;
 3. strict-load and pin the rulebook;
 4. resolve `argv[0]` and construct the candidate;
-5. acquire every declared local evidence item;
-6. build the snapshot with that instant as `frozen_at`;
+5. acquire every declared local evidence item, each stamped with its own instant;
+6. capture the **freeze instant** and build the snapshot with it as `frozen_at`;
 7. evaluate;
 8. **BLOCK or HOLD** — nothing launches and nothing is consumed. The decision is real, so the
    chain's receipt rule applies: a receipt is issued and the complete record is stored;
@@ -221,8 +221,12 @@ exactly as it should. The CLI prints one line naming the id and the source so th
 why, and `claims-gate` — which declares `coverage` over `http` — reaches HOLD locally with that
 line explaining it. The rulebook is valid; the evidence is simply not available here.
 
-Every acquisition's `acquired_at` is the same captured run instant. An adapter never constructs a
-timestamp, and the caller that does must be the one that also freezes.
+Every acquisition's `acquired_at` is read immediately before its adapter is called, so it is a
+fact about that observation rather than about the run. An adapter still never constructs a
+timestamp — it is handed one — and the caller that hands them out is the one that also freezes,
+afterwards. One instant shared by every item made each of them exactly zero seconds old at the
+freeze however long it had taken to obtain, which is what left `fresh()` with only one possible
+answer.
 
 ## Keys and trust
 `.vfy/keys/trust.json` is the workspace's trust anchor: `authorization` and `receipt` lists of
@@ -262,13 +266,21 @@ and not replayed, not as a failure of either.
     vfy receipts list
     vfy receipts show <receipt-id>
 
-`list` calls `LocalStore.list_receipts` and prints what the summaries carry, in the store's
-`(created_at, receipt_id)` order. It inherits the repaired store behavior wholesale: the index is
-subordinate, a listing reconciles against the committed records, a stale index heals, and an entry
-naming a record that does not exist is never believed. The CLI does not read `index.json` itself.
+`list` calls `LocalStore.listing` and prints what the summaries carry, in the store's
+`(created_at, receipt_id)` order. It inherits the store's listing behavior wholesale: the answer
+is derived from the committed records, the index is subordinate and is not believed, and an entry
+naming a record that does not exist is never listed. The CLI does not read `index.json` itself.
 
-A malformed index surfaces as `store_index_invalid` with the repair named — rebuilding is always
-available — rather than as an empty list, because an empty list would read as "nothing happened".
+**A damaged artifact never hides the healthy records.** Every artifact the store could not read —
+a corrupt receipt, a file that is not a receipt, an unusable `index.json` — is named on stderr by
+**filename** with its reason code, the readable records are still listed on stdout, and the
+command exits `1` (`EXIT_OPERATIONAL`). Under `--json` the same refusals appear as a `refused`
+array of `{"file", "code"}` alongside `receipts`. Nothing is deleted and nothing is repaired: the
+repair is `rebuild_index` for a cache, and a human decision for a record.
+
+The exit code is deliberately not `0`: a listing that quietly omitted an unreadable record would
+read as "that receipt was never written". It is deliberately not a decision code either — no
+decision was made here, and `store_index_invalid` is not an outcome.
 
 `list` does not verify each receipt: it is a listing, and claiming verification it did not perform
 would be the exact confusion this product exists to prevent. `show` loads one record **with**
@@ -322,6 +334,33 @@ and a caller that wants the child's own status reads `exit_status` from `--json`
 code is what a pipeline can branch on, and passing the child's status through would collide with
 the decision codes.
 
+### `vfy replay`, specifically
+This is the one place the table above is most often misread, so it is stated separately:
+
+| Code | What it means for `replay` |
+|---|---|
+| 0 | the receipt verified and replayed, **and it records ALLOW** |
+| 10 | the receipt verified and replayed, and it records BLOCK |
+| 11 | the receipt verified and replayed, and it records HOLD |
+| 1 | the receipt did **not** verify or did not replay — the reason code is on stderr |
+
+**A non-zero exit from `replay` is not by itself a verification failure.** 10 and 11 report the
+decision the receipt records, exactly as they do for `run` and `check`; a BLOCK receipt that
+verifies perfectly exits 10, because the decision is what the code carries. Verification failure
+is `1`, with a reason code such as `signature_invalid` or `replay_result_mismatch` on stderr.
+
+So `vfy replay r.json` **is not** the right shape for "did this receipt verify?". Two shapes that
+are:
+
+    vfy replay r.json; test $? -ne 1                        # verified, whatever it decided
+    vfy --json replay r.json | ...                          # read "replayed" and "outcome"
+
+Under `--json` the answer is explicit and does not need the exit code decoded: `verified`,
+`replayed`, `authorization_verified`, and `outcome`. `receipts show` behaves identically.
+
+There is no code that means "verified" alone, and adding one would merge the two questions the
+rest of this table keeps apart.
+
 ## The clock, and where it stops
 The trusted runtime is clock-free and stays that way. Orchestration is not: a real run has to say
 when its evidence was frozen and when its authorization was issued.
@@ -332,22 +371,47 @@ when its evidence was frozen and when its authorization was issued.
 Serialized as `YYYY-MM-DDTHH:MM:SSZ` from `time.gmtime`, integer seconds, no fraction, no local
 timezone, no locale-dependent formatting, no floating-point arithmetic. UTC always.
 
-`vfy run` captures **one** instant and uses it for `frozen_at`, every `acquired_at`, `issued_at`,
-`verification_time`, `acknowledged_at`, and the receipt's `created_at`. One run is one instant, so
-a run cannot be internally inconsistent about when it happened, and no clock is read between the
-freeze and the launch where a slow disk could make evidence look stale.
+`vfy run` reads the clock **once at each point in the chain where a distinct instant exists**, and
+never anywhere else:
 
-Two consequences follow from that, and both are properties of this design rather than accidents:
+| Reading | Records |
+|---|---|
+| start | the candidate seed |
+| once per acquisition, immediately before the adapter is called | that item's `acquired_at` |
+| freeze, after acquisition has finished | `frozen_at`, and the `snapshot_id` seed |
+| issue | the authorization's `issued_at` (and so its `expires_at`) |
+| spend | `verification_time` |
+| completion, after the child has exited | `acknowledged_at`, and the receipt's `created_at` |
 
-- **`acknowledged_at` is the instant the run began, not the instant the command finished.** A
-  command that runs for an hour is acknowledged at the same instant its evidence was frozen. The
-  acknowledgment records *that* the runtime reported back, and the receipt is not a duration
-  measurement; a caller that needs elapsed time measures it around the call.
-- **An authorization issued and verified at one instant cannot expire between the two.** `vfy run`
-  therefore never reaches `authorization_expired`. `ttl_seconds` bounds a *stored* authorization
-  presented later — which is a shape this CLI does not yet offer — so within `vfy run` it is
-  carried into the artifact and does not gate anything. `vfy replay` does not consult it at all
-  (`spec/receipt-and-replay.md`).
+A BLOCK or HOLD reads the clock once more, for its receipt's `created_at`; it issues no
+authorization and spends nothing.
+
+The readings are monotone, and every ordering rule the chain already enforces still holds by
+construction: each `acquired_at` is at or before `frozen_at`, `issued_at` is at or after
+`frozen_at`, and `verification_time` is at or after `issued_at`. A wall clock that steps backwards
+under the run is refused by those same rules — `evidence_order_invalid` or
+`authorization_not_yet_valid` — which is a fail-closed refusal above the spend, with nothing
+consumed and nothing started.
+
+Until the 0.1.x hardening pass `vfy run` captured **one** instant and used it for all of the
+above. One run was one instant, which is internally consistent and reproducible — and it made
+three of the chain's own questions unanswerable, each of which the runtime nonetheless went
+through the motions of asking:
+
+- **evidence was always exactly zero seconds old at the freeze**, so `fresh()` returned true for
+  every locally acquired item whatever it had cost to obtain, and `max_age_seconds` bounded
+  nothing;
+- **an authorization was verified at the instant it was minted**, so `ttl_seconds` could not be
+  reached and `authorization_expired` was unreachable in the one place in this product that
+  spends an authorization;
+- **`acknowledged_at` was the instant the run began**, so a command that ran for an hour was
+  acknowledged at the instant its evidence was frozen.
+
+Each of those is now the instant it claims to be. What did **not** change: a fixed clock still
+reproduces a run byte for byte, because a fixed clock returns the same instant however many times
+it is read; `vfy replay` still reads no clock at all; and nothing below `vfy/cli.py` and
+`vfy/workflow.py` holds one. The runtime is handed the completion clock and reads it once
+(`spec/execution.md`); it constructs no timestamp of its own.
 
 **Only `vfy/cli.py` and `vfy/workflow.py` may hold a clock.** Nothing below imports one, and the
 tests inject a fixed instant so no test result depends on the current time.

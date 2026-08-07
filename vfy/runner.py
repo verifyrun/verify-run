@@ -101,22 +101,44 @@ def executable_argv(candidate):
 
 
 def execute_authorized_command(pinned, candidate, snapshot, result, authorization, *,
-                               runtime_id, verification_time, acknowledged_at,
+                               runtime_id, verification_time,
                                store, authorization_keys, registry,
-                               receipt_id, receipt_created_at,
-                               receipt_key_id, receipt_key_version, receipt_private_key,
-                               cwd, environment=None, timeout_seconds=300):
+                               receipt_id, receipt_key_id, receipt_key_version,
+                               receipt_private_key, cwd,
+                               acknowledged_at=None, receipt_created_at=None,
+                               completion_clock=None,
+                               environment=None, timeout_seconds=300):
     """Verify, consume, execute, acknowledge, receipt, and store one authorized command.
 
     The order is the guarantee: every refusal above the consume leaves nothing spent and nothing
     started, and every failure below it leaves the authorization spent and says so.
+
+    The two completion instants — the acknowledgment's and the receipt's — arrive one of two
+    ways, never both. A caller that already knows them passes `acknowledged_at` and
+    `receipt_created_at` as strings, which is what a fixture, a replay harness, or any caller
+    reproducing a run byte for byte does. A caller running a real command passes
+    `completion_clock`, a callable this reads **once**, after the child has exited: the instant a
+    command finished is not knowable before it starts, and a caller forced to name one in advance
+    can only name the instant the run began. Either way the runtime holds no clock of its own,
+    constructs no timestamp, and reads nothing outside what it was handed.
     """
     for name, value in (("runtime_id", runtime_id), ("verification_time", verification_time),
-                        ("acknowledged_at", acknowledged_at), ("receipt_id", receipt_id),
-                        ("receipt_created_at", receipt_created_at),
-                        ("receipt_key_id", receipt_key_id)):
+                        ("receipt_id", receipt_id), ("receipt_key_id", receipt_key_id)):
         if not isinstance(value, str):
             raise TypeError(name + " must be a string")
+    if completion_clock is None:
+        for name, value in (("acknowledged_at", acknowledged_at),
+                            ("receipt_created_at", receipt_created_at)):
+            if not isinstance(value, str):
+                raise TypeError(name + " must be a string")
+    else:
+        if not callable(completion_clock):
+            raise ExecutionConfigurationInvalid("completion_clock must be callable.")
+        if acknowledged_at is not None or receipt_created_at is not None:
+            # Silently preferring one would let a caller believe it had pinned an instant that
+            # the run then overwrote.
+            raise ExecutionConfigurationInvalid(
+                "Supply the completion instants or the clock that reads them, never both.")
 
     if result.outcome != "ALLOW":
         # Checked here rather than left to verification, so a caller holding a negative decision
@@ -141,6 +163,10 @@ def execute_authorized_command(pinned, candidate, snapshot, result, authorizatio
     store.consume_once(verified)
 
     outcome = _launch(argv, directory, child_environment, timeout_seconds)
+    if completion_clock is not None:
+        # Below the line: the authorization is spent and the command has already run, so a clock
+        # that misbehaves is a recording failure and never a reason to pretend nothing happened.
+        acknowledged_at = receipt_created_at = _completion_instant(completion_clock)
     acknowledgment = _acknowledge(outcome, acknowledged_at)
 
     try:
@@ -215,6 +241,26 @@ def _check_timeout(timeout_seconds):
         raise ExecutionConfigurationInvalid(
             "timeout_seconds must be an integer from %d to %d."
             % (MIN_TIMEOUT_SECONDS, MAX_TIMEOUT_SECONDS))
+
+
+def _completion_instant(completion_clock):
+    """Read the caller's clock once and require a date-time in the frozen grammar.
+
+    Nothing is guessed if it misbehaves. The child has run and the nonce is spent, so the honest
+    report is the same one a failed receipt issue gets: the attempt finished and its record could
+    not be written.
+    """
+    try:
+        instant = completion_clock()
+    except Exception:
+        raise ExecutionRecordingFailed(
+            "The attempt finished and the completion instant could not be read.",
+            stage="acknowledge", receipt=None) from None
+    if not isinstance(instant, str) or not schema._is_date_time(instant):
+        raise ExecutionRecordingFailed(
+            "The attempt finished and the completion instant was not a date-time.",
+            stage="acknowledge", receipt=None)
+    return instant
 
 
 def _acknowledge(outcome, acknowledged_at):
