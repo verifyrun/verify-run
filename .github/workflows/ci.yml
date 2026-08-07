@@ -137,9 +137,11 @@ jobs:
         run: |
           python -m pip install -e .
           python -m unittest tests.test_conformance -v
-      - name: Keep the result document
+      - name: Print the result document
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: conformance-result
-          path: /tmp/conformance-result.json
+        # Printed rather than uploaded as an artifact. `actions/upload-artifact` returns 403 under
+        # this workflow's `permissions: contents: read`, and the fix would be to widen the job's
+        # token — which also grants cancelling runs and deleting artifacts, for the convenience of
+        # a downloadable copy. The verdict is already enforced above by
+        # `check_conformance_result.py`, and the log is a permanent record of the same bytes.
+        run: cat /tmp/conformance-result.json
