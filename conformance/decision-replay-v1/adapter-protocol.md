@@ -1,5 +1,18 @@
 # Adapter protocol
 
+> **What is frozen, and what this file is.** The profile's normative requirements are the `DR-*`
+> statements in `../../docs/conformance/decision-replay-v1.md`, together with the fixture set and
+> its manifest digest. Those are frozen at the `conformance-v1.0.0` tag and are byte-identical on
+> current `main`. **This file describes the harness**, not the implementation under test, and on
+> current `main` it has gained *additive* clarification since that tag — the `accepted` section and
+> the `adapter_error` section below. Nothing here changes which observations conform, and no
+> fixture verdict depends on it: `0.1.0a2` passed 30/30 before and after, and `0.1.0a1` still fails
+> the same four. To reproduce the claim exactly as it was frozen, read this file at the tag:
+> `git show conformance-v1.0.0:conformance/decision-replay-v1/adapter-protocol.md`.
+>
+> A future change that altered what an implementation must *do* would require a new profile
+> version, not an edit here.
+
 The runner is vendor-neutral and speaks to an implementation only through an adapter: a command
 that reads one JSON request on standard input and writes one JSON envelope on standard output.
 Any language, any transport underneath.
