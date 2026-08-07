@@ -6,7 +6,7 @@ independently of the package version.
 
 [PEP 440]: https://peps.python.org/pep-0440/
 
-## 0.1.0a3 — unreleased
+## 0.1.0a3 — 2026-08-06
 
 Final hardening pass before `verify-run` is frozen. Closes the remaining findings from the
 external review of `0.1.0a2` and adds no capability.
