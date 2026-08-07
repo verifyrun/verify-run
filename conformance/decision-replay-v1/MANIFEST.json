@@ -22,7 +22,7 @@
   },
   {
    "file": "conformance/decision-replay-v1/adapter-protocol.md",
-   "sha256": "b8a6d4512f6e3cc3fd1b61a915c10cf293b2482658f0813dd7311dea413dedd9"
+   "sha256": "aa4aa753330db6766bfc4f5a8ccc84051718a32a310e53ab74b57c19162d5c3c"
   },
   {
    "file": "conformance/decision-replay-v1/fixtures/manifest.json",
@@ -42,7 +42,7 @@
   },
   {
    "file": "tools/conformance_reference_run.sh",
-   "sha256": "ad9c863392c1ac21a20743d3ce152a1380a41f31d500bbc4117ca203ca1266da"
+   "sha256": "c0583c2d280635a250b25795b6d5735959f5d7a997df73f7fe53421468fd1f72"
   },
   {
    "file": "tools/build_conformance_fixtures.py",
