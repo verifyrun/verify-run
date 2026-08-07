@@ -16,6 +16,24 @@ neither lets anyone check that answer later without trusting whoever wrote the l
 `verify-run` puts one deterministic decision between the intent and the action, and records it in
 a form that can be recomputed from its own inputs.
 
+## Where verify-run fits
+
+This is one layer, deliberately: the local boundary that settles a consequential action and leaves
+a record anyone can recompute. It is not the whole of VERIFY, and reading it as a complete
+operating plane for a large organization will make it look strangely small.
+
+The things such an organization also needs — distributing rulebooks across many machines, retaining
+receipts somewhere durable, managing keys at organizational scale, acquiring evidence from remote
+systems, authoring the rules in the first place — are built *around* this runtime rather than
+inside it. None of them is in this repository, and that is the design rather than an omission. Each
+one would put a clock, a network, a database, or an account inside the component whose entire value
+is having none of them. A decision is not more trustworthy because the thing that reached it was
+larger; it is more trustworthy because you can recompute it offline from its own recorded inputs.
+
+The evidence contract is what keeps the split honest. Something outside may acquire and govern an
+input; what reaches `verify-run` is a frozen value with a recorded acquisition instant. The runtime
+settles the decision. Whatever fetched the input never does.
+
 ## Install
 
 ```bash
@@ -154,6 +172,13 @@ stops the walk and holds. See [docs/rulebook-reference.md](docs/rulebook-referen
 template does — and nothing is faked: the item is recorded as missing, the rulebook holds, and the
 CLI names the source. That is the correct answer for evidence nobody acquired, not a defect.
 
+Nor does a remote fact require an HTTP client *in here*. Anything that can print JSON is an `exec`
+source, so a caller that fetches a remote value and prints it supplies evidence the runtime freezes
+and evaluates like any other, with the runtime stamping when it was acquired. Teaching this
+evaluator about TLS, retries, redirects, credentials, and timeouts would enlarge the one component
+that is worth keeping small — and it would put a network read inside a function whose determinism
+is the reason replay works at all.
+
 ## Not in this alpha
 
 HTTP evidence, `watch` mode, `serve` mode, hosted registry or vault, fleets, accounts, billing, a
@@ -224,8 +249,10 @@ That claim is now written down as a public, vendor-neutral contract with fixture
 sh tools/conformance_reference_run.sh
 ```
 
-That installs `verify-run==0.1.0a2` from PyPI into a clean environment, runs the 30 fixtures
-against it, and writes a result document.
+That installs the version this checkout declares — currently `0.1.0a3` — from PyPI into a clean
+environment, runs the 30 fixtures against it, and writes a result document. Name any published
+version to test it instead: `sh tools/conformance_reference_run.sh out 0.1.0a2`. The profile and
+its fixtures are the same either way; only the implementation under test changes.
 
 **Replay recomputes the recorded decision. It does not re-execute the action**, does not reacquire
 evidence, and does not prove the action's effects occurred in the world. A result is a *self-test*,
@@ -234,16 +261,16 @@ profile version and fixture-manifest digest it names. See
 [docs/conformance/claims.md](docs/conformance/claims.md) for exactly what a result lets you say,
 and §16 of the contract for what it deliberately does not establish.
 
-Current reference result: **PASS**, 30/30 fixtures, `verify-run 0.1.0a2`, fixture manifest
+Current reference result: **PASS**, 30/30 fixtures, `verify-run 0.1.0a3`, fixture manifest
 `756029f681ad7587…`.
 
 ## Alpha status
 
-Version `0.1.0a2`. The decision semantics, canonical form, and receipt format are frozen and
-covered by golden vectors — `0.1.0a2` changed none of them, and every `0.1.0a1` receipt still
-verifies and replays. The command surface is the five commands above. Interfaces may still
-change before 1.0; recorded artifacts carry a `spec_version` so a future change cannot silently
-reinterpret an old receipt.
+Version `0.1.0a3`. The decision semantics, canonical form, and receipt format are frozen and
+covered by golden vectors — neither `0.1.0a2` nor `0.1.0a3` changed any of them, and every
+`0.1.0a1` and `0.1.0a2` receipt still verifies and replays. The command surface is the five
+commands above. Interfaces may still change before 1.0; recorded artifacts carry a `spec_version`
+so a future change cannot silently reinterpret an old receipt.
 
 ## License
 

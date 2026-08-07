@@ -217,6 +217,43 @@ class VersionAndMetadata(unittest.TestCase):
         for version in matrix:
             self.assertIn(version, readme, "CI tests %s but the README does not say so" % version)
 
+    def test_the_readme_names_the_current_release_not_a_previous_one(self):
+        """The README's own release facts must track `__version__`.
+
+        `0.1.0a3` shipped while the README still said the alpha was `0.1.0a2`, still reported the
+        conformance reference result against `0.1.0a2`, and still told a reader the reproduction
+        command installed `0.1.0a2`. All three were true when written and silently became false at
+        the release. A reader has no way to tell which sentences are historical and which are
+        stale, so the ones that describe *now* are asserted here.
+
+        Historical sentences are deliberately not policed: "every 0.1.0a1 receipt still verifies"
+        is a claim about the past and must stay written in the past.
+        """
+        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        for label, pattern in (
+                ("the alpha-status version", r"^Version `%s`\." % re.escape(__version__)),
+                ("the current conformance reference result",
+                 r"Current reference result: \*\*PASS\*\*, 30/30 fixtures, `verify-run %s`"
+                 % re.escape(__version__)),
+        ):
+            with self.subTest(claim=label):
+                self.assertRegex(readme, re.compile(pattern, re.M),
+                                 "%s does not name %s" % (label, __version__))
+
+    def test_the_readme_does_not_present_verify_run_as_the_whole_system(self):
+        """One section has to exist, because its absence is what outside readers got wrong.
+
+        Independent reviewers read the README and concluded the local CLI was the entire offering,
+        then judged it against what a large organization would need to deploy — centralized policy,
+        fleet management, durable retention, remote evidence. Those belong outside this runtime by
+        design, and a reader who cannot tell that will read a deliberate boundary as a missing
+        feature.
+        """
+        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertIn("## Where verify-run fits", readme)
+        for phrase in ("not the whole of VERIFY", "built *around* this runtime"):
+            self.assertIn(phrase, readme, "the boundary is not stated: %r" % phrase)
+
     def test_the_entry_point_and_license_are_declared(self):
         pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
         self.assertIn('vfy = "vfy.cli:main"', pyproject)
