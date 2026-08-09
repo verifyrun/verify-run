@@ -28,13 +28,25 @@ SCANNER_EXEMPT = {"tests/test_release.py", "tests/test_adapters.py", "tests/test
                   # more be scanned for them than the scanners above can scan themselves.
                   "CLAUDE.md"}
 
-SKIP_TREES = (".venv", ".git", "dist", "build", "__pycache__", "verify-run/", ".vfy/")
+# Directories the scanners do not walk, matched as whole path *segments*. The previous form
+# tested `part in relative` against the joined path, so every one of these was a substring trap:
+# `.git` swallowed `.github/workflows/*` and `.gitignore`, and `build` swallowed every
+# `tools/build_conformance_*.py`. The secret, vocabulary, and legacy gates therefore never read
+# the CI workflow or the tools that generate the conformance kit — the files most able to carry a
+# credential and least likely to be noticed. A gate that skips what it exists to check is not a
+# gate, so this matches segments and the test below proves those exact paths are reached.
+SKIP_TREES = (".venv", ".git", "dist", "build", "__pycache__", "verify-run", ".vfy")
+
+
+def _skipped(relative):
+    return any(segment in SKIP_TREES for segment in relative.split("/")[:-1] or [""]) \
+        or relative.split("/")[0] in SKIP_TREES
 
 
 def _repository_files(suffixes=None):
     for path in sorted(REPO_ROOT.rglob("*")):
         relative = path.relative_to(REPO_ROOT).as_posix()
-        if not path.is_file() or any(part in relative for part in SKIP_TREES):
+        if not path.is_file() or _skipped(relative):
             continue
         if relative in SCANNER_EXEMPT:
             continue
@@ -412,3 +424,54 @@ class PackageContents(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ScannersReachWhatShips(unittest.TestCase):
+    """A gate that skips the files most able to carry a credential is not a gate.
+
+    `SKIP_TREES` was matched with `part in relative` against the joined path, so `.git` swallowed
+    `.github/workflows/*` and `.gitignore`, and `build` swallowed every
+    `tools/build_conformance_*.py`. The secret, vocabulary, and legacy scanners never read the CI
+    workflow — the one file that legitimately handles credentials — or the tools that generate
+    the published conformance kit.
+    """
+
+    REACHED = (".github/workflows/ci.yml", ".gitignore",
+               "tools/build_conformance_manifest.py", "tools/build_conformance_fixtures.py",
+               "tools/build_conformance_manifest_of_record.py", "tools/run_conformance.py",
+               "tools/conformance_adapter.py")
+    EXCLUDED = ("dist/x.whl", ".venv/lib/x.py", ".git/config", "build/lib/x.py",
+                "vfy/__pycache__/x.pyc", "verify-run/index.js", ".vfy/store.json")
+
+    def test_the_scanner_corpus_contains_the_files_it_used_to_skip(self):
+        corpus = {relative for relative, _ in _repository_files()}
+        for name in self.REACHED:
+            with self.subTest(path=name):
+                self.assertIn(name, corpus, "%s is still invisible to the scanners" % name)
+
+    def test_genuinely_excluded_trees_are_still_excluded(self):
+        for name in self.EXCLUDED:
+            with self.subTest(path=name):
+                self.assertTrue(_skipped(name), "%s should not be scanned" % name)
+
+    def test_a_substring_can_no_longer_be_mistaken_for_a_path_segment(self):
+        for name in (".github/workflows/ci.yml", ".gitignore", "tools/build_x.py",
+                     "distribution.md", "rebuild.py", "a/buildings/b.py"):
+            with self.subTest(path=name):
+                self.assertFalse(_skipped(name))
+
+    def test_a_planted_credential_is_caught_in_every_shipped_location(self):
+        """Plant the marker the secret gate looks for, in files that were previously skipped."""
+        planted = "-" * 5 + "BEGIN RSA " + "PRIVATE KEY" + "-" * 5
+        for name in self.REACHED:
+            path = REPO_ROOT / name
+            if not path.is_file():
+                continue
+            original = path.read_bytes()
+            try:
+                path.write_bytes(original + ("\n# " + planted + "\n").encode("utf-8"))
+                found = any(planted in (_text(REPO_ROOT / relative) or "")
+                            for relative, _ in _repository_files())
+                self.assertTrue(found, "a planted credential in %s was not reachable" % name)
+            finally:
+                path.write_bytes(original)
