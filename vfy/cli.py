@@ -155,10 +155,28 @@ def _run(options, clock, identifiers, out, err):
         decision = workflow.run(workspace, argv, clock, identifiers, identity or None)
     except VerifyError as typed:
         if typed.code == "execution_recording_failed":
-            # The authorization is spent and the action may have happened. Say so plainly.
+            # The authorization is spent and the action may have happened. Say so plainly, and
+            # say where the signed account of it is: the receipt used to be discarded here, so a
+            # store failure erased the only evidence that a command had run.
+            preserved = getattr(typed, "preserved_at", None)
+            receipt = getattr(typed, "receipt", None)
             print("the attempt finished and its record could not be written (%s)"
                   % getattr(typed, "stage", "unknown"), file=err)
             print("the authorization is consumed; nothing is retried automatically", file=err)
+            if preserved:
+                print("the signed receipt was preserved, unrecorded, at %s" % preserved, file=err)
+                print("it is not a committed record; do not re-run the command", file=err)
+            elif receipt is not None:
+                print("the signed receipt could not be preserved either; it is reported on "
+                      "stdout under --json and nowhere else", file=err)
+            if options.as_json:
+                body = {"command": options.command, "error": typed.code,
+                        "stage": getattr(typed, "stage", None),
+                        "executed": True, "authorization_consumed": True,
+                        "receipt_id": receipt.receipt_id if receipt is not None else None,
+                        "preserved_at": preserved,
+                        "receipt": receipt.value() if receipt is not None else None}
+                _emit(body, out)
             return EXIT_RECORDING_FAILED
         raise
     _render(decision, options, out, err)

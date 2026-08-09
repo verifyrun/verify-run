@@ -38,6 +38,9 @@ _TMP = "tmp"
 _INDEX = "index.json"
 _STORE = "store.json"
 _INPUTS_SUFFIX = ".inputs"
+# An action that executed but whose record could not be committed. Under `tmp/` on
+# purpose: it is evidence that something happened, not a committed record of it.
+_UNRECORDED_SUFFIX = ".unrecorded.json"
 _BODY_NAMES = ("rulebook", "candidate", "snapshot", "authorization")
 _MAX_CONSUMPTION_SLOTS = 64
 _MAX_INDEX_SLOTS = 64
@@ -382,6 +385,50 @@ class LocalStore:
             return staged
         raise StoreCommitConflict(
             "Every consumption staging slot for this nonce is occupied; scan the store.")
+
+    def preserve_unrecorded(self, frozen_receipt):
+        """Keep the signed receipt for an action that happened but could not be committed.
+
+        Below the consume line the world may already have changed and the authority is spent, so
+        the signed account of it is the only thing left that can still be true. Losing it made
+        `receipts list` answer "no receipts yet" about a command that had run — the store denying
+        what the runtime did, which is the one thing a record keeper may never do.
+
+        This is **not** a committed record and must never be mistaken for one. It lives under
+        `tmp/`, so `list_receipts` (which globs `receipts/`) cannot see it and `scan` reports it
+        as present-but-uncommitted, exactly like any other artifact that is on disk without
+        having reached the commit point.
+
+        Returns the path written, or raises. The caller is already handling a failure; this one
+        is allowed to fail too, and says so rather than pretending.
+        """
+        receipt_id = frozen_receipt.receipt_id
+        _check_storable(receipt_id)
+        path = self.root / _TMP / (receipt_id + _UNRECORDED_SUFFIX)
+        payload = frozen_receipt.canonical_bytes
+        _reject_symlink(path)
+        if path.exists():
+            # Idempotent on identical bytes; a different receipt under one id is a conflict, not
+            # something to overwrite. Nothing here destroys an earlier account of an action.
+            if path.read_bytes() != payload:
+                raise StoreRecordConflict(
+                    "A different unrecorded receipt is already preserved under " + receipt_id)
+            return path
+        staging = self.root / _TMP / (receipt_id + _UNRECORDED_SUFFIX + ".partial")
+        descriptor = os.open(staging, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        try:
+            with os.fdopen(descriptor, "wb") as handle:
+                handle.write(payload)
+            staging.replace(path)          # the rename is the point at which it exists at all
+        except BaseException:
+            staging.unlink(missing_ok=True)
+            raise
+        return path
+
+    def unrecorded_path(self, receipt_id):
+        """Where an unrecorded receipt for this id would be kept. Reads nothing."""
+        _check_storable(receipt_id)
+        return self.root / _TMP / (receipt_id + _UNRECORDED_SUFFIX)
 
     def is_consumed(self, nonce):
         return self._consumption_path(nonce).exists()

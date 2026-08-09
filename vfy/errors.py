@@ -299,15 +299,18 @@ class ExecutionRecordingFailed(VerifyError):
     """The attempt finished and could not be recorded. The authorization is already spent.
 
     Carries the `stage` that failed and the `receipt` if one was issued, so a caller can persist
-    the record later without re-executing anything.
+    the record later without re-executing anything, and `preserved_at` — the path where the
+    signed receipt was kept when the store could still be written to. `preserved_at` is None when
+    preservation itself failed, which is a materially different report and is never guessed.
     """
 
     code = "execution_recording_failed"
 
-    def __init__(self, message, stage, receipt=None):
+    def __init__(self, message, stage, receipt=None, preserved_at=None):
         super().__init__(message)
         self.stage = stage
         self.receipt = receipt
+        self.preserved_at = preserved_at
 
 
 class EvidenceAdapterConfigInvalid(VerifyError):

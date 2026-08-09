@@ -846,3 +846,115 @@ class Vocabulary(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class UnrecordedReceiptSurvives(unittest.TestCase):
+    """An action that happened may not be erased by the failure to file it.
+
+    Below the consume line the world may already have changed and the authority is spent, so the
+    signed receipt is the only thing left that can still be true about it. It was handed back on
+    the exception and then dropped: `receipts list` answered "no receipts yet" about a command
+    that had run, the store denying what the runtime did.
+    """
+
+    def setUp(self):
+        self.case = _case(EXEC_DIR / "accept_exit_zero.json")
+        self.registry = _registry()
+
+    def _failing_store_run(self, failure=OSError("the receipt store is unavailable")):
+        sandbox = _Sandbox(self.case["tree"])
+        self.addCleanup(sandbox.__exit__, None, None, None)
+        built = _build(self.case, sandbox, self.registry)
+        real = store_module.LocalStore.put_record
+
+        def broken(self, *args, **kwargs):
+            raise failure
+
+        store_module.LocalStore.put_record = broken
+        try:
+            with self.assertRaises(ExecutionRecordingFailed) as caught:
+                _run(self.case, sandbox, self.registry, *built)
+        finally:
+            store_module.LocalStore.put_record = real
+        return sandbox, built, caught.exception
+
+    def test_the_signed_receipt_is_preserved_where_a_person_can_find_it(self):
+        sandbox, built, failure = self._failing_store_run()
+        self.assertEqual(failure.stage, "store")
+        self.assertIsNotNone(failure.receipt)
+        self.assertIsNotNone(failure.preserved_at, "the signed receipt was not preserved")
+
+        preserved = pathlib.Path(failure.preserved_at)
+        self.assertTrue(preserved.is_file())
+        self.assertEqual(preserved.read_bytes(), failure.receipt.canonical_bytes)
+        self.assertTrue(preserved.name.endswith(".unrecorded.json"))
+
+    def test_the_preserved_bytes_are_canonical_and_the_signature_verifies(self):
+        sandbox, built, failure = self._failing_store_run()
+        raw = pathlib.Path(failure.preserved_at).read_bytes()
+        value = load.load_json_bytes(raw)
+        self.assertEqual(canon.canonical_bytes(value), raw)
+        report = receipt_module.verify_receipt(value, _receipt_registry(self.case), self.registry)
+        self.assertTrue(report.signature_valid)
+        self.assertEqual(report.receipt_id, self.case["receipt_id"])
+
+    def test_it_is_never_mistaken_for_a_committed_record(self):
+        sandbox, built, failure = self._failing_store_run()
+        self.assertEqual(sandbox.store.listing().summaries, ())
+        self.assertEqual(sandbox.store.listing().refused, ())
+        with self.assertRaises(VerifyError):
+            sandbox.store.get_record(self.case["receipt_id"], verify=False)
+        self.assertIn(pathlib.Path(failure.preserved_at).name, sandbox.store.scan().abandoned_staging)
+
+    def test_the_nonce_stays_spent_and_nothing_is_re_executed(self):
+        sandbox, built, failure = self._failing_store_run()
+        self.assertTrue(sandbox.store.is_consumed(built[4].nonce),
+                        "preserving a receipt must not un-spend the authority")
+
+    def test_preserving_twice_is_idempotent_and_a_conflict_fails_closed(self):
+        sandbox, built, failure = self._failing_store_run()
+        signed = failure.receipt
+        again = sandbox.store.preserve_unrecorded(signed)
+        self.assertEqual(pathlib.Path(again).read_bytes(), signed.canonical_bytes)
+
+        pathlib.Path(failure.preserved_at).write_bytes(b'{"different": true}')
+        with self.assertRaises(VerifyError) as conflict:
+            sandbox.store.preserve_unrecorded(signed)
+        self.assertEqual(conflict.exception.code, "store_record_conflict")
+
+    def test_a_symlinked_preservation_path_is_refused(self):
+        with _Sandbox(self.case["tree"]) as sandbox:
+            built = _build(self.case, sandbox, self.registry)
+            target = sandbox.base / "elsewhere.json"
+            link = sandbox.store.unrecorded_path(self.case["receipt_id"])
+            link.symlink_to(target)
+            signed = receipt_module.issue_receipt(
+                built[0], built[1], built[2], built[3], built[4],
+                {"acknowledged": True, "acknowledged_at": self.case["acknowledged_at"],
+                 "exit_status": 0},
+                self.case["receipt_id"], self.case["receipt_created_at"],
+                self.case["receipt_key"]["key_id"], self.case["receipt_key"]["key_version"],
+                bytes.fromhex(self.case["receipt_key"]["private_key_hex"]), self.registry)
+            with self.assertRaises(VerifyError) as caught:
+                sandbox.store.preserve_unrecorded(signed)
+            self.assertEqual(caught.exception.code, "store_path_invalid")
+            self.assertFalse(target.exists(), "the link was followed")
+
+    def test_preservation_failing_too_is_reported_rather_than_guessed(self):
+        sandbox = _Sandbox(self.case["tree"])
+        self.addCleanup(sandbox.__exit__, None, None, None)
+        built = _build(self.case, sandbox, self.registry)
+        real_put = store_module.LocalStore.put_record
+        real_preserve = store_module.LocalStore.preserve_unrecorded
+        store_module.LocalStore.put_record = lambda self, *a, **k: (_ for _ in ()).throw(OSError("x"))
+        store_module.LocalStore.preserve_unrecorded = \
+            lambda self, *a, **k: (_ for _ in ()).throw(OSError("tmp is gone too"))
+        try:
+            with self.assertRaises(ExecutionRecordingFailed) as caught:
+                _run(self.case, sandbox, self.registry, *built)
+        finally:
+            store_module.LocalStore.put_record = real_put
+            store_module.LocalStore.preserve_unrecorded = real_preserve
+        self.assertIsNone(caught.exception.preserved_at,
+                          "a preservation that did not happen must not be claimed")
+        self.assertIsNotNone(caught.exception.receipt, "the receipt still travels on the failure")

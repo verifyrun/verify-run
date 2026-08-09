@@ -182,11 +182,20 @@ def execute_authorized_command(pinned, candidate, snapshot, result, authorizatio
     try:
         store.put_record(signed, pinned, candidate, snapshot, verified)
     except (VerifyError, OSError) as failure:
-        # The receipt is handed back so a caller can persist it later. It must never re-execute:
-        # the authorization is spent and this function would refuse anyway.
+        # The action has happened and the authority is spent. Before reporting that the record
+        # could not be committed, keep the signed account of it somewhere a person can still
+        # find: handing the receipt back in an exception is only useful to a caller that reads
+        # it, and losing it made the store answer "no receipts yet" about a command that ran.
+        preserved = None
+        try:
+            preserved = str(store.preserve_unrecorded(signed))
+        except (VerifyError, OSError):
+            # Preservation is allowed to fail too — the store may be entirely unavailable. The
+            # receipt still travels on the exception, and the caller is told which happened.
+            preserved = None
         raise ExecutionRecordingFailed(
             "The attempt finished and its record could not be committed: " + str(failure),
-            stage="store", receipt=signed) from None
+            stage="store", receipt=signed, preserved_at=preserved) from None
 
     return ExecutionRecord(
         authorization_id=verified.authorization_id,
