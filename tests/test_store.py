@@ -3,6 +3,8 @@
 import copy
 import dataclasses
 import json
+import os
+import signal
 import pathlib
 import shutil
 import tempfile
@@ -1071,3 +1073,104 @@ class CorruptHistoryDoesNotRevokeACommit(StoreTestCase):
         self.store.listing()
         self.assertEqual((self.root / "index.json").read_bytes(), before,
                          "a read command repaired the cache behind the caller")
+
+
+class HostileUnrecordedFallback(StoreTestCase):
+    """The recovery path F-AUDIT-02 introduced is itself untrusted local input.
+
+    Closing one trust boundary opened another. Preserving the receipt meant examining whatever
+    already stood at the fallback path, and the first version examined it with `exists()` and
+    then `read_bytes()` — so a FIFO planted there **hung the process** waiting for a writer, a
+    directory escaped as a raw `IsADirectoryError`, and a leftover staging file escaped as a raw
+    `FileExistsError`. That is the same defect class the store hardening exists to remove,
+    reintroduced in the repair for it.
+
+    Every case here runs under an alarm so a hang fails the suite instead of stopping it.
+    """
+
+    class _Receipt:
+        receipt_id = "r-fallback"
+        canonical_bytes = b'{"receipt_id":"r-fallback"}'
+
+    def setUp(self):
+        super().setUp()
+        self.receipt = self._Receipt()
+        previous = signal.signal(signal.SIGALRM, self._hung)
+        signal.alarm(30)
+        self.addCleanup(signal.signal, signal.SIGALRM, previous)
+        self.addCleanup(signal.alarm, 0)
+
+    @staticmethod
+    def _hung(*_):
+        raise AssertionError("a hostile store entry blocked the store; it was read, not examined")
+
+    def _fallback(self):
+        return self.store.unrecorded_path(self.receipt.receipt_id)
+
+    def _staging(self):
+        return self.store.root / "tmp" / (self.receipt.receipt_id + ".unrecorded.json.partial")
+
+    def test_a_fifo_at_the_fallback_path_is_refused_rather_than_read(self):
+        os.mkfifo(self._fallback())
+        with self.assertRaises(VerifyError) as caught:
+            self.store.preserve_unrecorded(self.receipt)
+        self.assertEqual(caught.exception.code, "store_path_invalid")
+
+    def test_a_directory_at_the_fallback_path_is_typed_not_a_host_error(self):
+        self._fallback().mkdir()
+        with self.assertRaises(VerifyError) as caught:
+            self.store.preserve_unrecorded(self.receipt)
+        self.assertEqual(caught.exception.code, "store_path_invalid")
+
+    def test_a_symlink_at_the_fallback_path_is_refused_live_or_dangling(self):
+        for target, label in ((self.parent / "absent.json", "dangling"),
+                              (self.parent / "present.json", "live")):
+            with self.subTest(link=label):
+                if label == "live":
+                    target.write_bytes(b"x")
+                self._fallback().unlink(missing_ok=True)
+                self._fallback().symlink_to(target)
+                with self.assertRaises(VerifyError) as caught:
+                    self.store.preserve_unrecorded(self.receipt)
+                self.assertEqual(caught.exception.code, "store_path_invalid")
+                self.assertFalse(target.exists() and target.read_bytes() != b"x",
+                                 "the link was written through")
+
+    def test_an_oversized_entry_is_refused_before_it_is_read(self):
+        self._fallback().write_bytes(b"x" * (store.MAX_RECEIPT_BYTES + 1))
+        with self.assertRaises(VerifyError) as caught:
+            self.store.preserve_unrecorded(self.receipt)
+        self.assertEqual(caught.exception.code, "store_artifact_noncanonical")
+
+    def test_the_size_bound_is_a_product_bound_at_an_exact_boundary(self):
+        self.assertEqual(store.MAX_RECEIPT_BYTES, 1 << 20)
+        self._fallback().write_bytes(b"x" * store.MAX_RECEIPT_BYTES)
+        with self.assertRaises(VerifyError) as caught:
+            self.store.preserve_unrecorded(self.receipt)
+        # At the bound it is read and compared, so the refusal is about content, not size.
+        self.assertEqual(caught.exception.code, "store_record_conflict")
+
+    def test_a_hostile_or_stale_staging_path_is_typed(self):
+        for plant, label in ((lambda p: p.write_bytes(b"stale"), "stale regular file"),
+                             (os.mkfifo, "FIFO")):
+            with self.subTest(staging=label):
+                staging = self._staging()
+                staging.unlink(missing_ok=True)
+                plant(staging)
+                with self.assertRaises(VerifyError) as caught:
+                    self.store.preserve_unrecorded(self.receipt)
+                self.assertEqual(caught.exception.code, "store_commit_conflict")
+
+    def test_a_traversal_identifier_never_reaches_the_filesystem(self):
+        class Escaping:
+            receipt_id = "../escape"
+            canonical_bytes = b"{}"
+        with self.assertRaises(VerifyError) as caught:
+            self.store.preserve_unrecorded(Escaping())
+        self.assertEqual(caught.exception.code, "store_path_invalid")
+
+    def test_the_healthy_path_still_works_and_stays_idempotent(self):
+        first = self.store.preserve_unrecorded(self.receipt)
+        self.assertEqual(pathlib.Path(first).read_bytes(), self.receipt.canonical_bytes)
+        self.assertEqual(self.store.preserve_unrecorded(self.receipt), first)
+        self.assertEqual(self.store.listing().summaries, ())

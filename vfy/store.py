@@ -12,6 +12,7 @@ import hashlib
 import json
 import os
 import re
+import stat
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -41,6 +42,11 @@ _INPUTS_SUFFIX = ".inputs"
 # An action that executed but whose record could not be committed. Under `tmp/` on
 # purpose: it is evidence that something happened, not a committed record of it.
 _UNRECORDED_SUFFIX = ".unrecorded.json"
+# A receipt is a bounded document. Nothing in the store reads more than this from an
+# untrusted entry, so a local file cannot decide how much memory a listing allocates.
+# Derived from the envelope: identifiers, three digests, a result with its reason trace,
+# and one signature — orders of magnitude below this. A product bound, not a host one.
+MAX_RECEIPT_BYTES = 1 << 20
 _BODY_NAMES = ("rulebook", "candidate", "snapshot", "authorization")
 _MAX_CONSUMPTION_SLOTS = 64
 _MAX_INDEX_SLOTS = 64
@@ -406,8 +412,10 @@ class LocalStore:
         _check_storable(receipt_id)
         path = self.root / _TMP / (receipt_id + _UNRECORDED_SUFFIX)
         payload = frozen_receipt.canonical_bytes
-        _reject_symlink(path)
-        if path.exists():
+        # Whatever is already at this path is untrusted local input, exactly like a committed
+        # receipt is. It is examined before it is read: a FIFO here used to block the process
+        # until a writer appeared, and a directory escaped as a raw IsADirectoryError.
+        if _require_regular(path) is not None:
             # Idempotent on identical bytes; a different receipt under one id is a conflict, not
             # something to overwrite. Nothing here destroys an earlier account of an action.
             if path.read_bytes() != payload:
@@ -415,11 +423,21 @@ class LocalStore:
                     "A different unrecorded receipt is already preserved under " + receipt_id)
             return path
         staging = self.root / _TMP / (receipt_id + _UNRECORDED_SUFFIX + ".partial")
-        descriptor = os.open(staging, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        try:
+            descriptor = os.open(staging, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        except OSError as failure:
+            # Exclusive creation refuses anything already standing there, hostile or merely
+            # abandoned. Typed, so it is a store condition rather than a host traceback.
+            raise StoreCommitConflict(
+                "The unrecorded receipt could not be staged: %s" % failure) from None
         try:
             with os.fdopen(descriptor, "wb") as handle:
                 handle.write(payload)
             staging.replace(path)          # the rename is the point at which it exists at all
+        except OSError as failure:
+            staging.unlink(missing_ok=True)
+            raise StoreCommitConflict(
+                "The unrecorded receipt could not be preserved: %s" % failure) from None
         except BaseException:
             staging.unlink(missing_ok=True)
             raise
@@ -520,6 +538,43 @@ class LocalStore:
             return staging
         raise StoreCommitConflict(
             "Every index staging slot is occupied; scan the store.")
+
+
+
+def _entry_kind(path):
+    """lstat once and say what is there, following nothing. None when absent.
+
+    One observation, one object. `Path.is_file()` follows symlinks and is a *different* look at
+    the filesystem from the read that follows it, so a check-then-read pair can be given two
+    different objects. Everything that matters is decided from this single lstat.
+    """
+    try:
+        info = os.lstat(path)
+    except FileNotFoundError:
+        return None
+    except OSError as failure:
+        raise StorePathInvalid("The store entry could not be examined: %s" % failure) from None
+    return info
+
+
+def _require_regular(path, info=None):
+    """Refuse any store entry that is not a plain regular file, before reading a byte.
+
+    A FIFO at a receipt path blocks the reader until a writer appears — a local file that hangs
+    the command. A directory raises `IsADirectoryError`, a device reads unbounded. None of these
+    may reach a read, and none may escape as a raw host exception.
+    """
+    info = _entry_kind(path) if info is None else info
+    if info is None:
+        return None
+    if stat.S_ISLNK(info.st_mode):
+        raise StorePathInvalid("A symlink is not permitted in the store layout: " + str(path))
+    if not stat.S_ISREG(info.st_mode):
+        raise StorePathInvalid("Not a regular file: " + str(path))
+    if info.st_size > MAX_RECEIPT_BYTES:
+        raise StoreArtifactNoncanonical(
+            "The stored file is larger than a receipt may be: " + str(path))
+    return info
 
 
 def _check_storable(receipt_id):
