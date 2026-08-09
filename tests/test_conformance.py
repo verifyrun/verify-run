@@ -482,3 +482,75 @@ class ProfileAndFixturesAreInternallyConsistent(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class VerdictPrecedence(unittest.TestCase):
+    """A conducted failure outranks an unconducted one. Absence never erases knowledge.
+
+    The runner tested INCOMPLETE before FAIL, so twenty-nine measured failures plus one adapter
+    timeout reported INCOMPLETE — literally "nothing was measured" — while the result document it
+    wrote carried twenty-nine measured failures. An implementation could have obtained that by
+    arranging for one fixture's adapter call to time out.
+    """
+
+    def setUp(self):
+        self._directory = tempfile.TemporaryDirectory()
+        self.workspace = Path(self._directory.name)
+        self.addCleanup(self._directory.cleanup)
+
+    def _run(self, body, name="stub.py"):
+        path = self.workspace / name
+        path.write_text(body, encoding="utf-8")
+        return run_suite("%s %s" % (sys.executable, path), self.workspace / (name + ".json"))
+
+    def test_a_conducted_failure_outranks_an_unconducted_one(self):
+        """One bundle times out; every other bundle is answered wrongly on purpose."""
+        stub = STUB_HEADER + '''
+import time
+if "block" in bundle:
+    time.sleep(30)                      # this one cannot be conducted
+result = honest()
+if result.get("terminal") == "HOLD":
+    result["terminal"] = "BLOCK"        # every conducted HOLD is answered wrongly
+answer(result)
+'''
+        completed, document = self._run(stub)
+        self.assertEqual(completed.returncode, EXIT_FAIL,
+                         "a timed-out fixture laundered conducted failures:\n" + completed.stdout)
+        self.assertEqual(document["overall"], "FAIL")
+        self.assertGreater(document["counts"]["failed"], 0)
+
+    def test_setup_problems_alone_are_still_incomplete(self):
+        completed, document = self._run("import sys\nsys.exit(1)\n")
+        self.assertEqual(completed.returncode, EXIT_INCOMPLETE)
+        self.assertEqual(document["overall"], "INCOMPLETE")
+        self.assertEqual(document["counts"]["failed"], 0)
+
+    def test_an_honest_adapter_still_passes(self):
+        completed, document = self._run(STUB_HEADER + "answer(honest())\n")
+        self.assertEqual(completed.returncode, EXIT_PASS, completed.stdout)
+        self.assertEqual(document["overall"], "PASS")
+
+    def test_a_leaked_secret_is_a_failure_wherever_it_is_observed(self):
+        """Same emission, same weight. Leaking sooner must not be a lighter verdict."""
+        marker = "-" * 5 + "BEGIN " + "PRIVATE KEY" + "-" * 5
+        for where, condition in (("capabilities probe", 'operation == "capabilities"'),
+                                 ("fixture probe", 'operation != "capabilities"')):
+            with self.subTest(leaked_during=where):
+                stub = (
+                    'import json, sys\n'
+                    'request = json.loads(sys.stdin.read())\n'
+                    'operation = request.get("operation")\n'
+                    'if %s:\n'
+                    '    sys.stdout.write(json.dumps({"adapter": "stub", "note": %r}))\n'
+                    '    raise SystemExit(0)\n'
+                    'sys.stdout.write(json.dumps({"adapter": "stub", "operation": operation,\n'
+                    '    "operations": ["replay"], "accepted_profiles": ["decision-replay-v1"],\n'
+                    '    "accepted": True, "terminal": "ALLOW", "signature_verified": True,\n'
+                    '    "recomputed": True, "bindings_verified": True}))\n'
+                    % (condition, marker))
+                completed, document = self._run(stub, name="leak-%s.py" % where.split()[0])
+                self.assertEqual(completed.returncode, EXIT_FAIL,
+                                 "a leak during the %s was not FAIL" % where)
+                self.assertEqual(document["overall"], "FAIL")
+                self.assertNotIn("BEGIN PRIVATE KEY", json.dumps(document))
