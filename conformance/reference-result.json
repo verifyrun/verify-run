@@ -45,9 +45,13 @@
     "artifact": {
       "filename": "verify_run-0.1.0a3-py3-none-any.whl",
       "kind": "wheel",
-      "sha256": "a0becbc38d9342e0f335a5c0fdd9483ff5de2e14596f4d193983b09172a2193b"
+      "sha256": "f63e42299579cb52f0aada2b2b823d683dd0841798299a4b44fca493750f9aca"
     },
     "distribution": "verify-run",
+    "installed_files_verified": {
+      "checked": 38,
+      "matched": 38
+    },
     "self_reported_banner": "verify-run 0.1.0a3",
     "version": "0.1.0a3"
   },
@@ -60,5 +64,5 @@
   },
   "published": false,
   "record_version": 1,
-  "result_sha256": "bebd79211b6d3c4db77b45277c1af0155dccbfbceb4ac01bba5074dd7152431a"
+  "result_sha256": "653ae425b66bfe364c9c9c6c90fe6157147856fb9819e03c15281e6e2b6d4ab0"
 }

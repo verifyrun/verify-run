@@ -30,6 +30,7 @@ artifact by construction.
 """
 
 import argparse
+import base64
 import hashlib
 import json
 import os
@@ -37,6 +38,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import zipfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -58,6 +60,50 @@ def run(argv, **keywords):
         raise SystemExit("failed: %s\n%s\n%s" % (" ".join(map(str, argv)),
                                                  done.stdout[-2000:], done.stderr[-2000:]))
     return done
+
+
+def installed_files_match_wheel(wheel, environment):
+    """Check that the installed distribution's files are the wheel's files.
+
+    A version banner is a string the candidate printed. This is the strongest binding Python
+    packaging actually substantiates, so it is the one made — and it is stated as exactly what it
+    is, not as attestation of a running process.
+
+    The wheel's `RECORD` lists a SHA-256 for each member it installs. pip **rewrites** RECORD on
+    install (console scripts, `.pyc`, relocated paths), so comparing the two files byte for byte
+    proves nothing; comparing each declared member's digest to the installed file's digest does.
+
+    Returns (checked, matched, missing). Any shortfall means the environment does not hold the
+    bytes this wheel declared.
+    """
+    site = next(Path(environment).glob("lib/python*/site-packages"), None)
+    if site is None:
+        return 0, 0, ["no site-packages in the environment"]
+    with zipfile.ZipFile(wheel) as archive:
+        record_name = next((n for n in archive.namelist() if n.endswith(".dist-info/RECORD")), None)
+        if record_name is None:
+            return 0, 0, ["the wheel declares no RECORD"]
+        rows = archive.read(record_name).decode("utf-8").splitlines()
+    checked = matched = 0
+    missing = []
+    for row in rows:
+        parts = row.rsplit(",", 2)
+        if len(parts) != 3 or not parts[1].startswith("sha256="):
+            continue                      # RECORD's own line carries no digest, by construction
+        relative, declared = parts[0], parts[1].split("=", 1)[1]
+        installed = site / relative
+        if not installed.is_file():
+            missing.append("absent: " + relative)
+            continue
+        checked += 1
+        # RECORD uses urlsafe base64 without padding, not hex.
+        actual = base64.urlsafe_b64encode(
+            hashlib.sha256(installed.read_bytes()).digest()).rstrip(b"=").decode("ascii")
+        if actual == declared:
+            matched += 1
+        else:
+            missing.append("differs: " + relative)
+    return checked, matched, missing
 
 
 def declared_version():
@@ -96,7 +142,13 @@ def main():
         vfy = environment_root / "bin" / "vfy"
         run([str(python), "-m", "pip", "install", "--quiet", str(wheel)])
         banner = run([str(vfy), "--version"]).stdout.strip()
-        print("   %s" % banner)
+        print("   %s (self-reported)" % banner)
+        checked, matched, missing = installed_files_match_wheel(wheel, environment_root)
+        if missing or not checked or matched != checked:
+            raise SystemExit(
+                "the environment does not hold this wheel's files (%d/%d matched): %s"
+                % (matched, checked, "; ".join(missing[:5])))
+        print("   %d of %d declared files match the wheel's own digests" % (matched, checked))
 
         print("3. run the kit against it")
         result_path = room / "result.json"
@@ -132,6 +184,9 @@ def main():
                 "version": result["implementation_version"],
                 "artifact": {"kind": "wheel", "filename": wheel.name, "sha256": wheel_digest},
                 "self_reported_banner": banner,
+                # Measured, not attested: every file the wheel declared with a digest is present
+                # in the environment the run used, with that digest.
+                "installed_files_verified": {"checked": checked, "matched": matched},
             },
             "profile": {"id": result["profile_id"], "version": result["profile_version"],
                         "sha256": result["profile_sha256"]},
