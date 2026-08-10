@@ -25,6 +25,26 @@ So this unit declares the narrow rule:
 | `kind == "command"` | the only kind whose action names a process. `tool_call`, `http_request`, and `custom` describe consequences this runtime cannot carry out, and guessing an execution for them would be inventing an action nobody authorized |
 | `action.argv` present, non-empty, every member a string | the schema permits an empty list; a command with no program is not a command |
 | `argv[0]` names a **path** — absolute, or containing a separator | see below |
+| the program is a **real regular file, not a symlink**, and executable by this user | see below |
+
+### The executable is not permitted to be a symlink
+This is asked once, of the entry itself, with `lstat` — so the answer cannot depend on how the
+caller spelled `argv[0]`. It used to. A bare name was checked for a symlink and refused one; a path
+form was checked with `is_file()`, which follows a link and answers for its target, and accepted
+one. `bin/deploy.sh` pointing at `elsewhere.sh` was therefore allowed and executed while the
+identical link written as `deploy.sh` was refused — and the candidate digest, the authorization and
+the receipt all named `bin/deploy.sh` while `elsewhere.sh` ran. A receipt that names a path other
+than the program that ran is not a record of the action.
+
+Refusal, rather than resolving to a canonical real path: the workspace config, the signing keys,
+the trust registry, every store entry and every evidence path already refuse a symlink instead of
+following one, and resolving here would also change what `candidate_digest` denotes.
+
+**What this establishes is path identity, not content identity.** The recorded name is a real
+regular executable file and not an alias for something else. Nothing here claims the bytes
+inspected are the bytes that later run: the file may be replaced between the check and the launch,
+and `docs/security.md` states that boundary rather than implying an immutability guarantee this
+runtime cannot make.
 
 `action.summary` is descriptive only and is never executed, never parsed, and never consulted.
 `action.tool`, `action.params`, and `action.targets` are likewise never executed — but they are

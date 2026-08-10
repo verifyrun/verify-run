@@ -11,10 +11,12 @@ import sys
 import tempfile
 import time
 import tokenize
+import types
 import unittest
 
 from vfy import authorization as auth_module
 from vfy import canon, gate, load, receipt as receipt_module, rulebook, runner, schema, snapshot
+from vfy import workflow
 from vfy import store as store_module
 from vfy.errors import ExecutionRecordingFailed, VerifyError
 
@@ -958,3 +960,89 @@ class UnrecordedReceiptSurvives(unittest.TestCase):
         self.assertIsNone(caught.exception.preserved_at,
                           "a preservation that did not happen must not be claimed")
         self.assertIsNotNone(caught.exception.receipt, "the receipt still travels on the failure")
+
+
+class ExecutableIdentityDoesNotDependOnSpelling(unittest.TestCase):
+    """A receipt naming one program while another runs defeats the point of recording the action.
+
+    The two branches of `resolve_program` disagreed. A bare name was checked with
+    `not candidate.is_symlink()` and refused a link; a path form was checked with `is_file()`,
+    which **follows** one, and accepted it. So `bin/deploy.sh` pointing at `elsewhere.sh` was
+    ALLOWed and executed — with the receipt, the candidate digest and the authorization all
+    naming `bin/deploy.sh` — while the identical link written as `deploy.sh` was refused. How the
+    caller spelled argv[0] decided whether a symlink was permitted.
+
+    Refusal is the repair rather than canonicalization: the config, the signing keys, the trust
+    registry, every store entry and evidence paths already reject a symlink instead of resolving
+    one, and canonicalizing would change what a candidate digest denotes.
+
+    What is asserted here is **path identity** — the recorded name is a real regular executable
+    file and not an alias. Not content identity: nothing claims the bytes checked are the bytes
+    that run.
+    """
+
+    def setUp(self):
+        self.room = pathlib.Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.room, ignore_errors=True)
+        self.bin = self.room / "bin"
+        self.bin.mkdir()
+
+    def _executable(self, path, body="real"):
+        path.write_text("#!/bin/sh\necho %s\n" % body, encoding="utf-8")
+        os.chmod(path, 0o755)
+        return path
+
+    def _workspace(self, search_path=("bin",)):
+        class Config(dict):
+            pass
+
+        config = {"execution": {"working_directory": "."}, "search_path": list(search_path)}
+        return types.SimpleNamespace(
+            path=lambda relative: self.room / relative, config=config)
+
+    def test_both_spellings_accept_a_plain_executable(self):
+        self._executable(self.bin / "deploy.sh")
+        workspace = self._workspace()
+        self.assertEqual(workflow.resolve_program(workspace, "bin/deploy.sh"), "bin/deploy.sh")
+        self.assertEqual(workflow.resolve_program(workspace, "deploy.sh"),
+                         str(self.bin / "deploy.sh"))
+
+    def test_both_spellings_refuse_a_symlinked_executable(self):
+        self._executable(self.room / "elsewhere.sh", "decoy")
+        (self.bin / "deploy.sh").symlink_to(self.room / "elsewhere.sh")
+        workspace = self._workspace()
+        for spelling in ("bin/deploy.sh", "deploy.sh"):
+            with self.subTest(argv0=spelling):
+                with self.assertRaises(VerifyError) as caught:
+                    workflow.resolve_program(workspace, spelling)
+                self.assertEqual(caught.exception.code, "cli_executable_not_found")
+
+    def test_a_symlink_chain_is_refused_at_the_first_link(self):
+        self._executable(self.room / "target.sh")
+        (self.room / "hop.sh").symlink_to(self.room / "target.sh")
+        (self.bin / "deploy.sh").symlink_to(self.room / "hop.sh")
+        with self.assertRaises(VerifyError):
+            workflow.resolve_program(self._workspace(), "bin/deploy.sh")
+
+    def test_a_dangling_symlink_is_refused_and_named_as_a_symlink(self):
+        (self.bin / "deploy.sh").symlink_to(self.room / "absent.sh")
+        with self.assertRaises(VerifyError) as caught:
+            workflow.resolve_program(self._workspace(), "bin/deploy.sh")
+        self.assertIn("symlink", str(caught.exception).lower())
+
+    def test_a_directory_and_a_fifo_are_not_executables(self):
+        (self.bin / "adir").mkdir()
+        os.mkfifo(self.bin / "afifo")
+        for name in ("adir", "afifo"):
+            for spelling in ("bin/" + name, name):
+                with self.subTest(argv0=spelling):
+                    with self.assertRaises(VerifyError):
+                        workflow.resolve_program(self._workspace(), spelling)
+
+    def test_a_non_executable_regular_file_is_refused(self):
+        (self.bin / "notexec.sh").write_text("#!/bin/sh\n", encoding="utf-8")
+        os.chmod(self.bin / "notexec.sh", 0o644)
+        for spelling in ("bin/notexec.sh", "notexec.sh"):
+            with self.subTest(argv0=spelling):
+                with self.assertRaises(VerifyError):
+                    workflow.resolve_program(self._workspace(), spelling)
