@@ -315,10 +315,27 @@ caller's terminal only when it is the command's own stream, never re-rendered by
 diagnostic. Expected typed failures print one line and no traceback.
 
 `--json` prints one canonical JSON object on stdout through the frozen canonicalizer, with every
-diagnostic on stderr. It is a stable field set — `command`, `outcome`, `matched_rule`, `reasons`,
-`receipt_id`, `receipt_path`, `executed`, `exit_status`, `exit_code` — carrying no timestamp that
-is not already in an artifact and no secret. It is canonical because it is produced by the same
-canonicalizer everything else uses; calling pretty-printed JSON canonical would be a lie.
+diagnostic on stderr. It carries no timestamp that is not already in an artifact and no secret, and
+it is canonical because it is produced by the same canonicalizer everything else uses; calling
+pretty-printed JSON canonical would be a lie.
+
+**Each command has its own field set.** This paragraph used to name one list and call it "a stable
+field set", which was wrong twice over: the list included `exit_code`, a field the CLI has never
+emitted, and omitted `notes`, which it does. A reader writing against it would have parsed for a
+key that is never there and missed one that is. The sets are:
+
+| command | fields |
+|---|---|
+| `check`, `run` | `command`, `outcome`, `matched_rule`, `reasons`, `receipt_id`, `receipt_path`, `executed`, `exit_status`, `notes` |
+| `run`, when the record could not be written | `command`, `error`, `stage`, `executed`, `authorization_consumed`, `exit_status`, `timed_out`, `signalled`, `receipt_id`, `preserved_at`, `receipt` |
+| `receipts list` | `command`, `receipts`, `refused` |
+| `replay`, `receipts show` | `command`, `receipt_id`, `outcome`, `verified`, `replayed`, `authorization_verified`, `timeline_anomalies` |
+
+The child's exit status is `exit_status`. There is no `exit_code` field; the CLI's own exit code is
+the process status, described under [Exit codes](#exit-codes), and is not a member of any document.
+
+`tests/test_cli.py` asserts each set against real command output, so this table cannot drift from
+the CLI again without a test failing.
 
 ## Exit codes
 Three different things, never merged: the decision, the child process's status, and the CLI's own
