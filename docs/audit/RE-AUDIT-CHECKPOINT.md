@@ -3,7 +3,7 @@
 Working notes for the closure arc. Not a public document: it records what was reproduced, what was
 repaired, and what the next session does not need to re-derive. Delete before a stable release.
 
-Local HEAD `7aa765d`, 16 commits ahead of `origin/main` `58c49dd`, unpushed, clean tree.
+Local HEAD `37830db`, 18 commits ahead of `origin/main` `58c49dd`, unpushed, clean tree.
 `pyproject` version `0.1.0a3` — **unchanged on purpose**; `v0.1.0a3` is published and these
 repairs mean the next release needs a new version.
 
@@ -28,7 +28,7 @@ repairs mean the next release needs a new version.
 | 15 | secret-leak verdict asymmetry | yes | CLOSED (re-proved) | `2feb303` |
 | 16 | docs / spec drift | **yes** | **CLOSED** | `edbd854`, `7aa765d` |
 | 17 | F9 nonce scope across store clones | not yet | **FOUNDER_DECISION_REQUIRED** (unreproduced) | — |
-| 18 | implementation identity behind a banner | **yes** | **KNOWN_DEFERRED** (reproduced, unrepaired) | — |
+| 18 | implementation identity behind a banner | **yes** | **PARTLY CLOSED** — banner/module_location and the checker artifact join done; RECORD-to-wheel binding not | `37830db` |
 | 19 | CI matrix / supply-chain cluster | not yet | **KNOWN_DEFERRED** | — |
 
 ## Baselines, taken twice with no edit between them
@@ -197,11 +197,42 @@ The repair is to have the **orchestrator** write the digest it measured into the
 prove the installed distribution's `RECORD` corresponds to it — the implementation keeps
 self-reporting only descriptive fields.
 
+## F-AUDIT-18 — what closed and what did not
+
+**Closed** (`37830db`): `module_location` was probed with `sys.executable` — the *adapter's* own
+interpreter — so it always reported the checkout regardless of `--vfy`. Now read from the
+interpreter the tested executable runs on, `None` when undeterminable. The reply is marked
+`self_attested`. `check_conformance_result.py --artifact` measures the file itself and joins it to
+`reference-result.json`; one-byte change, zero-byte file and missing file all fail, identical bytes
+pass under any name.
+
+**Not closed**: nothing asserts the executable *came from* the measured wheel. The orchestration
+makes it true (hash, install that file, invoke by absolute path) but does not assert it. Next step
+is binding the installed distribution's `RECORD` to the wheel digest.
+
+The binding must stay out of the result document: `decision-replay-v1`'s result schema is frozen
+with `additionalProperties: false`.
+
+## Traps in this arc
+
+- `echo $?` after a pipe reads the **last** command's status. Two hostile cases reported exit 0
+  while failing.
+- **zsh does not word-split unquoted parameters.** `$A` holding `--artifact path` reached argparse
+  as one malformed argument, producing exit 2 that looked like a checker defect.
+- Editing any file under the kit MANIFEST invalidates the kit until
+  `tools/build_conformance_manifest_of_record.py` is re-run — including the checker itself.
+
 ## Next dependency
 
-**F-AUDIT-18's repair** — the reproduction above is done and committed; the artifact binding is
-not. Then `19` (three separate subfindings: TTL-at-spend reachability, the Python matrix claim,
-CI action mutability), then `17`.
+**F-AUDIT-18's remaining step** — assert the installed distribution's `RECORD` corresponds to the
+measured wheel. Then `19` (three separate subfindings: TTL-at-spend reachability, the Python matrix
+claim, CI action mutability), then `17`/F9 reproduction-only.
+
+Note on the governing mandate: its prose uses words this repository's own vocabulary gate bans
+(notably "regime" and "admissibility"). None were written into any source, spec, or doc file — the
+gate would fail the build. The product-role statement it asks for is recorded here in permitted
+vocabulary: verify-run is the deterministic decision-and-receipt runtime; anything conversational,
+tenanted, billed, or administrative belongs above it and none of it exists in this tree.
 
 F-AUDIT-17/F9 is **unreproduced** in this session. It stays `FOUNDER_DECISION_REQUIRED` on the
 existing analysis rather than being downgraded on no evidence.
