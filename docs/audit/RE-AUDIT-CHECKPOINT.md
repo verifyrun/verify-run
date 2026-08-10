@@ -3,7 +3,7 @@
 Working notes for the closure arc. Not a public document: it records what was reproduced, what was
 repaired, and what the next session does not need to re-derive. Delete before a stable release.
 
-Local HEAD `edbd854`, 14 commits ahead of `origin/main` `58c49dd`, unpushed, clean tree.
+Local HEAD `7aa765d`, 16 commits ahead of `origin/main` `58c49dd`, unpushed, clean tree.
 `pyproject` version `0.1.0a3` — **unchanged on purpose**; `v0.1.0a3` is published and these
 repairs mean the next release needs a new version.
 
@@ -26,9 +26,9 @@ repairs mean the next release needs a new version.
 | 13 | dangling index symlink read as absence | **yes** | **CLOSED** | `cdffbd3` |
 | 14 | read-only listing that writes | **yes** | **CLOSED** | `cdffbd3` |
 | 15 | secret-leak verdict asymmetry | yes | CLOSED (re-proved) | `2feb303` |
-| 16 | docs / spec drift | partly | **PARTLY CLOSED** — temporal claims done in `edbd854`; the `exit_code`/`notes`/index/checklist sweep is not | — |
+| 16 | docs / spec drift | **yes** | **CLOSED** | `edbd854`, `7aa765d` |
 | 17 | F9 nonce scope across store clones | not yet | **FOUNDER_DECISION_REQUIRED** (unreproduced) | — |
-| 18 | implementation identity behind a banner | not yet | **KNOWN_DEFERRED** | — |
+| 18 | implementation identity behind a banner | **yes** | **KNOWN_DEFERRED** (reproduced, unrepaired) | — |
 | 19 | CI matrix / supply-chain cluster | not yet | **KNOWN_DEFERRED** | — |
 
 ## Baselines, taken twice with no edit between them
@@ -151,15 +151,57 @@ Classification: 11 is **valid-but-anomalous**, surfaced via `ReplayVerification.
 (a verification result object, not a signed payload — no protocol identity change). 12 preserves
 `execution` on the failure at all three stages below the launch line and fabricates no receipt.
 
+## F-AUDIT-16 — what was reproduced, and what was refuted
+
+**Confirmed and closed** (`7aa765d`): `spec/cli.md` advertised a `--json` field set containing
+`exit_code`, which the CLI has never emitted, and omitted `notes`, which it always does. It also
+gave one list where four different sets exist. The witness in `tests/test_cli.py` parses the
+documented table **out of the spec** and compares it to real output, so spec and CLI cannot drift
+apart again.
+
+**Refuted — do not "fix" these**, they were reproduced and found accurate:
+
+- `docs/release-checklist.md` "30 byte-identical fixture bundles" — `check_manifest` compares every
+  fixture file's SHA-256 to the recorded digest.
+- `docs/receipts-and-replay.md` index narration — describes exactly the post-F-AUDIT-13/14
+  behaviour.
+- `spec/release.md` "a release test proves an installed wheel takes the resource path" —
+  `RuntimeResources` plus the package CI job assert it.
+
+The temporal half of 16 closed earlier in `edbd854` (the "readings are monotone" claim).
+
+## F-AUDIT-18 — reproduced, NOT repaired
+
+A harmless local shell script that answers `--version` with `verify-run 0.1.0a3` and does nothing
+else is **accepted by the adapter as the implementation under test**. Worse than the finding
+stated: the capabilities reply reports
+`implementation.module_location = <checkout>/vfy/__init__.py` — the adapter describes *the Python
+module it can import*, which in that invocation is the repository checkout, while the executable
+under test is the stand-in. So the reply asserts "verify-run 0.1.0a3" about a program that is not
+verify-run at all.
+
+Reproducer (harmless, local only):
+
+```sh
+printf '#!/bin/sh\ncase "$1" in --version) echo "verify-run 0.1.0a3";; esac\n' > /tmp/spoof/vfy
+chmod +x /tmp/spoof/vfy
+echo '{"operation":"capabilities","profile":"decision-replay-v1"}' \
+  | python tools/conformance_adapter.py --vfy /tmp/spoof/vfy
+```
+
+**Do not invent a second identity system.** `tools/build_reference_result.py` already hashes the
+wheel *before* install and passes `--vfy <env>/bin/vfy` as an absolute path, so a PATH-prepended
+fake cannot reach it. What is missing is that (a) the result document does not carry the
+orchestrator-measured wheel digest, and (b) nothing asserts the executable came from that wheel.
+The repair is to have the **orchestrator** write the digest it measured into the result and to
+prove the installed distribution's `RECORD` corresponds to it — the implementation keeps
+self-reporting only descriptive fields.
+
 ## Next dependency
 
-**F-AUDIT-16's remaining sweep** — the temporal claims are done; the `--json exit_code`, `notes`,
-stale index/listing narration and release-checklist-constant hits are not. Then `18 → 19 → 17`.
-
-F-AUDIT-18's artifact identity should reuse the wheel digest already recorded in
-`conformance/reference-result.json` rather than inventing a second identity mechanism. The
-orchestrator must carry that digest into the result; the implementation under test may only
-self-report descriptive fields.
+**F-AUDIT-18's repair** — the reproduction above is done and committed; the artifact binding is
+not. Then `19` (three separate subfindings: TTL-at-spend reachability, the Python matrix claim,
+CI action mutability), then `17`.
 
 F-AUDIT-17/F9 is **unreproduced** in this session. It stays `FOUNDER_DECISION_REQUIRED` on the
 existing analysis rather than being downgraded on no evidence.
