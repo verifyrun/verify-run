@@ -264,9 +264,21 @@ the decision. Whatever fetched the input never does.
 
 ## Python support
 
-Requires `>=3.11`. Developed and fully tested on CPython 3.14 (macOS, arm64); continuous
-integration covers 3.11, 3.12, and 3.13 on Linux. Other platforms are expected to work but are
-not yet proven — see [docs/security.md](docs/security.md) for the exact platform caveats.
+Requires `>=3.11`. Developed and fully tested on CPython 3.14 (macOS, arm64). Continuous
+integration on Linux, stated per job because "CI covers 3.11–3.13" was true of some jobs and not
+others:
+
+| what runs | 3.11 | 3.12 | 3.13 |
+|---|:--:|:--:|:--:|
+| full source suite | ✓ | ✓ | ✓ |
+| source distribution installed and self-audited | ✓ | ✓ | ✓ |
+| release and security gates | | ✓ | |
+| wheel built, installed, and exercised | | ✓ | |
+| conformance kit | | ✓ | |
+
+So every supported version has the whole suite run against it *and* against an installed source
+distribution; the wheel and the conformance run are proven on 3.12. Other platforms are expected
+to work but are not yet proven — see [docs/security.md](docs/security.md) for the exact caveats.
 
 ## Development
 

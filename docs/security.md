@@ -246,3 +246,27 @@ being bolted onto a local cache now.
 
 Open an issue describing the behavior and the smallest reproduction. For anything you believe is
 exploitable, please report privately to the maintainer before disclosing publicly.
+
+## Build and release dependencies
+
+Stated rather than hardened, because a claim this repository cannot keep is worse than an honest
+boundary.
+
+Continuous integration uses `actions/checkout@v4` and `actions/setup-python@v5`, and builds with
+`pip` and `build` at whatever version the runner resolves. Those are **mutable references**: a tag
+can be moved, and an unpinned build tool resolves to whatever is current. This project relies on
+ordinary GitHub Marketplace and PyPI trust for them and does not claim immutable action identity.
+
+What that does and does not mean:
+
+- A compromised action or build tool could affect **what CI reports** and **what a release
+  artifact contains**. That is a real exposure and pinning by commit digest would reduce it.
+- It does not affect what a *recipient* can check. Every published artifact's identity is its
+  SHA-256; the conformance result is bound to that digest by
+  [`conformance/reference-result.json`](../conformance/reference-result.json); and a receipt
+  verifies and replays offline against key registries the reader supplies. None of those depend on
+  trusting the machine that built the artifact.
+
+Pinning by commit digest is a maintenance policy decision — it makes every action upgrade a manual
+step — and this alpha has not taken it. The exposure is written down here instead of being papered
+over with partial pins that would imply a guarantee the rest of the pipeline does not make.

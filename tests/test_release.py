@@ -679,3 +679,57 @@ class TheConformanceClaimFollowsAnArtifact(unittest.TestCase):
             return
         readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
         self.assertNotIn("Current reference result for the published release", readme)
+
+
+class ThePythonSupportClaimIsPerJob(unittest.TestCase):
+    """"CI covers 3.11–3.13" was true of some jobs and false of others.
+
+    The full source suite and the sdist self-audit run on all three supported versions; the
+    release gates, the wheel build/install, and the conformance run are on 3.12 alone. An
+    unqualified sentence let a reader conclude the *wheel* they install had been exercised on
+    their interpreter. The README now states it per job, and this reads the workflow to keep the
+    two together.
+    """
+
+    def _workflow(self):
+        return yaml.safe_load(
+            (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
+
+    def _versions(self, job):
+        matrix = job.get("strategy", {}).get("matrix", {}).get("python")
+        if matrix:
+            return sorted(str(v) for v in matrix)
+        named = [step.get("with", {}).get("python-version") for step in job["steps"]
+                 if "setup-python" in str(step.get("uses", ""))]
+        return sorted(str(v) for v in named if v)
+
+    def test_every_supported_version_has_a_full_suite_and_an_artifact_witness(self):
+        """`requires-python >= 3.11` needs artifact evidence, not only source evidence."""
+        jobs = self._workflow()["jobs"]
+        supported = self._versions(jobs["test"])
+        self.assertIn("3.11", supported)
+        self.assertEqual(self._versions(jobs["sdist-self-audit"]), supported,
+                         "a supported version with no installed-artifact witness is a claim "
+                         "resting on the checkout alone")
+
+    def test_the_readme_states_the_coverage_per_job_rather_than_in_one_sentence(self):
+        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertNotRegex(
+            readme, r"integration covers 3\.11, 3\.12, and 3\.13",
+            "the unqualified coverage sentence is back; it is true of some jobs only")
+        for row in ("full source suite", "self-audited", "wheel built",
+                    "conformance kit", "release and security gates"):
+            self.assertIn(row, readme, "the per-job coverage table is missing %r" % row)
+
+    def test_the_supply_chain_boundary_is_written_down_not_implied(self):
+        """Mutable action tags are a real exposure. Stating it beats a partial pin."""
+        security = (REPO_ROOT / "docs" / "security.md").read_text(encoding="utf-8")
+        self.assertIn("mutable references", security)
+        self.assertIn("does not claim immutable action identity", security)
+        workflow = (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+        pinned = re.findall(r"uses: \S+@([0-9a-f]{40})", workflow)
+        floating = re.findall(r"uses: \S+@(v\d+)", workflow)
+        self.assertTrue(pinned or floating, "no actions found; this check reads nothing")
+        if pinned and floating:
+            self.fail("actions are pinned inconsistently: %r and %r; pick one and say which"
+                      % (sorted(set(pinned))[:2], sorted(set(floating))))
