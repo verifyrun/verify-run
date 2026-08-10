@@ -19,6 +19,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 
 from vfy import canon, gate, load, rulebook, schema
 from vfy.errors import (
+    CanonicalFormInvalid,
     AuthorizationBindingMismatch,
     AuthorizationExpired,
     AuthorizationNonceReused,
@@ -177,10 +178,13 @@ def verify_authorization(value, pinned, candidate, snapshot, result, runtime_id,
     if entry["status"] == RETIRED:
         raise SigningKeyRetired("The signing key is retired and authorizes nothing.")
 
+    # One signature byte string, one accepted encoding. Strict base64 refuses a bad alphabet and
+    # bad padding but not unused trailing bits, so sixteen distinct texts decoded to the same
+    # 64 bytes and all sixteen verified. See `canon.decode_signature`.
     try:
-        signature = base64.b64decode(block["value"], validate=True)
-    except Exception:
-        raise SignatureMalformed("The signature value is not valid base64.") from None
+        signature = canon.decode_signature(block["value"])
+    except CanonicalFormInvalid as failure:
+        raise SignatureMalformed(str(failure)) from None
 
     payload = {key: member for key, member in value.items() if key != "signature"}
     signing_bytes = canon.canonicalize(payload).encode("utf-8")

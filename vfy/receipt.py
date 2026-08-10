@@ -20,6 +20,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 from vfy import authorization as auth_module
 from vfy import canon, gate, load, rulebook, schema, snapshot
 from vfy.errors import (
+    CanonicalFormInvalid,
     ReceiptBindingMismatch,
     ReceiptOutcomeIneligible,
     ReplayBodyMismatch,
@@ -155,10 +156,13 @@ def verify_receipt(value, keys, registry):
     if entry.get("status") == "revoked":
         raise SigningKeyRetired("The receipt signing key is revoked.")
 
+    # One signature byte string, one accepted encoding. Strict base64 refuses a bad alphabet and
+    # bad padding but not unused trailing bits, so sixteen distinct texts decoded to the same
+    # 64 bytes and all sixteen verified. See `canon.decode_signature`.
     try:
-        signature = base64.b64decode(block["value"], validate=True)
-    except Exception:
-        raise SignatureMalformed("The signature value is not valid base64.") from None
+        signature = canon.decode_signature(block["value"])
+    except CanonicalFormInvalid as failure:
+        raise SignatureMalformed(str(failure)) from None
 
     payload = {key: member for key, member in value.items() if key != "signature"}
     signing_bytes = canon.canonicalize(payload).encode("utf-8")

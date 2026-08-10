@@ -4,6 +4,7 @@ Pure: no clock, no randomness, no filesystem, no network, no environment, no loc
 timezone. The same value produces the same bytes on every machine.
 """
 
+import base64
 import hashlib
 
 from vfy.errors import CanonicalFormInvalid, FloatNotPermitted, SurrogateNotPermitted
@@ -30,6 +31,40 @@ _FIRST_PRINTABLE = " "  # U+0020: everything below it is a C0 control
 _TEXT = 0    # already-rendered text, emit as is
 _VALUE = 1   # a value still to be written
 _KEY = 2     # an object key still to be rendered, followed by its colon
+
+
+# One signature byte string has one accepted textual encoding.
+#
+# Strict base64 already refuses a bad alphabet and bad padding, but it does not refuse *unused
+# trailing bits*. A 64-byte Ed25519 signature encodes to 88 characters whose third-from-last
+# carries four bits that decode to nothing, so **sixteen distinct texts** decoded to the same
+# signature and every one of them verified. No forgery — the bytes are identical and Ed25519 is
+# untouched — but an artifact that is supposed to have one canonical form had sixteen, which is
+# exactly the property canonicalization exists to remove. Anything that compares, indexes, dedupes
+# or digests the encoded text would have disagreed with itself.
+SIGNATURE_BYTES = 64
+
+
+def decode_signature(text):
+    """Decode a signature and require the text to be its one canonical encoding.
+
+    Length is deliberately **not** checked here. `fixtures/` pins a truncated signature as
+    `signature_invalid` — the answer Ed25519 verification itself gives — and a length guard in
+    front of it would re-answer that as `signature_malformed`. The golden vectors are the
+    authority, and this function has one job: whether the text is the canonical spelling of the
+    bytes it decodes to. Nothing about which bytes are a valid signature.
+    """
+    if not isinstance(text, str):
+        raise CanonicalFormInvalid("A signature value must be a string.")
+    try:
+        raw = base64.b64decode(text, validate=True)
+    except Exception:
+        raise CanonicalFormInvalid("The signature value is not valid base64.") from None
+    # The check that closes it: re-encode and require the presented text back, exactly.
+    if base64.b64encode(raw).decode("ascii") != text:
+        raise CanonicalFormInvalid(
+            "The signature value is not the canonical base64 encoding of its own bytes.")
+    return raw
 
 
 def canonicalize(value):
