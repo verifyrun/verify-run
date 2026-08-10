@@ -254,6 +254,12 @@ environment, runs the 30 fixtures against it, and writes a result document. Name
 version to test it instead: `sh tools/conformance_reference_run.sh out 0.1.0a2`. The profile and
 its fixtures are the same either way; only the implementation under test changes.
 
+That script needs the version to be *published*, so it cannot test a candidate that only exists on
+your machine. For that, `tools/build_reference_result.py` builds the wheel from this tree, hashes
+it, installs that exact file into a clean environment, runs the kit against it, and records the
+artifact digest beside the result. The reference claim below is generated from that record rather
+than written by hand — a claim about an artifact has to come from the artifact.
+
 **Replay recomputes the recorded decision. It does not re-execute the action**, does not reacquire
 evidence, and does not prove the action's effects occurred in the world. A result is a *self-test*,
 not certification: nobody accredits this profile, and a PASS is meaningful only together with the
@@ -263,6 +269,10 @@ and §16 of the contract for what it deliberately does not establish.
 
 Current reference result: **PASS**, 30/30 fixtures, `verify-run 0.1.0a3`, fixture manifest
 `756029f681ad7587…`.
+
+That sentence is checked against [`conformance/reference-result.json`](conformance/reference-result.json),
+which names the exact wheel it was measured against by SHA-256. A version number alone would not
+distinguish two artifacts that print the same banner.
 
 ## Alpha status
 

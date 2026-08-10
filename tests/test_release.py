@@ -242,15 +242,8 @@ class VersionAndMetadata(unittest.TestCase):
         is a claim about the past and must stay written in the past.
         """
         readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
-        for label, pattern in (
-                ("the alpha-status version", r"^Version `%s`\." % re.escape(__version__)),
-                ("the current conformance reference result",
-                 r"Current reference result: \*\*PASS\*\*, 30/30 fixtures, `verify-run %s`"
-                 % re.escape(__version__)),
-        ):
-            with self.subTest(claim=label):
-                self.assertRegex(readme, re.compile(pattern, re.M),
-                                 "%s does not name %s" % (label, __version__))
+        self.assertRegex(readme, re.compile(r"^Version `%s`\." % re.escape(__version__), re.M),
+                         "the alpha-status version does not name " + __version__)
 
     def test_the_readme_does_not_present_verify_run_as_the_whole_system(self):
         """One section has to exist, because its absence is what outside readers got wrong.
@@ -596,3 +589,93 @@ class ScannersReachWhatShips(unittest.TestCase):
                 self.assertTrue(found, "a planted credential in %s was not reachable" % name)
             finally:
                 path.write_bytes(original)
+
+
+class TheConformanceClaimFollowsAnArtifact(unittest.TestCase):
+    """A release claim must come from a result, and a result must come from an artifact.
+
+    It ran the other way. `pyproject` declared a version; this file required the README to say
+    `Current reference result: PASS, 30/30 fixtures, verify-run <that version>`; and
+    `tools/conformance_reference_run.sh` installed `verify-run==<that version>` from PyPI. So
+    bumping to `0.1.0a4` — reproduced mechanically — made the release gate *demand* a PASS
+    sentence naming an artifact that did not exist on PyPI and had never been run against the
+    kit. The only way to go green was to author the claim first. A version label was deciding
+    what a result said.
+
+    The direction is now: build the wheel, hash it, install that file, run the kit against it,
+    check the result against the kit, record artifact identity beside result identity. The
+    README sentence is checked against that record, so it cannot name a version whose artifact
+    nobody measured. `tools/build_reference_result.py` is what produces the record.
+    """
+
+    RECORD = REPO_ROOT / "conformance" / "reference-result.json"
+    PROFILE_DIR = REPO_ROOT / "conformance" / "decision-replay-v1"
+
+    def setUp(self):
+        self.assertTrue(self.RECORD.is_file(),
+                        "no checked-in reference result; run tools/build_reference_result.py")
+        self.record = json.loads(self.RECORD.read_text(encoding="utf-8"))
+
+    def _sha256(self, path):
+        import hashlib
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+
+    def test_the_record_binds_the_kit_it_was_run_against(self):
+        profile = json.loads((self.PROFILE_DIR / "profile.json").read_text(encoding="utf-8"))
+        manifest = (self.PROFILE_DIR / profile["fixture_manifest"]).resolve()
+        self.assertEqual(self.record["profile"]["sha256"],
+                         self._sha256(self.PROFILE_DIR / "profile.json"),
+                         "the record names a profile digest this kit does not have")
+        self.assertEqual(self.record["fixtures"]["manifest_sha256"], self._sha256(manifest),
+                         "the record names a fixture manifest this kit does not have")
+        self.assertEqual(self.record["profile"]["id"], profile["profile_id"])
+        self.assertEqual(self.record["profile"]["version"], profile["profile_version"])
+        declared = sorted(entry["fixture_id"] for entry in
+                          json.loads(manifest.read_text(encoding="utf-8"))["fixtures"])
+        self.assertEqual(self.record["fixtures"]["ids"], declared,
+                         "the record's fixture set is not this kit's fixture set")
+
+    def test_the_record_names_a_specific_artifact_and_not_only_a_version(self):
+        artifact = self.record["implementation"]["artifact"]
+        self.assertRegex(artifact["sha256"], r"\A[0-9a-f]{64}\Z")
+        self.assertIn(artifact["kind"], ("wheel", "sdist"))
+        self.assertIn(self.record["implementation"]["version"], artifact["filename"])
+        self.assertNotEqual(artifact["sha256"], "0" * 64)
+
+    def test_the_records_verdict_follows_its_own_counts(self):
+        counts = self.record["counts"]
+        self.assertEqual(counts["passed"], counts["total"])
+        self.assertEqual(counts["failed"], 0)
+        self.assertEqual(counts["skipped"], 0)
+        self.assertEqual(self.record["overall"], "PASS")
+        self.assertEqual(counts["total"], len(self.record["fixtures"]["ids"]))
+        self.assertGreater(counts["total"], 0, "a PASS over zero fixtures is not a pass")
+
+    def test_the_readme_claim_is_the_one_the_record_generates(self):
+        """The README does not get to author this sentence. It has to match the record's."""
+        sys.path.insert(0, str(REPO_ROOT / "tools"))
+        try:
+            import build_reference_result
+        finally:
+            sys.path.pop(0)
+        expected = build_reference_result.claim_sentence(self.record)
+        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertIn(expected, readme,
+                      "the README's reference-result sentence is not the one the record "
+                      "generates; regenerate it rather than editing the README")
+
+    def test_the_record_matches_the_built_artifact_when_one_is_present(self):
+        wheels, _ = artifacts_for(".whl")
+        if not wheels:
+            self.skipTest("no built wheel for %s in dist/" % declared_version())
+        built = {self._sha256(p) for p in wheels}
+        self.assertIn(self.record["implementation"]["artifact"]["sha256"], built,
+                      "the record names a wheel digest that no artifact in dist/ has; the "
+                      "recorded result was not measured against these bytes")
+
+    def test_an_unpublished_record_does_not_claim_a_release_coordinate(self):
+        """`published: false` is the honest state for a candidate. It must not read as a release."""
+        if self.record.get("published"):
+            return
+        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertNotIn("Current reference result for the published release", readme)
