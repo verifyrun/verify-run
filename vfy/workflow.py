@@ -129,7 +129,12 @@ class Workspace:
         return self.root / relative
 
     def store(self):
+        """The store opened to write to. Creates the declared layout if it is not there."""
         return store_module.LocalStore(self.vfy)
+
+    def store_for_reading(self):
+        """The store opened only to look at. A command that reads must leave no trace."""
+        return store_module.LocalStore.for_reading(self.vfy)
 
 
 def schema_registry(spec_dir):
@@ -554,7 +559,7 @@ def replay(workspace, receipt_path):
     No clock is read. Replay recomputes a decision from recorded inputs, and every input it needs
     is on disk; a receipt that verified yesterday verifies today.
     """
-    store = workspace.store()
+    store = workspace.store_for_reading()
     path = Path(receipt_path)
     expected = (workspace.vfy / "receipts").resolve()
     resolved = path.resolve()
@@ -569,7 +574,7 @@ def replay(workspace, receipt_path):
 
 def list_receipts(workspace):
     """The store's own listing: what it read, and what it refused, by filename."""
-    return workspace.store().listing()
+    return workspace.store_for_reading().listing()
 
 
 def _receipt_path(workspace, receipt_id):

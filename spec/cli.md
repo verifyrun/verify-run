@@ -286,6 +286,13 @@ decision was made here, and `store_index_invalid` is not an outcome.
 would be the exact confusion this product exists to prevent. `show` loads one record **with**
 verification and replay through `get_record`, and says so.
 
+**`list`, `show`, and `replay` write nothing at all.** They open the store *for reading*, which is
+a different construction from the one `run` uses and cannot create the layout — see
+`spec/local-store.md`. Running any of them against a store missing `receipts/`, or whose
+`store.json` has been replaced by something that is not a regular file, is a typed refusal on
+stderr with exit `1` and **zero filesystem change**. It is not a silent repair, and a `receipts/`
+that cannot be listed is not answered as an empty store.
+
 ## Output
 Human output uses product vocabulary only: rulebook, gate, evidence, snapshot, decision,
 authorization, receipt, replay, runtime, verification, and the four outcomes.

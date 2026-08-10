@@ -130,10 +130,19 @@ read per committed record, which is what a local store bounded by one workspace'
 `get_record`, which is where anything is actually verified, is unchanged and still refuses a
 damaged record by name.
 
-The index itself is subject to the same rule. A malformed, unreadable, or symlinked `index.json`
-appears in `refused` — it is never believed, and it never silences the records either. Writing is
-where a symlinked cache is dangerous, and writing still refuses: `rebuild_index` raises
-`store_path_invalid` rather than renaming over the link.
+The index itself is subject to the same rule. A malformed, unreadable, symlinked, non-regular, or
+oversized `index.json` appears in `refused` — it is never believed, and it never silences the
+records either. A **dangling** symlink is refused like any other: it is a directory entry that is
+a link, not an absence, and reporting it as *no cache* would make a hostile object invisible
+precisely by having it point at nothing. Writing is where a symlinked cache is dangerous, and
+writing still refuses: `rebuild_index` raises `store_path_invalid` rather than renaming over the
+link.
+
+One further consequence of reading records rather than the cache: **the index refresh a commit
+performs walks the same files a listing does.** A hostile object planted under `receipts/` must
+therefore not be able to block *recording* either. It cannot: the refresh reads through the same
+primitive, refuses the entry, and — as [Subordinate, operationally](#subordinate-operationally)
+requires — never propagates a cache problem onto a record the rename already committed.
 
 ### Subordinate, operationally
     store_format_version: 1 — clarified after Unit 12's concurrency proof; no guarantee changed.
@@ -257,6 +266,71 @@ directory and every body in it, the index, and every consumption record.
 Filenames are derived only from the storable-id grammar and from SHA-256 hex, so `../`, absolute
 paths, and separators cannot appear in a derived name at all. Nothing is deleted recursively, and
 no path outside the caller's root is ever touched.
+
+## Reading an untrusted entry
+Every file the store reads is untrusted local input, and each one is read the same way: **one
+object is classified, opened, and read.**
+
+The open *is* the classification. `O_NOFOLLOW` settles the symlink question while the descriptor
+is being acquired, and kind, size, and contents are then asked of that descriptor and never of
+the path again. `O_NONBLOCK` keeps a FIFO from parking the process in the open itself.
+
+This ordering is the requirement, not a detail. `is_file()` followed by `read_bytes()`, or
+`stat()` followed by `open()`, are two separate looks at one name, and a name can be made to
+refer to two different objects between them.
+
+Two consequences follow, and both are load-bearing:
+
+- **A directory entry that is a symlink is an entry, not an absence.** `exists()` answers for
+  what a link points at, so a dangling symlink reports as nothing being there. Absence therefore
+  means *no directory entry*, and every question about presence — a committed record, the index,
+  a consumption record, a preserved unrecorded receipt — is asked that way.
+- **Size is refused from the descriptor, before allocation.** A store entry above the byte bound
+  is refused without a read proportional to it, and a file that grows past the bound while being
+  read is refused too.
+
+`MAX_RECEIPT_BYTES` is 1 MiB. It is a **product bound, not a derived one**: a receipt is a small
+bounded document — identifiers, three digests, a result with its reason trace, one signature —
+and 1 MiB is orders of magnitude above any of them. Nothing computes it from the schema, and it
+should be read as the largest thing this store will call a receipt rather than as a proof about
+the largest receipt that exists.
+
+Non-regular entries are refused as a class: FIFOs, directories, sockets, and devices. What the
+guarantee narrows to on a host lacking `O_NOFOLLOW` or `O_NONBLOCK` is stated below.
+
+### The race this closes, and the one it does not
+Closed: the window between deciding what a name refers to and reading it. There is no such
+window; there is one descriptor.
+
+Not closed: a **parent directory** component may still be replaced while a path is being
+resolved. The store does not claim otherwise, and a caller who does not control the enclosing
+directory does not get a stronger guarantee from anything here.
+
+On a host without `O_NOFOLLOW`, the symlink refusal falls back to what a single `lstat` can say,
+which is a check-then-open pair again. On a host without `O_NONBLOCK`, a FIFO can block the open.
+Both flags are POSIX and present on every platform this alpha is tested on; the fallback is
+recorded because a narrower guarantee should be written down rather than assumed away.
+
+## Opening the store
+A store is opened **either to write to or only to look at**, and these are different
+constructions rather than one construction in two moods.
+
+- **Opened for writing** — creates the declared layout if it is not there, writes the format
+  marker, refreshes the index on commit.
+- **Opened for reading** — creates nothing, repairs nothing, migrates nothing, normalizes
+  nothing. A missing or replaced layout member is *reported*, never supplied.
+
+A command that only reads must be unable to leave a trace, and that has to be a property of which
+constructor ran rather than of auditing every path a listing might take.
+
+Opened for reading, the store requires a real directory at the root and at `receipts/`, and
+refuses a format marker that is not a regular file. An **absent** `store.json` is tolerated —
+the committed records are the authority and a marker going missing is not a reason to make a
+listing unavailable — but an object standing in its place is refused.
+
+A directory that cannot be listed is refused by name. It is not reported as an empty store: `I
+cannot see` and `there is nothing here` are different sentences, and this product does not merge
+them here either.
 
 ## Recovery
 - **abandoned staging** — reported by an explicit scan, never auto-deleted;
