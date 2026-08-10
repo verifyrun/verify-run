@@ -3,7 +3,7 @@
 Working notes for the closure arc. Not a public document: it records what was reproduced, what was
 repaired, and what the next session does not need to re-derive. Delete before a stable release.
 
-Local HEAD `86523cb`, 7 commits ahead of `origin/main` `58c49dd`, unpushed, clean tree.
+Local HEAD `a7b5372`, 13 commits ahead of `origin/main` `58c49dd`, unpushed, clean tree.
 `pyproject` version `0.1.0a3` — **unchanged on purpose**; `v0.1.0a3` is published and these
 repairs mean the next release needs a new version.
 
@@ -14,13 +14,13 @@ repairs mean the next release needs a new version.
 | 01 | decimal operand host-limit / raw ValueError | yes | CLOSED | `0b2129c` |
 | 02 | executed signed receipt lost after record failure | yes | CLOSED | `7cd7a1d`, `ea8305c` |
 | 03 | non-regular / oversized committed receipt | **yes** | **CLOSED** | `cdffbd3` |
-| 04 | executable identity fidelity | not yet | OPEN | — |
+| 04 | executable identity fidelity | **yes** | **CLOSED** | `d90d9c6` |
 | 05 | result ↔ kit binding | **yes** | **CLOSED** | `86523cb` |
 | 06 | conducted FAIL laundered into INCOMPLETE | yes | CLOSED | `2feb303` |
 | 07 | release scanners skipping by substring | yes | CLOSED | `fc0cfb9` |
-| 08 | self-auditable sdist | not yet | OPEN | — |
-| 09 | artifact-bound reference result | not yet | OPEN | — |
-| 10 | canonical base64 signatures | not yet | OPEN | — |
+| 08 | self-auditable sdist | **yes** | **CLOSED** | `2d083db` |
+| 09 | artifact-bound reference result | **yes** | **CLOSED** | `30e92cd` |
+| 10 | canonical base64 signatures | **yes** | **CLOSED** | `a7b5372` |
 | 11 | completion timeline after a backward clock | not yet | OPEN | — |
 | 12 | outcome survival after completion-clock failure | not yet | OPEN | — |
 | 13 | dangling index symlink read as absence | **yes** | **CLOSED** | `cdffbd3` |
@@ -114,10 +114,31 @@ identity, exact fixture-id set, and `counts`/`overall` recomputed from the rows.
 - `tests/test_store.py:677` prints an `AuthorizationNonceReused` traceback from a worker thread.
   Pre-existing and by design — it is the losing writer in the concurrency proof, not a failure.
 
+## Traps found in the release-integrity arc
+
+- **`dist/` held `0.1.0a2` for the whole `0.1.0a3` line**, and `PackageContents` selected
+  `sorted(glob("*.whl"))[-1]`. Three artifact tests had been passing green against bytes nobody
+  built from this tree. Artifacts are now selected by declared version and a mismatch fails.
+- The **version-bump reproduction poisoned `__pycache__`**: `0.1.0a3` and `0.1.0a4` are the same
+  length, so restoring the file inside one mtime second left Python using bytecode compiled from
+  the bumped source. `vfy/__init__.py` read `a3` while the import reported `a4`. Clear
+  `__pycache__` after any in-place version experiment.
+- A first `decode_signature` enforced 64 bytes and broke two golden fixtures
+  (`reject_truncated_signature`, `reject_invalid_signature` expect `signature_invalid`, not
+  `signature_malformed`). Length is Ed25519's question. The fixtures were not edited.
+- The artifact credential scan first used a bare `-----BEGIN` prefix — stricter than the source
+  gate — and flagged `tools/run_conformance.py`, whose leak detector legitimately names that
+  marker. Both corpora now share `SecretGate.PATTERNS`.
+- The `sdist-self-audit` CI step first asserted `vfy` resolves inside site-packages. Running a
+  shipped suite from an unpacked tree puts that tree's own `vfy/` first, and those are the
+  artifact's bytes. The honest assertion is that nothing came from the *checkout*.
+
 ## Next dependency
 
-**F-AUDIT-10 (canonical base64) or F-AUDIT-08 (self-auditable sdist)** — 08 next per the mandate
-order, which is `08 → 09 → 04 → 10 → 11/12 → 16 → 18/19 → 17`.
+**F-AUDIT-11 + F-AUDIT-12** — post-spend temporal accounting, then `16 → 18/19 → 17`.
+
+F-AUDIT-18's artifact identity should reuse the wheel digest already recorded in
+`conformance/reference-result.json` rather than inventing a second identity mechanism.
 
 F9 / F-AUDIT-17 stays fenced: reproduce and classify only, and stop for a founder decision if
 closing it would change authorization identity.
