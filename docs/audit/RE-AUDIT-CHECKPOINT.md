@@ -228,9 +228,9 @@ with `additionalProperties: false`.
 measured wheel. Then `19` (three separate subfindings: TTL-at-spend reachability, the Python matrix
 claim, CI action mutability), then `17`/F9 reproduction-only.
 
-Note on the governing mandate: its prose uses words this repository's own vocabulary gate bans
-(notably "regime" and "admissibility"). None were written into any source, spec, or doc file — the
-gate would fail the build. The product-role statement it asks for is recorded here in permitted
+Note on the governing mandates: their prose uses several words this repository's own vocabulary
+gate bans. None were written into any source, spec, or doc file — the gate fails the build if they
+are, which it did once when this very note tried to quote one of them. The product-role statement it asks for is recorded here in permitted
 vocabulary: verify-run is the deterministic decision-and-receipt runtime; anything conversational,
 tenanted, billed, or administrative belongs above it and none of it exists in this tree.
 
