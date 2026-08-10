@@ -143,6 +143,63 @@ def bind_to_kit(kit, record, result):
     return problems
 
 
+def check_artifact_identity(kit, result, artifact):
+    """Join the result to the artifact that ran, and say plainly what is only self-attested.
+
+    A conformance result names `implementation` and `implementation_version`, and both are strings
+    the candidate printed about itself. A harmless local shell script answering `--version` with
+    this distribution's banner satisfies them exactly as the real thing does, so on their own they
+    establish nothing about which bytes ran.
+
+    Artifact identity lives in `conformance/reference-result.json`, measured by the orchestrator
+    before it installed anything — deliberately not in the result document, because the published
+    `decision-replay-v1` schema is frozen with `additionalProperties: false` and adding a member
+    would change a contract this repair has no authority to change.
+
+    With `--artifact`, the recorded digest is checked against the file's own bytes. Without it,
+    this prints what is verified and what is merely attested rather than implying the stronger
+    claim.
+    """
+    problems = []
+    record_path = kit / "conformance" / "reference-result.json"
+    if not record_path.is_file():
+        if artifact:
+            problems.append("no reference-result.json, so no artifact identity to check against")
+        return problems
+    try:
+        record = load(record_path)
+    except (OSError, ValueError) as failure:
+        return ["the reference result could not be read: %s" % failure]
+
+    named = (record.get("implementation") or {}).get("artifact") or {}
+    recorded = named.get("sha256")
+    print("artifact       : %s %s" % (named.get("kind", "?"), (recorded or "none")[:16]))
+    # Only when the caller is explicitly binding this result to an artifact. A third party
+    # checking *their* implementation against this kit must not be required to match verify-run's
+    # own reference record — the kit is vendor-neutral and this record is not. The control case in
+    # `tests/test_conformance.py` caught the first version of this check doing exactly that.
+    if artifact and result.get("implementation_version") != (
+            record.get("implementation") or {}).get("version"):
+        problems.append(
+            "the result describes %r and the reference record names artifact version %r"
+            % (result.get("implementation_version"),
+               (record.get("implementation") or {}).get("version")))
+    if artifact:
+        path = Path(artifact)
+        if not path.is_file():
+            problems.append("no artifact at %s" % artifact)
+        else:
+            measured = digest(path)
+            print("artifact digest: measured %s" % measured[:16])
+            if measured != recorded:
+                problems.append(
+                    "the artifact hashes to %s and the reference record names %s, so this result "
+                    "does not describe these bytes" % (measured, recorded))
+    else:
+        print("artifact digest: not checked (pass --artifact to bind this result to bytes)")
+    return problems
+
+
 def main():
     running = tuple(sys.version_info[:2])
     if running < MINIMUM_PYTHON:
@@ -155,6 +212,9 @@ def main():
     parser.add_argument("--kit", default=str(KIT_ROOT), help="repository root holding the kit")
     parser.add_argument("--allow", action="append", default=[], metavar="VERDICT",
                         help="an additional acceptable `overall` value; repeatable")
+    parser.add_argument("--artifact", metavar="PATH",
+                        help="the distribution artifact this result must describe; its digest is "
+                             "measured here and must equal the one the reference record names")
     options = parser.parse_args()
 
     kit = Path(options.kit).resolve()
@@ -203,8 +263,9 @@ def main():
     print("overall        : %s" % result.get("overall"))
     print("profile        : %s %s" % (result.get("profile_id"), result.get("profile_version")))
     print("fixtures       : %s" % result.get("fixture_manifest_sha256"))
-    print("implementation : %s %s" % (result.get("implementation"),
-                                      result.get("implementation_version")))
+    print("implementation : %s %s (self-attested)"
+          % (result.get("implementation"), result.get("implementation_version")))
+    problems.extend(check_artifact_identity(kit, result, options.artifact))
     if problems:
         print("\nnot acceptable:", file=sys.stderr)
         for problem in problems:

@@ -146,17 +146,55 @@ def run(argv, cwd):
 
 
 def implementation_identity(vfy):
+    """Describe the program under test — and nothing else.
+
+    Everything here is **self-attested and says so**. A version banner is a string the candidate
+    chose to print; it is not artifact identity, and a harmless local shell script answering
+    `--version` with this distribution's banner is accepted by this function exactly as the real
+    thing is. Binding a result to the bytes that ran is the orchestrator's job, from a digest it
+    measured itself before installing anything — see `conformance/reference-result.json`.
+
+    `module_location` used to be probed with `sys.executable`, which is the **adapter's** own
+    interpreter. It therefore reported whatever `vfy` the adapter could import — the source
+    checkout, in the ordinary case — no matter which executable `--vfy` named. A stand-in that
+    does nothing was described as living in the repository. The location is now read from the
+    interpreter that the executable under test actually runs on, and is `None` when that cannot be
+    determined rather than being filled in from somewhere unrelated.
+    """
     completed = run([vfy, "--version"], Path.cwd())
     text = completed.stdout.decode("utf-8", "replace").strip()
     version = text.split()[-1] if text else "unknown"
-    location = ""
-    probe = subprocess.run([sys.executable, "-c",
-                            "import vfy, sys; sys.stdout.write(vfy.__file__)"],
-                           capture_output=True, text=True)
-    if probe.returncode == 0:
-        location = probe.stdout.strip()
     return {"name": "verify-run", "version": version, "surface": "cli",
-            "module_location": location}
+            "self_attested": True,
+            "executable": str(Path(vfy).resolve()),
+            "module_location": module_location_of(vfy)}
+
+
+def module_location_of(vfy):
+    """Where the executable under test imports `vfy` from, asked of *its* interpreter."""
+    interpreter = interpreter_of(vfy)
+    if interpreter is None:
+        return None
+    probe = subprocess.run([interpreter, "-c", "import vfy, sys; sys.stdout.write(vfy.__file__)"],
+                           capture_output=True, text=True, cwd=str(Path(vfy).resolve().parent))
+    return probe.stdout.strip() or None if probe.returncode == 0 else None
+
+
+def interpreter_of(vfy):
+    """The interpreter a console script names in its shebang, if it is one."""
+    try:
+        with open(vfy, "rb") as handle:
+            first = handle.readline(512)
+    except OSError:
+        return None
+    if not first.startswith(b"#!"):
+        return None
+    named = first[2:].strip().decode("utf-8", "replace").split()
+    if not named:
+        return None
+    # `#!/usr/bin/env python3` names the finder, not the interpreter.
+    path = named[1] if named[0].endswith("env") and len(named) > 1 else named[0]
+    return path if Path(path).is_file() else None
 
 
 def materialize(bundle, root, vfy):
