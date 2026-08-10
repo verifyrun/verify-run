@@ -102,6 +102,59 @@ jobs:
           /tmp/sdist-env/bin/pip install dist/*.tar.gz
           cd /tmp && /tmp/sdist-env/bin/vfy --version
 
+  sdist-self-audit:
+    name: the sdist must verify itself, from outside the checkout
+    # A green source checkout says nothing about the artifact. The sdist shipped `tests/` without
+    # the `conformance/` kit those tests run, the `tools/` that drive it, or the `.gitignore` the
+    # secret gate reads — so 37 of its own tests were red for anyone who ran them from the
+    # artifact rather than from a git clone, and no job noticed because every job had a clone.
+    # This one unpacks the artifact somewhere else and runs the suite the artifact itself ships.
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Build the source distribution
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build --sdist
+      - name: Unpack it outside the checkout
+        run: |
+          mkdir -p /tmp/artifact
+          tar xzf dist/*.tar.gz -C /tmp/artifact
+          ls /tmp/artifact
+      - name: Install only the artifact, into a clean environment
+        run: |
+          python -m venv /tmp/audit-env
+          /tmp/audit-env/bin/pip install /tmp/artifact/verify_run-*/
+      - name: Run the suite the artifact ships, from the artifact
+        # No PYTHONPATH and a working directory outside the checkout: an accidental import of the
+        # repository package would make this job prove the wrong thing.
+        run: |
+          cd /tmp/artifact/verify_run-*/
+          env -u PYTHONPATH /tmp/audit-env/bin/python -m unittest discover -s tests -t . -v \
+            2>&1 | tail -40
+      - name: The artifact must not have imported the checkout
+        # Deliberately not asserting that `vfy` resolves inside site-packages. Running a shipped
+        # suite from the unpacked tree puts that tree's own `vfy/` first, and those are the
+        # artifact's bytes either way — that is what a downstream auditor actually does. The
+        # property worth proving is the one that would make this job a lie: that nothing was
+        # imported from the *original checkout*.
+        run: |
+          cd /tmp/artifact/verify_run-*/
+          env -u PYTHONPATH /tmp/audit-env/bin/python -c "
+          import vfy, pathlib
+          where = pathlib.Path(vfy.__file__).resolve()
+          checkout = pathlib.Path('$GITHUB_WORKSPACE').resolve()
+          assert not where.is_relative_to(checkout), 'imported from the checkout: %s' % where
+          assert str(where).startswith('/tmp/'), where
+          print('vfy imported from the artifact, not the checkout:', where)"
+
   conformance:
     name: Decision Replay Conformance Profile v1
     runs-on: ubuntu-latest

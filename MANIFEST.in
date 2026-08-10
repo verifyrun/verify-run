@@ -1,5 +1,16 @@
-# The source distribution must be auditable: a project whose golden vectors cannot be checked
-# from its own sdist is asking to be trusted rather than verified.
+# The source distribution must be auditable, and "auditable" has a testable meaning:
+#
+#   an unpacked official source distribution contains everything required to execute the
+#   verification suite that the source distribution itself ships.
+#
+# It did not. The sdist carried `tests/` but not the `conformance/` kit, the `tools/` that drive
+# it, `docs/conformance/`, or `.gitignore` — so 37 of its own tests went red the moment anyone
+# ran them from the artifact instead of from a git checkout. A project whose golden vectors and
+# release gates cannot be checked from its own sdist is asking to be trusted rather than
+# verified, which is the one thing this product exists not to ask.
+#
+# Every line below is here because a shipped test or a shipped verification instruction reads
+# the files it names. The rule for adding one is that rule, not convenience.
 include LICENSE NOTICE README.md CHANGELOG.md pyproject.toml MANIFEST.in
 recursive-include spec *.md *.schema.json
 recursive-include templates *.yaml
@@ -7,6 +18,17 @@ recursive-include fixtures *.json *.md
 recursive-include tests *.py
 include docs/*.md
 include .github/workflows/ci.yml
+
+# The conformance kit: the profile, its fixture manifest, the 30 fixture bundles, the result
+# schema, and the adapter protocol. `docs/conformance/` is named explicitly rather than by a
+# recursive `docs` include, so internal working notes under `docs/` do not ship with it.
+recursive-include conformance *.json *.md *.yaml
+recursive-include docs/conformance *.md
+recursive-include tools *.py *.sh
+
+# `.gitignore` is read by the secret gate, which checks that the ignore file cannot hide an
+# authoritative source file. A gate that ships without the file it inspects proves nothing.
+include .gitignore
 
 # Never, in either distribution.
 exclude .DS_Store

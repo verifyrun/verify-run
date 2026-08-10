@@ -373,18 +373,74 @@ class DocumentationAccuracy(unittest.TestCase):
             self.assertTrue((REPO_ROOT / name).is_file(), name)
 
 
+def declared_version():
+    """The version this source tree declares. Read, not inferred from a filename."""
+    for line in (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8").splitlines():
+        if line.startswith("version"):
+            return line.split("=", 1)[1].strip().strip('"')
+    raise AssertionError("pyproject.toml declares no version")
+
+
+def artifacts_for(suffix):
+    """Built artifacts in dist/ **for the version this tree declares**, and the rest.
+
+    Selecting `sorted(glob(...))[-1]` is how a package gate ends up certifying source it never
+    saw: `dist/` held 0.1.0a2 while the tree declared 0.1.0a3, and three artifact tests passed
+    green against the older bytes. An artifact proves something about the source it was built
+    from and nothing at all about any other source, so the version has to be part of choosing it.
+    """
+    if not DIST.is_dir():
+        return [], []
+    found = sorted(DIST.glob("*" + suffix))
+    # Wheel and sdist both spell the version after the first `-`/`_` separated distribution name.
+    tag = declared_version()
+    matching = [p for p in found if tag in p.name.split(suffix)[0]]
+    return matching, [p for p in found if p not in matching]
+
+
+class StaleArtifactsAreNotEvidence(unittest.TestCase):
+    """A built artifact proves something about the source it was built from. Only that source.
+
+    `dist/` held `verify_run-0.1.0a2.*` for the whole of the 0.1.0a3 line, and the package gate
+    picked the newest filename it could find and audited it — so "the wheel carries the runtime
+    and nothing else" was a true statement about bytes nobody had built from this tree. The gate
+    was green and it was not looking at the release.
+    """
+
+    def test_dist_holds_no_artifact_from_another_version(self):
+        stale = artifacts_for(".whl")[1] + artifacts_for(".tar.gz")[1]
+        self.assertEqual(
+            [p.name for p in stale], [],
+            "dist/ holds artifacts from another version than the declared %s. They are not "
+            "evidence for this source and must be removed before a release is proved."
+            % declared_version())
+
+
 class PackageContents(unittest.TestCase):
-    """Runs only when dist/ has been built. CI builds first, then invokes this."""
+    """Runs only when dist/ has been built **for this version**. CI builds first, then invokes it.
+
+    Skipping when nothing is built is honest — there is no artifact to describe. Skipping when
+    something *wrong* is built is not, so a mismatched artifact fails here rather than being
+    quietly stepped over.
+    """
 
     def setUp(self):
-        if not DIST.is_dir() or not list(DIST.glob("*.whl")):
-            self.skipTest("no built artifacts in dist/; run `python -m build` first")
+        wheels, stale = artifacts_for(".whl")
+        if not wheels:
+            if stale:
+                self.fail("dist/ holds %s but this tree declares %s; a stale artifact is not "
+                          "evidence for this source"
+                          % (", ".join(p.name for p in stale), declared_version()))
+            self.skipTest("no built artifacts for %s in dist/; run `python -m build` first"
+                          % declared_version())
 
     def _wheel(self):
-        return sorted(DIST.glob("*.whl"))[-1]
+        return artifacts_for(".whl")[0][-1]
 
     def _sdist(self):
-        return sorted(DIST.glob("*.tar.gz"))[-1]
+        found = artifacts_for(".tar.gz")[0]
+        self.assertTrue(found, "no source distribution for " + declared_version())
+        return found[-1]
 
     def test_the_wheel_carries_the_runtime_and_nothing_else(self):
         with zipfile.ZipFile(self._wheel()) as archive:
@@ -413,17 +469,82 @@ class PackageContents(unittest.TestCase):
                              "%s appears in the source distribution" % forbidden)
 
     def test_no_built_artifact_carries_a_credential(self):
+        """Both artifacts. The name said "no built artifact" and it read only the wheel.
+
+        The scanners are exempt from themselves here for exactly the reason they are exempt in the
+        source tree: a file whose job is to hold the pattern `-----BEGIN PRIVATE KEY` cannot be
+        scanned for it. The exemption is by the same declared list, so it cannot quietly widen —
+        the wheel ships no tests at all, and the sdist ships precisely the four self-referential
+        test modules `SCANNER_EXEMPT` already names.
+        """
         seeds = [bytes.fromhex(s) for s in SecretGate.PUBLISHED_TEST_SEEDS]
+        # The same credential definition the source gate uses, against the shipped bytes. A bare
+        # `-----BEGIN` prefix was stricter than the source gate and flagged
+        # `tools/run_conformance.py`, whose leak detector legitimately names that marker. One
+        # definition of "a credential", two corpora — not two definitions that can disagree.
+        patterns = dict(SecretGate.PATTERNS)
+
+        def exempt(name):
+            return any(name.endswith("/" + relative) for relative in SCANNER_EXEMPT)
+
+        def inspect(label, name, blob):
+            if exempt(name):
+                return
+            for seed in seeds:
+                self.assertNotIn(seed, blob, label)
+            try:
+                text = blob.decode("utf-8")
+            except UnicodeDecodeError:
+                return
+            for kind, pattern in patterns.items():
+                self.assertIsNone(pattern.search(text), "%s carries a %s" % (label, kind))
+
+        scanned = 0
         with zipfile.ZipFile(self._wheel()) as archive:
             for name in archive.namelist():
-                blob = archive.read(name)
-                self.assertNotIn(b"-----BEGIN", blob, name)
-                for seed in seeds:
-                    self.assertNotIn(seed, blob, name)
+                inspect("wheel:" + name, name, archive.read(name))
+                scanned += 1
+        with tarfile.open(self._sdist()) as archive:
+            for member in archive.getmembers():
+                if not member.isfile():
+                    continue
+                handle = archive.extractfile(member)
+                if handle is not None:
+                    inspect("sdist:" + member.name, member.name, handle.read())
+                    scanned += 1
+        self.assertGreater(scanned, 200, "the artifact scan read almost nothing")
+        # Not vacuous: the same patterns, applied to a planted credential, must fire. A scan that
+        # reads 400 files and could not recognise a key is a green light and nothing else.
+        planted = "-" * 5 + "BEGIN RSA " + "PRIVATE KEY" + "-" * 5 + "\nMIIB\n"
+        for probe in (planted, 'api_key = "' + "z" * 20 + '"', "AKIA" + "A" * 16):
+            self.assertTrue(any(p.search(probe) for p in patterns.values()),
+                            "the artifact scan would not recognise %r" % probe[:24])
 
+    def test_the_source_distribution_ships_what_its_own_tests_read(self):
+        """The sdist's auditability claim, checked against the artifact rather than MANIFEST.in.
 
-if __name__ == "__main__":
-    unittest.main()
+        The sdist carried `tests/` but not the `conformance/` kit those tests run, nor the
+        `tools/` that drive it, nor `.gitignore` that the secret gate inspects — so 37 of its own
+        tests went red for anyone who ran them from the artifact instead of from a git checkout.
+        """
+        with tarfile.open(self._sdist()) as archive:
+            names = archive.getnames()
+        required = ("/conformance/decision-replay-v1/profile.json",
+                    "/conformance/decision-replay-v1/fixtures/manifest.json",
+                    "/conformance/decision-replay-v1/result.schema.json",
+                    "/tools/run_conformance.py", "/tools/conformance_adapter.py",
+                    "/tools/check_conformance_result.py",
+                    "/docs/conformance/decision-replay-v1.md", "/.gitignore")
+        for name in required:
+            self.assertTrue(any(entry.endswith(name) for entry in names),
+                            "the sdist ships a test that reads %s and not the file" % name)
+        bundles = len({entry.rsplit("/", 1)[0] for entry in names
+                       if "/conformance/decision-replay-v1/fixtures/" in entry
+                       and entry.endswith(".json")})
+        self.assertGreaterEqual(bundles, 30, "the sdist must carry the whole fixture set")
+        # Internal working notes are not part of the verification proposition and must not ship.
+        self.assertFalse(any("/docs/audit/" in entry for entry in names),
+                         "internal audit notes shipped in the source distribution")
 
 
 class ScannersReachWhatShips(unittest.TestCase):
