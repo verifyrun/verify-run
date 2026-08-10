@@ -3,7 +3,7 @@
 Working notes for the closure arc. Not a public document: it records what was reproduced, what was
 repaired, and what the next session does not need to re-derive. Delete before a stable release.
 
-Local HEAD `a7b5372`, 13 commits ahead of `origin/main` `58c49dd`, unpushed, clean tree.
+Local HEAD `edbd854`, 14 commits ahead of `origin/main` `58c49dd`, unpushed, clean tree.
 `pyproject` version `0.1.0a3` — **unchanged on purpose**; `v0.1.0a3` is published and these
 repairs mean the next release needs a new version.
 
@@ -21,15 +21,15 @@ repairs mean the next release needs a new version.
 | 08 | self-auditable sdist | **yes** | **CLOSED** | `2d083db` |
 | 09 | artifact-bound reference result | **yes** | **CLOSED** | `30e92cd` |
 | 10 | canonical base64 signatures | **yes** | **CLOSED** | `a7b5372` |
-| 11 | completion timeline after a backward clock | not yet | OPEN | — |
-| 12 | outcome survival after completion-clock failure | not yet | OPEN | — |
+| 11 | completion timeline after a backward clock | **yes** | **CLOSED** | `edbd854` |
+| 12 | outcome survival after completion-clock failure | **yes** | **CLOSED** | `edbd854` |
 | 13 | dangling index symlink read as absence | **yes** | **CLOSED** | `cdffbd3` |
 | 14 | read-only listing that writes | **yes** | **CLOSED** | `cdffbd3` |
 | 15 | secret-leak verdict asymmetry | yes | CLOSED (re-proved) | `2feb303` |
-| 16 | docs / spec drift | not yet | OPEN | — |
-| 17 | F9 nonce scope across store clones | not yet | **FENCED** | — |
-| 18 | implementation identity behind a banner | not yet | OPEN | — |
-| 19 | CI matrix / supply-chain cluster | not yet | OPEN | — |
+| 16 | docs / spec drift | partly | **PARTLY CLOSED** — temporal claims done in `edbd854`; the `exit_code`/`notes`/index/checklist sweep is not | — |
+| 17 | F9 nonce scope across store clones | not yet | **FOUNDER_DECISION_REQUIRED** (unreproduced) | — |
+| 18 | implementation identity behind a banner | not yet | **KNOWN_DEFERRED** | — |
+| 19 | CI matrix / supply-chain cluster | not yet | **KNOWN_DEFERRED** | — |
 
 ## Baselines, taken twice with no edit between them
 
@@ -133,12 +133,36 @@ identity, exact fixture-id set, and `counts`/`overall` recomputed from the rows.
   shipped suite from an unpacked tree puts that tree's own `vfy/` first, and those are the
   artifact's bytes. The honest assertion is that nothing came from the *checkout*.
 
+## F-AUDIT-11 / 12 — what was reproduced
+
+Both through the real runner and the real verifier, not from code reading.
+
+- **11**: `completion_clock` returning `2020-01-01T00:00:00Z` produced a **signed receipt created
+  six years before the `issued_at` of the authorization it records** and before the `frozen_at` of
+  the evidence it evaluated. Signature valid, replay identical, authorization verified — reported
+  as entirely ordinary. Note `created_at` and `acknowledged_at` come from the *same* completion
+  reading, so they are always equal; the anomaly is only visible against instants recorded above
+  them.
+- **12**: a completion clock that raised gave `ExecutionRecordingFailed(stage='acknowledge',
+  receipt=None)` and **nothing about the child**, which had exited 0. `.outcome` on that exception
+  is `VerifyError.outcome` (`'ERROR'`), not an execution outcome — easy to misread as coverage.
+
+Classification: 11 is **valid-but-anomalous**, surfaced via `ReplayVerification.timeline_anomalies`
+(a verification result object, not a signed payload — no protocol identity change). 12 preserves
+`execution` on the failure at all three stages below the launch line and fabricates no receipt.
+
 ## Next dependency
 
-**F-AUDIT-11 + F-AUDIT-12** — post-spend temporal accounting, then `16 → 18/19 → 17`.
+**F-AUDIT-16's remaining sweep** — the temporal claims are done; the `--json exit_code`, `notes`,
+stale index/listing narration and release-checklist-constant hits are not. Then `18 → 19 → 17`.
 
 F-AUDIT-18's artifact identity should reuse the wheel digest already recorded in
-`conformance/reference-result.json` rather than inventing a second identity mechanism.
+`conformance/reference-result.json` rather than inventing a second identity mechanism. The
+orchestrator must carry that digest into the result; the implementation under test may only
+self-report descriptive fields.
+
+F-AUDIT-17/F9 is **unreproduced** in this session. It stays `FOUNDER_DECISION_REQUIRED` on the
+existing analysis rather than being downgraded on no evidence.
 
 F9 / F-AUDIT-17 stays fenced: reproduce and classify only, and stop for a founder decision if
 closing it would change authorization identity.
