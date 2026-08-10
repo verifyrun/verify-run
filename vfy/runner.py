@@ -166,7 +166,7 @@ def execute_authorized_command(pinned, candidate, snapshot, result, authorizatio
     if completion_clock is not None:
         # Below the line: the authorization is spent and the command has already run, so a clock
         # that misbehaves is a recording failure and never a reason to pretend nothing happened.
-        acknowledged_at = receipt_created_at = _completion_instant(completion_clock)
+        acknowledged_at = receipt_created_at = _completion_instant(completion_clock, outcome)
     acknowledgment = _acknowledge(outcome, acknowledged_at)
 
     try:
@@ -177,7 +177,7 @@ def execute_authorized_command(pinned, candidate, snapshot, result, authorizatio
     except (VerifyError, TypeError, ValueError) as failure:
         raise ExecutionRecordingFailed(
             "The attempt finished and its receipt could not be issued: " + str(failure),
-            stage="issue", receipt=None) from None
+            stage="issue", receipt=None, execution=outcome) from None
 
     try:
         store.put_record(signed, pinned, candidate, snapshot, verified)
@@ -195,7 +195,7 @@ def execute_authorized_command(pinned, candidate, snapshot, result, authorizatio
             preserved = None
         raise ExecutionRecordingFailed(
             "The attempt finished and its record could not be committed: " + str(failure),
-            stage="store", receipt=signed, preserved_at=preserved) from None
+            stage="store", receipt=signed, preserved_at=preserved, execution=outcome) from None
 
     return ExecutionRecord(
         authorization_id=verified.authorization_id,
@@ -252,23 +252,27 @@ def _check_timeout(timeout_seconds):
             % (MIN_TIMEOUT_SECONDS, MAX_TIMEOUT_SECONDS))
 
 
-def _completion_instant(completion_clock):
+def _completion_instant(completion_clock, execution=None):
     """Read the caller's clock once and require a date-time in the frozen grammar.
 
     Nothing is guessed if it misbehaves. The child has run and the nonce is spent, so the honest
     report is the same one a failed receipt issue gets: the attempt finished and its record could
     not be written.
+
+    `execution` travels on the failure. No signed receipt can exist without a `created_at`, so
+    none is fabricated — but the child's exit status is a fact the runtime already holds, and
+    dropping it would report a completed action as though nothing had been observed at all.
     """
     try:
         instant = completion_clock()
     except Exception:
         raise ExecutionRecordingFailed(
             "The attempt finished and the completion instant could not be read.",
-            stage="acknowledge", receipt=None) from None
+            stage="acknowledge", receipt=None, execution=execution) from None
     if not isinstance(instant, str) or not schema._is_date_time(instant):
         raise ExecutionRecordingFailed(
             "The attempt finished and the completion instant was not a date-time.",
-            stage="acknowledge", receipt=None)
+            stage="acknowledge", receipt=None, execution=execution)
     return instant
 
 

@@ -77,6 +77,9 @@ class StoredRecord:
     authorization_canonical: str | None
     replay_verified: bool
     authorization_verified: bool
+    # Impossible instant orderings the verifier named. Empty for an ordinary
+    # record; a store never decides this, it only carries what replay reported.
+    timeline_anomalies: tuple = ()
 
     def receipt(self):
         return load.load_json_bytes(self.receipt_canonical.encode("utf-8"))
@@ -284,6 +287,7 @@ class LocalStore:
                     "A %s record must not store %s.json" % (outcome, name))
 
         replay_verified = authorization_verified = False
+        anomalies = ()
         if verify:
             if receipt_keys is None or registry is None:
                 raise TypeError("verification needs a receipt key registry and a schema registry")
@@ -296,6 +300,7 @@ class LocalStore:
                 verification_time=verification_time)
             replay_verified = report.result_matched
             authorization_verified = report.authorization_verified
+            anomalies = report.timeline_anomalies
 
         return StoredRecord(
             receipt_id=receipt_id, outcome=outcome,
@@ -305,7 +310,8 @@ class LocalStore:
             snapshot_canonical=canon.canonicalize(loaded["snapshot"]),
             authorization_canonical=(canon.canonicalize(loaded["authorization"])
                                      if "authorization" in loaded else None),
-            replay_verified=replay_verified, authorization_verified=authorization_verified)
+            replay_verified=replay_verified, authorization_verified=authorization_verified,
+            timeline_anomalies=anomalies)
 
     def list_receipts(self):
         """The summaries a listing could read. `listing()` also names what it refused."""

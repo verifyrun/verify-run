@@ -296,3 +296,28 @@ record. Canonical text is the authority and `value()` reconstructs, as in every 
 
 No argument is mutated. The candidate, snapshot, result, and authorization a caller passes in are
 the same objects, unchanged, when the call returns.
+
+## After the launch line, information may become uncertain but never disappears
+Every stage after `store.consume_once` runs when the authorization is spent and the child may
+already have run. The governing law for all of them:
+
+> Once the runtime has observed execution facts, a later bookkeeping failure may add uncertainty
+> about the **record**. It may never erase the **execution**.
+
+`execution_recording_failed` therefore carries `stage`, and:
+
+| stage | `receipt` | `execution` | `preserved_at` |
+|---|---|---|---|
+| `acknowledge` — the completion instant could not be read | none: a receipt has no valid form without `created_at` | what the child did | none |
+| `issue` — the receipt could not be signed | none | what the child did | none |
+| `store` — the record could not be committed | the signed receipt | what the child did | where the receipt was preserved, or none if preservation also failed |
+
+`execution` is `None` only when the child genuinely had not run. It is never `None` to mean *it ran
+and the details were lost*. The `acknowledge` stage used to report exactly that: the child had
+exited with a status, and the failure carried nothing but the stage — the same defect shape as
+losing the signed receipt one stage later.
+
+**A signed-but-unrecorded receipt and an unreceipted execution are different terminal states** and
+must stay distinct. One has a signature and needs a home; the other has no signature and must not
+be given one. Routing either through the other would invent a receipt that was never signed, or
+lose the one that was.

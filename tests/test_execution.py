@@ -1046,3 +1046,153 @@ class ExecutableIdentityDoesNotDependOnSpelling(unittest.TestCase):
             with self.subTest(argv0=spelling):
                 with self.assertRaises(VerifyError):
                     workflow.resolve_program(self._workspace(), spelling)
+
+
+class PostExecutionAccounting(unittest.TestCase):
+    """Once the action has crossed the launch line, later failures may add uncertainty about the
+    *record* and may never erase what the runtime already observed about the *execution*.
+
+    Two findings, one law.
+
+    F-AUDIT-11 — the completion clock is read after the child exits, and nothing compared it to
+    anything recorded earlier. A backward reading produced a **signed receipt created six years
+    before the authorization it records was issued** and before the evidence it evaluated was
+    frozen, and verify and replay both accepted it as ordinary.
+
+    F-AUDIT-12 — when that same clock *failed*, `ExecutionRecordingFailed` carried `receipt=None`
+    and nothing else. The child had run and exited 0, and no caller could be told so. That is the
+    F-AUDIT-02 shape one stage earlier.
+
+    The repairs are deliberately asymmetric, because the two situations are. An anomalous
+    timeline is **valid-but-anomalous**: the receipt keeps its observed instants, still verifies,
+    still replays, and the impossible ordering is named. Refusing it would destroy the only
+    record of a real action because of a clock; clamping the instants would destroy the evidence.
+    A missing instant is different — no signed receipt can exist without a `created_at`, so none
+    is fabricated, and the observed outcome travels on the failure instead.
+    """
+
+    def setUp(self):
+        self.case = _case(EXEC_DIR / "accept_exit_zero.json")
+        self.registry = _registry()
+
+    def _run_with(self, **over):
+        sandbox = _Sandbox(self.case["tree"])
+        self.addCleanup(sandbox.__exit__, None, None, None)
+        sandbox.__enter__()
+        built = _build(self.case, sandbox, self.registry)
+        return built, _run(self.case, sandbox, self.registry, *built,
+                           acknowledged_at=None, receipt_created_at=None, **over)
+
+    def _replay(self, built, record):
+        pinned, candidate, frozen, _result, authorization = built
+        return receipt_module.replay_receipt(
+            json.loads(record.receipt.canonical_bytes.decode()),
+            pinned.canonical.encode("utf-8"), candidate, json.loads(frozen.canonical),
+            _receipt_registry(self.case), self.registry,
+            authorization=authorization.value(), authorization_keys=_key_registry(self.case),
+            verification_time="2026-08-05T00:01:00Z")
+
+    # --- F-AUDIT-11 ---------------------------------------------------------------------------
+    def test_an_ordinary_completion_reports_no_anomaly(self):
+        built, record = self._run_with(completion_clock=lambda: "2026-08-05T00:00:30Z")
+        self.assertEqual(self._replay(built, record).timeline_anomalies, ())
+
+    def test_a_backward_completion_clock_still_signs_verifies_and_replays(self):
+        built, record = self._run_with(completion_clock=lambda: "2020-01-01T00:00:00Z")
+        report = self._replay(built, record)
+        self.assertTrue(report.signature_valid, "the account of a real action must survive")
+        self.assertTrue(report.result_matched)
+        self.assertTrue(report.authorization_verified)
+
+    def test_a_backward_completion_clock_is_named_and_not_ordinary(self):
+        built, record = self._run_with(completion_clock=lambda: "2020-01-01T00:00:00Z")
+        anomalies = self._replay(built, record).timeline_anomalies
+        self.assertTrue(anomalies, "an impossible timeline read as ordinary")
+        joined = " | ".join(anomalies)
+        self.assertIn("created_at", joined)
+        self.assertIn("issued_at", joined)
+
+    def test_the_observed_instants_are_recorded_exactly_and_never_clamped(self):
+        """Rewriting a timestamp to look ordered destroys the evidence it is there to be."""
+        _built, record = self._run_with(completion_clock=lambda: "2020-01-01T00:00:00Z")
+        document = json.loads(record.receipt.canonical_bytes.decode())
+        self.assertEqual(document["created_at"], "2020-01-01T00:00:00Z")
+        self.assertEqual(document["execution"]["acknowledged_at"], "2020-01-01T00:00:00Z")
+
+    def test_equal_instants_are_not_anomalies(self):
+        """The completion stage is one clock reading, and the runtime records whole seconds."""
+        self.assertEqual(
+            receipt_module.timeline_anomalies(
+                {"created_at": "2026-08-05T00:00:00Z",
+                 "execution": {"acknowledged_at": "2026-08-05T00:00:00Z"}},
+                {"frozen_at": "2026-08-05T00:00:00Z"},
+                {"issued_at": "2026-08-05T00:00:00Z"}), ())
+
+    def test_an_offset_spelling_of_the_same_instant_is_not_an_anomaly(self):
+        """Offsets sort differently from how they order in time; instants are compared, not text."""
+        self.assertEqual(
+            receipt_module.timeline_anomalies(
+                {"created_at": "2026-08-05T05:00:00+05:00",      # == 00:00:00Z
+                 "execution": {"acknowledged_at": "2026-08-05T00:00:01Z"}},
+                {"frozen_at": "2026-08-05T00:00:00Z"},
+                {"issued_at": "2026-08-04T19:00:00-05:00"}), ())  # == 2026-08-05T00:00:00Z
+
+    def test_an_offset_spelling_of_an_earlier_instant_is_still_an_anomaly(self):
+        found = receipt_module.timeline_anomalies(
+            {"created_at": "2026-08-05T00:00:00+05:00",           # == 2026-08-04T19:00:00Z
+             "execution": {"acknowledged_at": "2026-08-05T00:00:00+05:00"}},
+            {"frozen_at": "2026-08-05T00:00:00Z"}, {"issued_at": "2026-08-05T00:00:00Z"})
+        self.assertTrue(found, "an offset spelling hid a genuinely earlier instant")
+
+    def test_an_unreadable_instant_is_not_reported_as_a_timeline_anomaly(self):
+        """Malformedness is the schema's question and is answered where schemas are checked."""
+        self.assertEqual(
+            receipt_module.timeline_anomalies(
+                {"created_at": "not-an-instant", "execution": {"acknowledged_at": None}},
+                {"frozen_at": "2026-08-05T00:00:00Z"}, {"issued_at": "2026-08-05T00:00:00Z"}), ())
+
+    # --- F-AUDIT-12 ---------------------------------------------------------------------------
+    def _failure_from(self, clock):
+        with self.assertRaises(ExecutionRecordingFailed) as caught:
+            self._run_with(completion_clock=clock)
+        return caught.exception
+
+    def test_a_failed_completion_clock_keeps_what_the_child_already_did(self):
+        def unavailable():
+            raise OSError("the clock is unavailable")
+
+        failure = self._failure_from(unavailable)
+        self.assertEqual(failure.stage, "acknowledge")
+        self.assertIsNone(failure.receipt, "no receipt can exist without a created_at")
+        self.assertIsNotNone(failure.execution, "the execution outcome was discarded")
+        self.assertTrue(failure.execution["started"])
+        self.assertEqual(failure.execution["exit_status"], 0)
+
+    def test_a_completion_clock_returning_a_non_instant_keeps_it_too(self):
+        failure = self._failure_from(lambda: "not-a-date-time")
+        self.assertEqual(failure.stage, "acknowledge")
+        self.assertTrue(failure.execution["started"])
+        self.assertEqual(failure.execution["exit_status"], 0)
+
+    def test_no_receipt_is_fabricated_when_the_instant_is_unavailable(self):
+        def unavailable():
+            raise OSError("no clock")
+
+        failure = self._failure_from(unavailable)
+        self.assertIsNone(failure.receipt)
+        self.assertIsNone(failure.preserved_at,
+                          "an unrecorded receipt must not appear when no receipt was signed")
+
+    def test_the_two_terminal_states_stay_distinct(self):
+        """A signed-but-unrecorded receipt and an unreceipted execution are not the same report.
+
+        Routing one through the other would either invent a receipt that was never signed or lose
+        the one that was.
+        """
+        def unavailable():
+            raise OSError("no clock")
+
+        clock_failure = self._failure_from(unavailable)
+        self.assertEqual((clock_failure.stage, clock_failure.receipt is None,
+                          clock_failure.preserved_at is None), ("acknowledge", True, True))
+        self.assertIsNotNone(clock_failure.execution)

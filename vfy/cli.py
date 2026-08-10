@@ -169,10 +169,30 @@ def _run(options, clock, identifiers, out, err):
             elif receipt is not None:
                 print("the signed receipt could not be preserved either; it is reported on "
                       "stdout under --json and nowhere else", file=err)
+            # What was already observed about the child. A failure after the launch line may
+            # leave the record uncertain; it may not leave the execution unknown, and the
+            # completion-clock stage used to report a finished command as though nothing had been
+            # seen at all.
+            execution = getattr(typed, "execution", None) or {}
+            if execution.get("started"):
+                print("the action executed; the outcome below was observed before the failure",
+                      file=err)
+                if execution.get("timed_out"):
+                    print("  the action was ended by its timeout", file=err)
+                elif execution.get("signal_number") is not None:
+                    print("  the action was ended by a signal", file=err)
+                else:
+                    print("  exit status %s" % execution.get("exit_status"), file=err)
+                if receipt is None:
+                    print("  no signed receipt exists: it could not be completed", file=err)
             if options.as_json:
                 body = {"command": options.command, "error": typed.code,
                         "stage": getattr(typed, "stage", None),
-                        "executed": True, "authorization_consumed": True,
+                        "executed": bool(execution.get("started")),
+                        "authorization_consumed": True,
+                        "exit_status": execution.get("exit_status"),
+                        "timed_out": execution.get("timed_out"),
+                        "signalled": execution.get("signal_number") is not None,
                         "receipt_id": receipt.receipt_id if receipt is not None else None,
                         "preserved_at": preserved,
                         "receipt": receipt.value() if receipt is not None else None}
@@ -191,7 +211,8 @@ def _replay(options, clock, identifiers, out, err):
     record = workflow.replay(workspace, options.receipt)
     body = {"command": "replay", "receipt_id": record.receipt_id, "outcome": record.outcome,
             "verified": True, "replayed": record.replay_verified,
-            "authorization_verified": record.authorization_verified}
+            "authorization_verified": record.authorization_verified,
+            "timeline_anomalies": list(record.timeline_anomalies)}
     if options.as_json:
         _emit(body, out)
     else:
@@ -202,6 +223,11 @@ def _replay(options, clock, identifiers, out, err):
                  else "not replayed"), file=out)
         if record.authorization_verified:
             print("  authorization verified against the recorded bindings", file=out)
+        # Named, not refused. Below the spend line the action may already have happened, so a
+        # clock that stepped backward cannot make it un-happen, and this receipt is still the
+        # account of it. Silence here would let an impossible timeline read as ordinary.
+        for anomaly in record.timeline_anomalies:
+            print("  timeline      %s" % anomaly, file=out)
     return _DECISION_EXIT[record.outcome]
 
 
