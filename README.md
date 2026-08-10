@@ -223,7 +223,7 @@ That claim is written down as a public, vendor-neutral contract with fixtures an
 sh tools/conformance_reference_run.sh
 ```
 
-That installs the version this checkout declares — currently `0.1.0a3` — from PyPI into a clean
+That installs the version this checkout declares — currently `0.1.0a4` — from PyPI into a clean
 environment, runs the 30 fixtures against it, and writes a result document. Name any published
 version to test it instead: `sh tools/conformance_reference_run.sh out 0.1.0a2`.
 
@@ -237,7 +237,7 @@ A result is a *self-test*, not certification: nobody accredits this profile, and
 meaningful only together with the profile version and fixture-manifest digest it names. See
 [docs/conformance/claims.md](docs/conformance/claims.md) for exactly what a result lets you say.
 
-Current reference result: **PASS**, 30/30 fixtures, `verify-run 0.1.0a3`, fixture manifest
+Current reference result: **PASS**, 30/30 fixtures, `verify-run 0.1.0a4`, fixture manifest
 `756029f681ad7587…`.
 
 That sentence is checked against [`conformance/reference-result.json`](conformance/reference-result.json),
@@ -292,9 +292,9 @@ and `fixtures/` holds the golden vectors; implementations conform to them, never
 
 ## Alpha status
 
-Version `0.1.0a3`. The decision semantics, canonical form, and receipt format are frozen and
-covered by golden vectors — neither `0.1.0a2` nor `0.1.0a3` changed any of them, and every
-`0.1.0a1` and `0.1.0a2` receipt still verifies and replays. The command surface is the five
+Version `0.1.0a4`. The decision semantics, canonical form, and receipt format are frozen and
+covered by golden vectors — none of `0.1.0a2`, `0.1.0a3`, or `0.1.0a4` changed any of them, and
+every receipt written by an earlier alpha still verifies and replays. The command surface is the five
 commands above. Interfaces may still change before 1.0; recorded artifacts carry a `spec_version`
 so a future change cannot silently reinterpret an old receipt.
 
