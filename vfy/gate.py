@@ -35,6 +35,15 @@ ABSENT = _Absent()
 
 _DECIMAL = re.compile(r"\A(-?)(0|[1-9][0-9]*)(?:\.([0-9]+))?\Z")
 
+# How many significant digits a numeric operand may carry and still be compared. This is a
+# *product* bound, chosen here rather than inherited from the host: CPython refuses to convert an
+# integer string past `sys.set_int_max_str_digits` (4300 by default), and a limit that a runtime
+# flag can move is not a limit this evaluator can be said to have declared. 1024 digits is far
+# beyond any quantity a rulebook compares — counts, amounts, scores, instants — and far below the
+# host's, so the host's limit is unreachable and cannot become the discriminator. An operand past
+# this bound does not crash and does not silently compare: it cannot settle, and the rule holds.
+MAX_NUMERIC_DIGITS = 1024
+
 _FIXED_MESSAGES = {
     "evidence_unsettled": "Evidence could not settle this rule.",
     "operand_unsettled": "An operand could not settle this rule.",
@@ -307,32 +316,71 @@ def _equal(left, right):
 
 
 def _numeric_parts(value):
-    """Return (sign, digits, scale) for an exact numeric, or None. No float is ever built."""
+    """Return (sign, integer digits, fraction digits) for an exact numeric, or None.
+
+    Digits stay *text*. Nothing here converts an operand to an integer, because a decimal an
+    adversary composes has no length this evaluator chose: `int("0." + "1" * 6000)` raised a raw
+    `ValueError` from CPython's int-string conversion limit, which made a host configuration
+    setting — not the rulebook — decide whether a candidate was admissible. A decision that
+    depends on `sys.set_int_max_str_digits` is not deterministic in the sense replay needs.
+
+    An operand past the declared bound is refused the way any operand that cannot be compared is
+    refused: `None`, which the caller notes as `operand_unsettled` and holds on. That is a
+    settled, fail-closed answer in the existing vocabulary, not a new terminal.
+    """
     if isinstance(value, bool):
         return None
     if isinstance(value, int):
-        return (-1 if value < 0 else 1, abs(value), 0)
+        # Canonicalization bounds every integer to ±(2**53 - 1), so this text is ≤ 16 digits.
+        return (-1 if value < 0 else 1, str(abs(value)), "")
     if not isinstance(value, str):
         return None
     match = _DECIMAL.match(value)
     if match is None:
         return None
     sign, whole, fraction = match.group(1), match.group(2), match.group(3) or ""
-    digits = int(whole + fraction) if fraction else int(whole)
-    return (-1 if sign == "-" and digits != 0 else 1, digits, len(fraction))
+    if len(whole) + len(fraction) > MAX_NUMERIC_DIGITS:
+        return None
+    whole = whole.lstrip("0") or "0"
+    fraction = fraction.rstrip("0")
+    negative = sign == "-" and (whole != "0" or fraction != "")
+    return (-1 if negative else 1, whole, fraction)
+
+
+def _compare_magnitude(first, second):
+    """Order two non-negative magnitudes given as (integer digits, fraction digits).
+
+    Digit text only. With leading zeros stripped, a longer integer part is the larger number, and
+    equal-length digit strings order lexicographically exactly as they order numerically; the
+    fractions are right-padded to a common width so the same holds there.
+    """
+    whole_a, frac_a = first[1], first[2]
+    whole_b, frac_b = second[1], second[2]
+    if len(whole_a) != len(whole_b):
+        return -1 if len(whole_a) < len(whole_b) else 1
+    if whole_a != whole_b:
+        return -1 if whole_a < whole_b else 1
+    width = max(len(frac_a), len(frac_b))
+    padded_a, padded_b = frac_a.ljust(width, "0"), frac_b.ljust(width, "0")
+    if padded_a == padded_b:
+        return 0
+    return -1 if padded_a < padded_b else 1
 
 
 def _compare_numeric(left, right):
-    """Return -1, 0, 1 by exact integer arithmetic, or None when either side is not numeric."""
+    """Return -1, 0, 1 by exact digit comparison, or None when either side is not comparable.
+
+    No integer is built from operand text and no power of ten is materialized. The previous form
+    computed `10 ** (scale - other_scale)`, so a difference in scale an adversary chose decided
+    how large an intermediate the evaluator allocated.
+    """
     first, second = _numeric_parts(left), _numeric_parts(right)
     if first is None or second is None:
         return None
-    scale = max(first[2], second[2])
-    left_units = first[0] * first[1] * 10 ** (scale - first[2])
-    right_units = second[0] * second[1] * 10 ** (scale - second[2])
-    if left_units < right_units:
-        return -1
-    return 0 if left_units == right_units else 1
+    if first[0] != second[0]:
+        return -1 if first[0] < second[0] else 1
+    order = _compare_magnitude(first, second)
+    return order if first[0] > 0 else -order
 
 
 # --- portable glob ----------------------------------------------------------------------------

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "verify-run"
-version = "0.1.0a3"
+version = "0.1.0a4"
 description = "A local, deterministic action gate for consequential software."
 readme = "README.md"
 requires-python = ">=3.11"

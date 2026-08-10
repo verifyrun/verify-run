@@ -299,15 +299,30 @@ class ExecutionRecordingFailed(VerifyError):
     """The attempt finished and could not be recorded. The authorization is already spent.
 
     Carries the `stage` that failed and the `receipt` if one was issued, so a caller can persist
-    the record later without re-executing anything.
+    the record later without re-executing anything, and `preserved_at` — the path where the
+    signed receipt was kept when the store could still be written to. `preserved_at` is None when
+    preservation itself failed, which is a materially different report and is never guessed.
+
+    It also carries `execution`: what was already observed about the child. Every stage below the
+    launch line runs *after* the action may have changed the world, so a failure there is allowed
+    to leave the record uncertain and is never allowed to leave the execution unknown. The
+    completion-clock stage used to discard the launch outcome entirely — the child had exited
+    with a status nobody could any longer be told about, which is the same defect shape as losing
+    the signed receipt one stage later.
     """
 
     code = "execution_recording_failed"
 
-    def __init__(self, message, stage, receipt=None):
+    def __init__(self, message, stage, receipt=None, preserved_at=None, execution=None):
         super().__init__(message)
         self.stage = stage
         self.receipt = receipt
+        # What the runtime already observed about the child, when it had already observed it.
+        # A failure below the launch line may make the *record* uncertain; it may not make the
+        # execution unknown. `None` means the child had genuinely not run yet, and is never used
+        # to mean "it ran and we lost the details".
+        self.execution = execution
+        self.preserved_at = preserved_at
 
 
 class EvidenceAdapterConfigInvalid(VerifyError):

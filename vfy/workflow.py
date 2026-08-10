@@ -129,7 +129,12 @@ class Workspace:
         return self.root / relative
 
     def store(self):
+        """The store opened to write to. Creates the declared layout if it is not there."""
         return store_module.LocalStore(self.vfy)
+
+    def store_for_reading(self):
+        """The store opened only to look at. A command that reads must leave no trace."""
+        return store_module.LocalStore.for_reading(self.vfy)
 
 
 def schema_registry(spec_dir):
@@ -373,18 +378,55 @@ def pin_rulebook(workspace):
     return rulebook.load_rulebook_bytes(path.read_bytes(), workspace.registry)
 
 
+def _is_plain_executable(path):
+    """A real regular file, not a link, that this user may execute. Follows nothing.
+
+    `is_file()` follows symlinks, so it answers for whatever a link points at rather than for the
+    entry that is there. Both branches of `resolve_program` ask this one question, because the
+    answer must not depend on how the caller spelled the name.
+    """
+    try:
+        info = os.lstat(path)
+    except OSError:
+        return False
+    return stat.S_ISREG(info.st_mode) and os.access(path, os.X_OK)
+
+
 def resolve_program(workspace, name):
-    """Resolve argv[0] to a path before the candidate is built, digested, or authorized."""
+    """Resolve argv[0] to a path before the candidate is built, digested, or authorized.
+
+    **A symlink is refused, whichever form the caller wrote.** The two branches disagreed: a bare
+    name was checked with `not candidate.is_symlink()` and refused a link, while a path form was
+    checked with `is_file()` — which follows one — and accepted it. So `bin/deploy.sh` pointing at
+    `elsewhere.sh` was allowed and executed, and the same link written as `deploy.sh` was refused.
+    The receipt named `bin/deploy.sh`; the program that ran was `elsewhere.sh`. A receipt naming a
+    path other than what ran defeats the point of recording the action at all.
+
+    Refusing is the choice the rest of the trusted layout already makes — the config, the signing
+    keys, the trust registry, every store entry, and evidence paths all reject a symlink rather
+    than resolving one. Canonicalizing instead would introduce a resolution behaviour that exists
+    nowhere else here and would change what a candidate digest denotes, which is a public
+    identity change and not a repair.
+
+    What this establishes is **path identity**: the name recorded is a real regular file that this
+    workspace can execute, and not an alias for something else. It is *not* file-content identity.
+    Nothing here claims the bytes at that path are the bytes that later run — the file may be
+    replaced between this check and the exec, and `docs/security.md` states that boundary rather
+    than papering over it.
+    """
     if os.sep in name or (os.altsep and os.altsep in name):
         candidate = (workspace.path(workspace.config["execution"]["working_directory"]) / name)
-        if candidate.is_file() and os.access(candidate, os.X_OK):
+        if _is_plain_executable(candidate):
             return name
+        if candidate.is_symlink():
+            raise CliExecutableNotFound(
+                "A symlinked executable is not permitted; name the program it points at: " + name)
         raise CliExecutableNotFound("No executable at " + name)
     # A bare name is searched along the configured path only. Never PATH, never the parent
     # environment: the same rulebook must not mean different programs on different machines.
     for entry in workspace.config["search_path"]:
         candidate = workspace.path(entry) / name
-        if candidate.is_file() and not candidate.is_symlink() and os.access(candidate, os.X_OK):
+        if _is_plain_executable(candidate):
             return str(candidate)
     raise CliExecutableNotFound(
         "%r is not on the workspace search path; write a path or add its directory." % name)
@@ -554,7 +596,7 @@ def replay(workspace, receipt_path):
     No clock is read. Replay recomputes a decision from recorded inputs, and every input it needs
     is on disk; a receipt that verified yesterday verifies today.
     """
-    store = workspace.store()
+    store = workspace.store_for_reading()
     path = Path(receipt_path)
     expected = (workspace.vfy / "receipts").resolve()
     resolved = path.resolve()
@@ -569,7 +611,7 @@ def replay(workspace, receipt_path):
 
 def list_receipts(workspace):
     """The store's own listing: what it read, and what it refused, by filename."""
-    return workspace.store().listing()
+    return workspace.store_for_reading().listing()
 
 
 def _receipt_path(workspace, receipt_id):

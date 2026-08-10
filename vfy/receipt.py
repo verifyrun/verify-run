@@ -20,6 +20,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 from vfy import authorization as auth_module
 from vfy import canon, gate, load, rulebook, schema, snapshot
 from vfy.errors import (
+    CanonicalFormInvalid,
     ReceiptBindingMismatch,
     ReceiptOutcomeIneligible,
     ReplayBodyMismatch,
@@ -79,6 +80,16 @@ class ReplayVerification:
     authorization_verified: bool
     recomputed_canonical: str
     replayed: bool = True
+    # Instants that cannot have happened in the order recorded. Empty for an ordinary receipt.
+    #
+    # Valid-but-anomalous, deliberately. Everything below the spend line happens *after* the
+    # action may have changed the world, so a wall clock that steps backward between the launch
+    # and the acknowledgment cannot retroactively make the execution not have happened — and a
+    # receipt is the account of what happened. Refusing it would destroy the only record of a
+    # real action because of a clock; rewriting the instants to look ordered would destroy the
+    # evidence. So the receipt still verifies and still replays, and the impossible ordering is
+    # named here. A caller that treats a non-empty tuple as ordinary is choosing to.
+    timeline_anomalies: tuple = ()
 
 
 def issue_receipt(pinned, candidate, snap, result, authorization, execution, receipt_id,
@@ -155,10 +166,13 @@ def verify_receipt(value, keys, registry):
     if entry.get("status") == "revoked":
         raise SigningKeyRetired("The receipt signing key is revoked.")
 
+    # One signature byte string, one accepted encoding. Strict base64 refuses a bad alphabet and
+    # bad padding but not unused trailing bits, so sixteen distinct texts decoded to the same
+    # 64 bytes and all sixteen verified. See `canon.decode_signature`.
     try:
-        signature = base64.b64decode(block["value"], validate=True)
-    except Exception:
-        raise SignatureMalformed("The signature value is not valid base64.") from None
+        signature = canon.decode_signature(block["value"])
+    except CanonicalFormInvalid as failure:
+        raise SignatureMalformed(str(failure)) from None
 
     payload = {key: member for key, member in value.items() if key != "signature"}
     signing_bytes = canon.canonicalize(payload).encode("utf-8")
@@ -249,7 +263,45 @@ def replay_receipt(value, rulebook_source, candidate, snapshot_value, receipt_ke
         receipt_id=verified.receipt_id, outcome=verified.outcome, signature_valid=True,
         bodies_matched=True, result_recomputed=True, result_matched=True,
         authorization_verified=authorization_verified,
-        recomputed_canonical=recomputed.canonical)
+        recomputed_canonical=recomputed.canonical,
+        timeline_anomalies=timeline_anomalies(value, snapshot_value, authorization))
+
+
+def timeline_anomalies(receipt_value, snapshot_value=None, authorization=None):
+    """Recorded instants that cannot have occurred in the order recorded.
+
+    Compared as **instants**, not as text. The frozen grammar admits numeric offsets, so
+    `2026-01-01T00:00:00+05:00` sorts after `2026-01-01T00:00:00Z` while being five hours earlier;
+    `rulebook._instant` is the offset-aware reading the rest of the runtime already uses, so two
+    spellings of one instant are equal here and never an anomaly.
+
+    Only orderings that are impossible are reported. Equal instants are not anomalies: the whole
+    completion stage is one clock reading, so `created_at == acknowledged_at` is the ordinary case,
+    and the runtime records whole seconds, in which a fast command genuinely starts and finishes.
+    """
+    found = []
+    execution = receipt_value.get("execution") or {}
+    created = receipt_value.get("created_at")
+    acknowledged = execution.get("acknowledged_at")
+    frozen_at = (snapshot_value or {}).get("frozen_at")
+    issued_at = (authorization or {}).get("issued_at")
+
+    def earlier(first, second):
+        try:
+            return rulebook._instant(first) < rulebook._instant(second)
+        except (TypeError, ValueError, AttributeError):
+            return False        # an unreadable instant is a schema question, answered elsewhere
+
+    for later_name, later, earlier_name, before in (
+            ("created_at", created, "the authorization's issued_at", issued_at),
+            ("created_at", created, "the evidence snapshot's frozen_at", frozen_at),
+            ("execution.acknowledged_at", acknowledged, "the authorization's issued_at", issued_at),
+            ("execution.acknowledged_at", acknowledged,
+             "the evidence snapshot's frozen_at", frozen_at),
+            ("execution.acknowledged_at", acknowledged, "created_at", created)):
+        if later is not None and before is not None and earlier(later, before):
+            found.append("%s (%s) precedes %s (%s)" % (later_name, later, earlier_name, before))
+    return tuple(found)
 
 
 def _check_shape_for_outcome(outcome, authorization, execution):

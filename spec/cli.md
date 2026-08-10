@@ -286,6 +286,13 @@ decision was made here, and `store_index_invalid` is not an outcome.
 would be the exact confusion this product exists to prevent. `show` loads one record **with**
 verification and replay through `get_record`, and says so.
 
+**`list`, `show`, and `replay` write nothing at all.** They open the store *for reading*, which is
+a different construction from the one `run` uses and cannot create the layout — see
+`spec/local-store.md`. Running any of them against a store missing `receipts/`, or whose
+`store.json` has been replaced by something that is not a regular file, is a typed refusal on
+stderr with exit `1` and **zero filesystem change**. It is not a silent repair, and a `receipts/`
+that cannot be listed is not answered as an empty store.
+
 ## Output
 Human output uses product vocabulary only: rulebook, gate, evidence, snapshot, decision,
 authorization, receipt, replay, runtime, verification, and the four outcomes.
@@ -308,10 +315,27 @@ caller's terminal only when it is the command's own stream, never re-rendered by
 diagnostic. Expected typed failures print one line and no traceback.
 
 `--json` prints one canonical JSON object on stdout through the frozen canonicalizer, with every
-diagnostic on stderr. It is a stable field set — `command`, `outcome`, `matched_rule`, `reasons`,
-`receipt_id`, `receipt_path`, `executed`, `exit_status`, `exit_code` — carrying no timestamp that
-is not already in an artifact and no secret. It is canonical because it is produced by the same
-canonicalizer everything else uses; calling pretty-printed JSON canonical would be a lie.
+diagnostic on stderr. It carries no timestamp that is not already in an artifact and no secret, and
+it is canonical because it is produced by the same canonicalizer everything else uses; calling
+pretty-printed JSON canonical would be a lie.
+
+**Each command has its own field set.** This paragraph used to name one list and call it "a stable
+field set", which was wrong twice over: the list included `exit_code`, a field the CLI has never
+emitted, and omitted `notes`, which it does. A reader writing against it would have parsed for a
+key that is never there and missed one that is. The sets are:
+
+| command | fields |
+|---|---|
+| `check`, `run` | `command`, `outcome`, `matched_rule`, `reasons`, `receipt_id`, `receipt_path`, `executed`, `exit_status`, `notes` |
+| `run`, when the record could not be written | `command`, `error`, `stage`, `executed`, `authorization_consumed`, `exit_status`, `timed_out`, `signalled`, `receipt_id`, `preserved_at`, `receipt` |
+| `receipts list` | `command`, `receipts`, `refused` |
+| `replay`, `receipts show` | `command`, `receipt_id`, `outcome`, `verified`, `replayed`, `authorization_verified`, `timeline_anomalies` |
+
+The child's exit status is `exit_status`. There is no `exit_code` field; the CLI's own exit code is
+the process status, described under [Exit codes](#exit-codes), and is not a member of any document.
+
+`tests/test_cli.py` asserts each set against real command output, so this table cannot drift from
+the CLI again without a test failing.
 
 ## Exit codes
 Three different things, never merged: the decision, the child process's status, and the CLI's own
@@ -386,12 +410,33 @@ never anywhere else:
 A BLOCK or HOLD reads the clock once more, for its receipt's `created_at`; it issues no
 authorization and spends nothing.
 
-The readings are monotone, and every ordering rule the chain already enforces still holds by
-construction: each `acquired_at` is at or before `frozen_at`, `issued_at` is at or after
-`frozen_at`, and `verification_time` is at or after `issued_at`. A wall clock that steps backwards
-under the run is refused by those same rules — `evidence_order_invalid` or
+**Above the spend, the ordering is enforced.** Each `acquired_at` is at or before `frozen_at`,
+`issued_at` is at or after `frozen_at`, and `verification_time` is at or after `issued_at`. A wall
+clock that steps backwards there is refused by those same rules — `evidence_order_invalid` or
 `authorization_not_yet_valid` — which is a fail-closed refusal above the spend, with nothing
 consumed and nothing started.
+
+**Below the spend, the ordering is observed and recorded, not enforced.** This is not a weaker
+version of the same rule; it is a different situation. The completion reading happens after the
+child has exited, so by then the action may already have changed the world, and no rule applied
+afterwards can make it not have. The readings are therefore **not** guaranteed monotone — this
+paragraph previously said they were, which no wall clock can promise.
+
+A backward completion reading produces a receipt whose `created_at` and `acknowledged_at` are
+genuinely earlier than the `issued_at` and `frozen_at` recorded above them. That receipt:
+
+- **is signed, verifies, and replays.** It is the account of a real action, and refusing it would
+  destroy the only record of that action because of a clock.
+- **keeps its observed instants exactly.** Nothing is clamped to look ordered; rewriting a
+  timestamp destroys the evidence it exists to be.
+- **is not reported as ordinary.** Verification names every impossible ordering in
+  `timeline_anomalies`, and `vfy replay` prints each one on a `timeline` line. Instants are
+  compared as instants, so two spellings of one instant — `Z` and a numeric offset — are equal and
+  never an anomaly.
+
+If the completion instant cannot be read at all, no receipt is fabricated, because a signed
+receipt has no valid form without a `created_at`. What the runtime already observed about the child
+travels on the failure instead: see [`spec/execution.md`](execution.md).
 
 Until the 0.1.x hardening pass `vfy run` captured **one** instant and used it for all of the
 above. One run was one instant, which is internally consistent and reproducible — and it made

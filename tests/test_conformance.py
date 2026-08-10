@@ -10,6 +10,8 @@ Each stub is a small script speaking the adapter protocol. None of them touches 
 answer from a table, which is exactly what a dishonest implementation would do.
 """
 
+import copy
+import hashlib
 import json
 import os
 import shutil
@@ -482,3 +484,202 @@ class ProfileAndFixturesAreInternallyConsistent(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class VerdictPrecedence(unittest.TestCase):
+    """A conducted failure outranks an unconducted one. Absence never erases knowledge.
+
+    The runner tested INCOMPLETE before FAIL, so twenty-nine measured failures plus one adapter
+    timeout reported INCOMPLETE — literally "nothing was measured" — while the result document it
+    wrote carried twenty-nine measured failures. An implementation could have obtained that by
+    arranging for one fixture's adapter call to time out.
+    """
+
+    def setUp(self):
+        self._directory = tempfile.TemporaryDirectory()
+        self.workspace = Path(self._directory.name)
+        self.addCleanup(self._directory.cleanup)
+
+    def _run(self, body, name="stub.py"):
+        path = self.workspace / name
+        path.write_text(body, encoding="utf-8")
+        return run_suite("%s %s" % (sys.executable, path), self.workspace / (name + ".json"))
+
+    def test_a_conducted_failure_outranks_an_unconducted_one(self):
+        """One bundle times out; every other bundle is answered wrongly on purpose."""
+        stub = STUB_HEADER + '''
+import time
+if "block" in bundle:
+    time.sleep(30)                      # this one cannot be conducted
+result = honest()
+if result.get("terminal") == "HOLD":
+    result["terminal"] = "BLOCK"        # every conducted HOLD is answered wrongly
+answer(result)
+'''
+        completed, document = self._run(stub)
+        self.assertEqual(completed.returncode, EXIT_FAIL,
+                         "a timed-out fixture laundered conducted failures:\n" + completed.stdout)
+        self.assertEqual(document["overall"], "FAIL")
+        self.assertGreater(document["counts"]["failed"], 0)
+
+    def test_setup_problems_alone_are_still_incomplete(self):
+        completed, document = self._run("import sys\nsys.exit(1)\n")
+        self.assertEqual(completed.returncode, EXIT_INCOMPLETE)
+        self.assertEqual(document["overall"], "INCOMPLETE")
+        self.assertEqual(document["counts"]["failed"], 0)
+
+    def test_an_honest_adapter_still_passes(self):
+        completed, document = self._run(STUB_HEADER + "answer(honest())\n")
+        self.assertEqual(completed.returncode, EXIT_PASS, completed.stdout)
+        self.assertEqual(document["overall"], "PASS")
+
+    def test_a_leaked_secret_is_a_failure_wherever_it_is_observed(self):
+        """Same emission, same weight. Leaking sooner must not be a lighter verdict."""
+        marker = "-" * 5 + "BEGIN " + "PRIVATE KEY" + "-" * 5
+        for where, condition in (("capabilities probe", 'operation == "capabilities"'),
+                                 ("fixture probe", 'operation != "capabilities"')):
+            with self.subTest(leaked_during=where):
+                stub = (
+                    'import json, sys\n'
+                    'request = json.loads(sys.stdin.read())\n'
+                    'operation = request.get("operation")\n'
+                    'if %s:\n'
+                    '    sys.stdout.write(json.dumps({"adapter": "stub", "note": %r}))\n'
+                    '    raise SystemExit(0)\n'
+                    'sys.stdout.write(json.dumps({"adapter": "stub", "operation": operation,\n'
+                    '    "operations": ["replay"], "accepted_profiles": ["decision-replay-v1"],\n'
+                    '    "accepted": True, "terminal": "ALLOW", "signature_verified": True,\n'
+                    '    "recomputed": True, "bindings_verified": True}))\n'
+                    % (condition, marker))
+                completed, document = self._run(stub, name="leak-%s.py" % where.split()[0])
+                self.assertEqual(completed.returncode, EXIT_FAIL,
+                                 "a leak during the %s was not FAIL" % where)
+                self.assertEqual(document["overall"], "FAIL")
+                self.assertNotIn("BEGIN PRIVATE KEY", json.dumps(document))
+
+
+class AResultMustBeAResultOfThisKit(unittest.TestCase):
+    """A verdict is a *relation* between a result and a kit, and it was never checked as one.
+
+    Reproduced against this tree: a document with `fixtures: []`, every count zero,
+    `overall: PASS` and a fixture-manifest digest of sixty-four zeroes was reported
+    **acceptable**, exit 0. Nothing was wrong with it as a document, and nothing was wrong with
+    the kit — the checker verified the kit against *itself* and the result against *the schema*,
+    and the two checks never met. So a PASS over zero fixtures passed.
+
+    Every case here is a forgery a self-consistent document can express. Each must be refused,
+    and the untouched real result must still be accepted, because a checker that refuses
+    everything has not learned anything.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.directory = tempfile.TemporaryDirectory()
+        cls.workspace = Path(cls.directory.name)
+        cls.reference = cls._reference_pass()
+
+    @staticmethod
+    def _reference_pass():
+        """A PASS document built *from the kit*, so the forgeries below are the only difference.
+
+        Synthesized rather than produced by a real run on purpose: what is under test is the
+        relation between a document and a kit, and building the document from the kit is the
+        strongest starting point for attacking that relation. A run against a real
+        implementation is what the conformance job does, and it is a different question.
+        """
+        profile_path = REPO / "conformance" / "decision-replay-v1" / "profile.json"
+        profile = json.loads(profile_path.read_text(encoding="utf-8"))
+        manifest_path = (profile_path.parent / profile["fixture_manifest"]).resolve()
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        schema = json.loads((REPO / "conformance" / "decision-replay-v1"
+                             / "result.schema.json").read_text(encoding="utf-8"))
+        rows = [{"fixture_id": entry["fixture_id"], "status": "PASS", "required": True,
+                 "problems": [], "requirements": entry.get("requirements", []),
+                 "observed_terminal": None, "observed_error_category": None,
+                 "implementation_reason": None, "raw": {}}
+                for entry in manifest["fixtures"]]
+        document = {
+            "profile_id": profile["profile_id"], "profile_version": profile["profile_version"],
+            "runner_version": "1.1.0", "implementation": "reference",
+            "implementation_version": "0", "adapter": "synthetic",
+            "adapter_capabilities": {}, "environment": {"python": "0", "platform": "test"},
+            "started_at": "2026-01-01T00:00:00Z", "completed_at": "2026-01-01T00:00:01Z",
+            "fixture_manifest_sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
+            "profile_sha256": hashlib.sha256(profile_path.read_bytes()).hexdigest(),
+            "manifest_problems": [], "requirement_status": {}, "requirements_covered": [],
+            "fixtures": rows,
+            "counts": {"total": len(rows), "required": len(rows), "passed": len(rows),
+                       "failed": 0, "skipped": 0},
+            "overall": "PASS",
+        }
+        for name in schema["required"]:
+            if name not in document:                    # the schema is authority, not this list
+                document[name] = None
+        return document
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.directory.cleanup()
+
+    def _check(self, document):
+        path = self.workspace / "candidate.json"
+        path.write_text(json.dumps(document, indent=2, sort_keys=True), encoding="utf-8")
+        return subprocess.run(
+            [sys.executable, str(REPO / "tools" / "check_conformance_result.py"), str(path)],
+            capture_output=True, text=True, timeout=300)
+
+    def test_the_untouched_reference_result_is_accepted(self):
+        done = self._check(copy.deepcopy(self.reference))
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+
+    def test_every_forgery_a_self_consistent_document_can_express_is_refused(self):
+        def empty(d):
+            d["fixtures"] = []
+            d["counts"] = dict.fromkeys(d["counts"], 0)
+            d["overall"] = "PASS"
+            d["fixture_manifest_sha256"] = "0" * 64
+
+        forgeries = {
+            "a PASS over zero fixtures": empty,
+            "a wrong fixture-manifest digest":
+                lambda d: d.__setitem__("fixture_manifest_sha256", "a" * 64),
+            "a wrong profile digest": lambda d: d.__setitem__("profile_sha256", "b" * 64),
+            "a wrong profile id": lambda d: d.__setitem__("profile_id", "decision-replay-v2"),
+            "a wrong profile version": lambda d: d.__setitem__("profile_version", "9.9.9"),
+            "a dropped fixture": lambda d: (d["fixtures"].pop(0),
+                                            d["counts"].update(total=d["counts"]["total"] - 1,
+                                                               passed=d["counts"]["passed"] - 1,
+                                                               required=d["counts"]["required"] - 1)),
+            "a duplicated fixture": lambda d: (
+                d["fixtures"].append(copy.deepcopy(d["fixtures"][0])),
+                d["counts"].update(total=d["counts"]["total"] + 1,
+                                   passed=d["counts"]["passed"] + 1)),
+            "an invented fixture": lambda d: (
+                d["fixtures"].append(dict(d["fixtures"][0], fixture_id="invented/not-in-kit")),
+                d["counts"].update(total=d["counts"]["total"] + 1,
+                                   passed=d["counts"]["passed"] + 1)),
+            "a renamed fixture id":
+                lambda d: d["fixtures"][0].__setitem__("fixture_id", "renamed/elsewhere"),
+            "a FAIL row under an edited PASS":
+                lambda d: d["fixtures"][0].__setitem__("status", "FAIL"),
+            "a SKIP row under an edited PASS":
+                lambda d: d["fixtures"][0].__setitem__("status", "SKIP"),
+            "counts edited away from the rows":
+                lambda d: d["counts"].__setitem__("passed", 99),
+            "manifest problems under a kept PASS":
+                lambda d: d.__setitem__("manifest_problems", ["a fixture was altered"]),
+        }
+        for label, forge in forgeries.items():
+            with self.subTest(forgery=label):
+                document = copy.deepcopy(self.reference)
+                forge(document)
+                done = self._check(document)
+                self.assertNotEqual(
+                    done.returncode, 0,
+                    "this forgery was called acceptable: %s\n%s" % (label, done.stdout))
+
+    def test_the_checker_derives_the_verdict_rather_than_reading_it(self):
+        """Structural in the only sense that matters: the fields it must not simply believe."""
+        source = (REPO / "tools" / "check_conformance_result.py").read_text(encoding="utf-8")
+        for evidence in ("counts.%s says", "overall says", "does not report", "more than once"):
+            self.assertIn(evidence, source)

@@ -34,9 +34,11 @@ A step is marked done only when it has actually been performed. Nothing below is
 - [x] CI job added that builds the distribution, installs it clean, and runs the full conformance
       kit; anything but PASS fails the job, INCOMPLETE included.
 
-## Remaining before a `0.1.0a3` release
+## Remaining before a `0.1.0a4` release
 
-- [ ] **Bump the version** to `0.1.0a3` in `pyproject.toml`, and retitle the CHANGELOG section.
+- [x] **Bump the version** to `0.1.0a4` in `pyproject.toml` and `vfy/__init__.py`, and add
+      the CHANGELOG section. Regenerate `conformance/reference-result.json` from the newly
+      built wheel — never edit it by hand; the claim must come from the artifact.
       Deliberately not done during the hardening pass: `vfy --version` would otherwise claim a
       version nobody can install.
 - [ ] **Move `PIN` in `tools/conformance_reference_run.sh`** to the newly published version, once

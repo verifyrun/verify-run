@@ -19,9 +19,20 @@ repeated `--adapter-arg`, one token each, which is never split:
 Exit status: 0 PASS, 1 FAIL, 2 INCOMPLETE, 3 runner error. PASS is a self-reported test result.
 It is not certification, and nothing here issues one.
 
-**A run that could not be conducted is INCOMPLETE, never FAIL.** An adapter that will not start,
-times out, or does not speak the protocol is a fact about the harness; reporting it as FAIL would
-accuse an implementation of failing a test it was never actually given.
+**A run that could not be conducted is INCOMPLETE.** An adapter that will not start, times out,
+or does not speak the protocol is a fact about the harness; reporting it as FAIL would accuse an
+implementation of failing a test it was never actually given.
+
+**A fixture that *was* conducted and disagreed is FAIL, and stays FAIL.** The verdict follows the
+strongest settled negative fact:
+
+    any conducted fixture failed          -> FAIL
+    the adapter emitted key material      -> FAIL
+    anything could not be conducted       -> INCOMPLETE
+    otherwise                             -> PASS
+
+Absence of knowledge never erases knowledge already established. Reading INCOMPLETE first meant
+one timed-out adapter call could report "nothing was measured" over twenty-nine measured failures.
 """
 
 import argparse
@@ -48,6 +59,9 @@ MAX_ADAPTER_OUTPUT = 1 << 20          # one mebibyte; an adapter that floods is 
 DEFAULT_ADAPTER_TIMEOUT_SECONDS = 180
 
 # Anything resembling private key material must never reach a result document.
+# One observation, one name, one weight — see the verdict precedence below.
+LEAKED_SECRET = "adapter_leaked_secret_material"
+
 SECRET_MARKERS = ("PRIVATE KEY", "private_key", "BEGIN OPENSSH", "-----BEGIN")
 
 # Problems that mean the run could not be conducted: the adapter would not start, gave up, or did
@@ -159,7 +173,7 @@ def call_adapter(command, request, timeout_seconds=DEFAULT_ADAPTER_TIMEOUT_SECON
         return None, "adapter_output_too_large"
     text = completed.stdout.decode("utf-8", "replace")
     if any(marker in text for marker in SECRET_MARKERS):
-        return None, "adapter_leaked_secret_material"
+        return None, LEAKED_SECRET
     try:
         envelope = json.loads(text)
     except ValueError:
@@ -249,6 +263,7 @@ def main():
         # Everything that means "this run could not be conducted". Kept apart from the fixture
         # verdicts all the way to the exit status, because they answer different questions.
         setup_notes = []
+        security_failures = []
         results = []
 
         capabilities, capability_error = call_adapter(
@@ -256,9 +271,17 @@ def main():
             options.adapter_timeout)
         if capability_error:
             capabilities = {"error": capability_error}
-            setup_notes.append(
-                "the adapter did not answer the capabilities request (%s), so no fixture was run"
-                % capability_error)
+            if capability_error == LEAKED_SECRET:
+                # The same observation must carry the same weight wherever it is made. Emitting
+                # private key material during the capabilities probe was previously recorded as a
+                # setup problem and reported INCOMPLETE, while the identical emission during a
+                # fixture was FAIL — so an adapter could downgrade its own leak by leaking sooner.
+                security_failures.append(
+                    "the adapter emitted private key material answering the capabilities request")
+            else:
+                setup_notes.append(
+                    "the adapter did not answer the capabilities request (%s), so no fixture was "
+                    "run" % capability_error)
         else:
             accepted = capabilities.get("accepted_profiles")
             if isinstance(accepted, list) and profile["profile_id"] not in accepted:
@@ -288,6 +311,8 @@ def main():
 
         # A fixture whose only problems are transport problems was never actually put to the
         # implementation. It is not a failed test; it is a test that did not happen.
+        security_failures += ["%s: %s" % (r["fixture_id"], LEAKED_SECRET) for r in results
+                              if LEAKED_SECRET in r["problems"]]
         not_conducted = [r for r in results if r["status"] == "ERROR" and r["problems"]
                          and all(setup_problem(p) for p in r["problems"])]
         setup_notes += ["%s: %s" % (r["fixture_id"], "; ".join(r["problems"]))
@@ -300,12 +325,20 @@ def main():
         covered = sorted({requirement for fixture in manifest["fixtures"]
                           for requirement in fixture["requirements"]})
 
-        if manifest_problems or setup_notes:
-            overall = "INCOMPLETE"
-        elif failed:
+        # Verdict precedence, strongest settled negative fact first. A fixture that was actually
+        # conducted and disagreed is knowledge; a fixture that could not be conducted is the
+        # absence of knowledge, and absence must never erase what was already established.
+        #
+        # This ordering was inverted: `INCOMPLETE` was tested before `FAIL`, so twenty-nine
+        # conducted failures plus one adapter timeout reported INCOMPLETE — "nothing was
+        # measured" — while the result document itself carried twenty-nine measured failures. An
+        # implementation could have obtained that by making one fixture's adapter call time out.
+        if failed:
             overall = "FAIL"
-        elif skipped or len(required) != len(manifest["fixtures"]):
-            overall = "INCOMPLETE" if skipped else "PASS"
+        elif security_failures:
+            overall = "FAIL"
+        elif manifest_problems or setup_notes or skipped:
+            overall = "INCOMPLETE"
         else:
             overall = "PASS"
 

@@ -28,13 +28,25 @@ SCANNER_EXEMPT = {"tests/test_release.py", "tests/test_adapters.py", "tests/test
                   # more be scanned for them than the scanners above can scan themselves.
                   "CLAUDE.md"}
 
-SKIP_TREES = (".venv", ".git", "dist", "build", "__pycache__", "verify-run/", ".vfy/")
+# Directories the scanners do not walk, matched as whole path *segments*. The previous form
+# tested `part in relative` against the joined path, so every one of these was a substring trap:
+# `.git` swallowed `.github/workflows/*` and `.gitignore`, and `build` swallowed every
+# `tools/build_conformance_*.py`. The secret, vocabulary, and legacy gates therefore never read
+# the CI workflow or the tools that generate the conformance kit — the files most able to carry a
+# credential and least likely to be noticed. A gate that skips what it exists to check is not a
+# gate, so this matches segments and the test below proves those exact paths are reached.
+SKIP_TREES = (".venv", ".git", "dist", "build", "__pycache__", "verify-run", ".vfy")
+
+
+def _skipped(relative):
+    return any(segment in SKIP_TREES for segment in relative.split("/")[:-1] or [""]) \
+        or relative.split("/")[0] in SKIP_TREES
 
 
 def _repository_files(suffixes=None):
     for path in sorted(REPO_ROOT.rglob("*")):
         relative = path.relative_to(REPO_ROOT).as_posix()
-        if not path.is_file() or any(part in relative for part in SKIP_TREES):
+        if not path.is_file() or _skipped(relative):
             continue
         if relative in SCANNER_EXEMPT:
             continue
@@ -230,15 +242,8 @@ class VersionAndMetadata(unittest.TestCase):
         is a claim about the past and must stay written in the past.
         """
         readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
-        for label, pattern in (
-                ("the alpha-status version", r"^Version `%s`\." % re.escape(__version__)),
-                ("the current conformance reference result",
-                 r"Current reference result: \*\*PASS\*\*, 30/30 fixtures, `verify-run %s`"
-                 % re.escape(__version__)),
-        ):
-            with self.subTest(claim=label):
-                self.assertRegex(readme, re.compile(pattern, re.M),
-                                 "%s does not name %s" % (label, __version__))
+        self.assertRegex(readme, re.compile(r"^Version `%s`\." % re.escape(__version__), re.M),
+                         "the alpha-status version does not name " + __version__)
 
     def test_the_readme_does_not_present_verify_run_as_the_whole_system(self):
         """One section has to exist, because its absence is what outside readers got wrong.
@@ -361,18 +366,74 @@ class DocumentationAccuracy(unittest.TestCase):
             self.assertTrue((REPO_ROOT / name).is_file(), name)
 
 
+def declared_version():
+    """The version this source tree declares. Read, not inferred from a filename."""
+    for line in (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8").splitlines():
+        if line.startswith("version"):
+            return line.split("=", 1)[1].strip().strip('"')
+    raise AssertionError("pyproject.toml declares no version")
+
+
+def artifacts_for(suffix):
+    """Built artifacts in dist/ **for the version this tree declares**, and the rest.
+
+    Selecting `sorted(glob(...))[-1]` is how a package gate ends up certifying source it never
+    saw: `dist/` held 0.1.0a2 while the tree declared 0.1.0a3, and three artifact tests passed
+    green against the older bytes. An artifact proves something about the source it was built
+    from and nothing at all about any other source, so the version has to be part of choosing it.
+    """
+    if not DIST.is_dir():
+        return [], []
+    found = sorted(DIST.glob("*" + suffix))
+    # Wheel and sdist both spell the version after the first `-`/`_` separated distribution name.
+    tag = declared_version()
+    matching = [p for p in found if tag in p.name.split(suffix)[0]]
+    return matching, [p for p in found if p not in matching]
+
+
+class StaleArtifactsAreNotEvidence(unittest.TestCase):
+    """A built artifact proves something about the source it was built from. Only that source.
+
+    `dist/` held `verify_run-0.1.0a2.*` for the whole of the 0.1.0a3 line, and the package gate
+    picked the newest filename it could find and audited it — so "the wheel carries the runtime
+    and nothing else" was a true statement about bytes nobody had built from this tree. The gate
+    was green and it was not looking at the release.
+    """
+
+    def test_dist_holds_no_artifact_from_another_version(self):
+        stale = artifacts_for(".whl")[1] + artifacts_for(".tar.gz")[1]
+        self.assertEqual(
+            [p.name for p in stale], [],
+            "dist/ holds artifacts from another version than the declared %s. They are not "
+            "evidence for this source and must be removed before a release is proved."
+            % declared_version())
+
+
 class PackageContents(unittest.TestCase):
-    """Runs only when dist/ has been built. CI builds first, then invokes this."""
+    """Runs only when dist/ has been built **for this version**. CI builds first, then invokes it.
+
+    Skipping when nothing is built is honest — there is no artifact to describe. Skipping when
+    something *wrong* is built is not, so a mismatched artifact fails here rather than being
+    quietly stepped over.
+    """
 
     def setUp(self):
-        if not DIST.is_dir() or not list(DIST.glob("*.whl")):
-            self.skipTest("no built artifacts in dist/; run `python -m build` first")
+        wheels, stale = artifacts_for(".whl")
+        if not wheels:
+            if stale:
+                self.fail("dist/ holds %s but this tree declares %s; a stale artifact is not "
+                          "evidence for this source"
+                          % (", ".join(p.name for p in stale), declared_version()))
+            self.skipTest("no built artifacts for %s in dist/; run `python -m build` first"
+                          % declared_version())
 
     def _wheel(self):
-        return sorted(DIST.glob("*.whl"))[-1]
+        return artifacts_for(".whl")[0][-1]
 
     def _sdist(self):
-        return sorted(DIST.glob("*.tar.gz"))[-1]
+        found = artifacts_for(".tar.gz")[0]
+        self.assertTrue(found, "no source distribution for " + declared_version())
+        return found[-1]
 
     def test_the_wheel_carries_the_runtime_and_nothing_else(self):
         with zipfile.ZipFile(self._wheel()) as archive:
@@ -401,14 +462,274 @@ class PackageContents(unittest.TestCase):
                              "%s appears in the source distribution" % forbidden)
 
     def test_no_built_artifact_carries_a_credential(self):
+        """Both artifacts. The name said "no built artifact" and it read only the wheel.
+
+        The scanners are exempt from themselves here for exactly the reason they are exempt in the
+        source tree: a file whose job is to hold the pattern `-----BEGIN PRIVATE KEY` cannot be
+        scanned for it. The exemption is by the same declared list, so it cannot quietly widen —
+        the wheel ships no tests at all, and the sdist ships precisely the four self-referential
+        test modules `SCANNER_EXEMPT` already names.
+        """
         seeds = [bytes.fromhex(s) for s in SecretGate.PUBLISHED_TEST_SEEDS]
+        # The same credential definition the source gate uses, against the shipped bytes. A bare
+        # `-----BEGIN` prefix was stricter than the source gate and flagged
+        # `tools/run_conformance.py`, whose leak detector legitimately names that marker. One
+        # definition of "a credential", two corpora — not two definitions that can disagree.
+        patterns = dict(SecretGate.PATTERNS)
+
+        def exempt(name):
+            return any(name.endswith("/" + relative) for relative in SCANNER_EXEMPT)
+
+        def inspect(label, name, blob):
+            if exempt(name):
+                return
+            for seed in seeds:
+                self.assertNotIn(seed, blob, label)
+            try:
+                text = blob.decode("utf-8")
+            except UnicodeDecodeError:
+                return
+            for kind, pattern in patterns.items():
+                self.assertIsNone(pattern.search(text), "%s carries a %s" % (label, kind))
+
+        scanned = 0
         with zipfile.ZipFile(self._wheel()) as archive:
             for name in archive.namelist():
-                blob = archive.read(name)
-                self.assertNotIn(b"-----BEGIN", blob, name)
-                for seed in seeds:
-                    self.assertNotIn(seed, blob, name)
+                inspect("wheel:" + name, name, archive.read(name))
+                scanned += 1
+        with tarfile.open(self._sdist()) as archive:
+            for member in archive.getmembers():
+                if not member.isfile():
+                    continue
+                handle = archive.extractfile(member)
+                if handle is not None:
+                    inspect("sdist:" + member.name, member.name, handle.read())
+                    scanned += 1
+        self.assertGreater(scanned, 200, "the artifact scan read almost nothing")
+        # Not vacuous: the same patterns, applied to a planted credential, must fire. A scan that
+        # reads 400 files and could not recognise a key is a green light and nothing else.
+        planted = "-" * 5 + "BEGIN RSA " + "PRIVATE KEY" + "-" * 5 + "\nMIIB\n"
+        for probe in (planted, 'api_key = "' + "z" * 20 + '"', "AKIA" + "A" * 16):
+            self.assertTrue(any(p.search(probe) for p in patterns.values()),
+                            "the artifact scan would not recognise %r" % probe[:24])
+
+    def test_the_source_distribution_ships_what_its_own_tests_read(self):
+        """The sdist's auditability claim, checked against the artifact rather than MANIFEST.in.
+
+        The sdist carried `tests/` but not the `conformance/` kit those tests run, nor the
+        `tools/` that drive it, nor `.gitignore` that the secret gate inspects — so 37 of its own
+        tests went red for anyone who ran them from the artifact instead of from a git checkout.
+        """
+        with tarfile.open(self._sdist()) as archive:
+            names = archive.getnames()
+        required = ("/conformance/decision-replay-v1/profile.json",
+                    "/conformance/decision-replay-v1/fixtures/manifest.json",
+                    "/conformance/decision-replay-v1/result.schema.json",
+                    "/tools/run_conformance.py", "/tools/conformance_adapter.py",
+                    "/tools/check_conformance_result.py",
+                    "/docs/conformance/decision-replay-v1.md", "/.gitignore")
+        for name in required:
+            self.assertTrue(any(entry.endswith(name) for entry in names),
+                            "the sdist ships a test that reads %s and not the file" % name)
+        bundles = len({entry.rsplit("/", 1)[0] for entry in names
+                       if "/conformance/decision-replay-v1/fixtures/" in entry
+                       and entry.endswith(".json")})
+        self.assertGreaterEqual(bundles, 30, "the sdist must carry the whole fixture set")
+        # Internal working notes are not part of the verification proposition and must not ship.
+        self.assertFalse(any("/docs/audit/" in entry for entry in names),
+                         "internal audit notes shipped in the source distribution")
 
 
-if __name__ == "__main__":
-    unittest.main()
+class ScannersReachWhatShips(unittest.TestCase):
+    """A gate that skips the files most able to carry a credential is not a gate.
+
+    `SKIP_TREES` was matched with `part in relative` against the joined path, so `.git` swallowed
+    `.github/workflows/*` and `.gitignore`, and `build` swallowed every
+    `tools/build_conformance_*.py`. The secret, vocabulary, and legacy scanners never read the CI
+    workflow — the one file that legitimately handles credentials — or the tools that generate
+    the published conformance kit.
+    """
+
+    REACHED = (".github/workflows/ci.yml", ".gitignore",
+               "tools/build_conformance_manifest.py", "tools/build_conformance_fixtures.py",
+               "tools/build_conformance_manifest_of_record.py", "tools/run_conformance.py",
+               "tools/conformance_adapter.py")
+    EXCLUDED = ("dist/x.whl", ".venv/lib/x.py", ".git/config", "build/lib/x.py",
+                "vfy/__pycache__/x.pyc", "verify-run/index.js", ".vfy/store.json")
+
+    def test_the_scanner_corpus_contains_the_files_it_used_to_skip(self):
+        corpus = {relative for relative, _ in _repository_files()}
+        for name in self.REACHED:
+            with self.subTest(path=name):
+                self.assertIn(name, corpus, "%s is still invisible to the scanners" % name)
+
+    def test_genuinely_excluded_trees_are_still_excluded(self):
+        for name in self.EXCLUDED:
+            with self.subTest(path=name):
+                self.assertTrue(_skipped(name), "%s should not be scanned" % name)
+
+    def test_a_substring_can_no_longer_be_mistaken_for_a_path_segment(self):
+        for name in (".github/workflows/ci.yml", ".gitignore", "tools/build_x.py",
+                     "distribution.md", "rebuild.py", "a/buildings/b.py"):
+            with self.subTest(path=name):
+                self.assertFalse(_skipped(name))
+
+    def test_a_planted_credential_is_caught_in_every_shipped_location(self):
+        """Plant the marker the secret gate looks for, in files that were previously skipped."""
+        planted = "-" * 5 + "BEGIN RSA " + "PRIVATE KEY" + "-" * 5
+        for name in self.REACHED:
+            path = REPO_ROOT / name
+            if not path.is_file():
+                continue
+            original = path.read_bytes()
+            try:
+                path.write_bytes(original + ("\n# " + planted + "\n").encode("utf-8"))
+                found = any(planted in (_text(REPO_ROOT / relative) or "")
+                            for relative, _ in _repository_files())
+                self.assertTrue(found, "a planted credential in %s was not reachable" % name)
+            finally:
+                path.write_bytes(original)
+
+
+class TheConformanceClaimFollowsAnArtifact(unittest.TestCase):
+    """A release claim must come from a result, and a result must come from an artifact.
+
+    It ran the other way. `pyproject` declared a version; this file required the README to say
+    `Current reference result: PASS, 30/30 fixtures, verify-run <that version>`; and
+    `tools/conformance_reference_run.sh` installed `verify-run==<that version>` from PyPI. So
+    bumping to `0.1.0a4` — reproduced mechanically — made the release gate *demand* a PASS
+    sentence naming an artifact that did not exist on PyPI and had never been run against the
+    kit. The only way to go green was to author the claim first. A version label was deciding
+    what a result said.
+
+    The direction is now: build the wheel, hash it, install that file, run the kit against it,
+    check the result against the kit, record artifact identity beside result identity. The
+    README sentence is checked against that record, so it cannot name a version whose artifact
+    nobody measured. `tools/build_reference_result.py` is what produces the record.
+    """
+
+    RECORD = REPO_ROOT / "conformance" / "reference-result.json"
+    PROFILE_DIR = REPO_ROOT / "conformance" / "decision-replay-v1"
+
+    def setUp(self):
+        self.assertTrue(self.RECORD.is_file(),
+                        "no checked-in reference result; run tools/build_reference_result.py")
+        self.record = json.loads(self.RECORD.read_text(encoding="utf-8"))
+
+    def _sha256(self, path):
+        import hashlib
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+
+    def test_the_record_binds_the_kit_it_was_run_against(self):
+        profile = json.loads((self.PROFILE_DIR / "profile.json").read_text(encoding="utf-8"))
+        manifest = (self.PROFILE_DIR / profile["fixture_manifest"]).resolve()
+        self.assertEqual(self.record["profile"]["sha256"],
+                         self._sha256(self.PROFILE_DIR / "profile.json"),
+                         "the record names a profile digest this kit does not have")
+        self.assertEqual(self.record["fixtures"]["manifest_sha256"], self._sha256(manifest),
+                         "the record names a fixture manifest this kit does not have")
+        self.assertEqual(self.record["profile"]["id"], profile["profile_id"])
+        self.assertEqual(self.record["profile"]["version"], profile["profile_version"])
+        declared = sorted(entry["fixture_id"] for entry in
+                          json.loads(manifest.read_text(encoding="utf-8"))["fixtures"])
+        self.assertEqual(self.record["fixtures"]["ids"], declared,
+                         "the record's fixture set is not this kit's fixture set")
+
+    def test_the_record_names_a_specific_artifact_and_not_only_a_version(self):
+        artifact = self.record["implementation"]["artifact"]
+        self.assertRegex(artifact["sha256"], r"\A[0-9a-f]{64}\Z")
+        self.assertIn(artifact["kind"], ("wheel", "sdist"))
+        self.assertIn(self.record["implementation"]["version"], artifact["filename"])
+        self.assertNotEqual(artifact["sha256"], "0" * 64)
+
+    def test_the_records_verdict_follows_its_own_counts(self):
+        counts = self.record["counts"]
+        self.assertEqual(counts["passed"], counts["total"])
+        self.assertEqual(counts["failed"], 0)
+        self.assertEqual(counts["skipped"], 0)
+        self.assertEqual(self.record["overall"], "PASS")
+        self.assertEqual(counts["total"], len(self.record["fixtures"]["ids"]))
+        self.assertGreater(counts["total"], 0, "a PASS over zero fixtures is not a pass")
+
+    def test_the_readme_claim_is_the_one_the_record_generates(self):
+        """The README does not get to author this sentence. It has to match the record's."""
+        sys.path.insert(0, str(REPO_ROOT / "tools"))
+        try:
+            import build_reference_result
+        finally:
+            sys.path.pop(0)
+        expected = build_reference_result.claim_sentence(self.record)
+        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertIn(expected, readme,
+                      "the README's reference-result sentence is not the one the record "
+                      "generates; regenerate it rather than editing the README")
+
+    def test_the_record_matches_the_built_artifact_when_one_is_present(self):
+        wheels, _ = artifacts_for(".whl")
+        if not wheels:
+            self.skipTest("no built wheel for %s in dist/" % declared_version())
+        built = {self._sha256(p) for p in wheels}
+        self.assertIn(self.record["implementation"]["artifact"]["sha256"], built,
+                      "the record names a wheel digest that no artifact in dist/ has; the "
+                      "recorded result was not measured against these bytes")
+
+    def test_an_unpublished_record_does_not_claim_a_release_coordinate(self):
+        """`published: false` is the honest state for a candidate. It must not read as a release."""
+        if self.record.get("published"):
+            return
+        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertNotIn("Current reference result for the published release", readme)
+
+
+class ThePythonSupportClaimIsPerJob(unittest.TestCase):
+    """"CI covers 3.11–3.13" was true of some jobs and false of others.
+
+    The full source suite and the sdist self-audit run on all three supported versions; the
+    release gates, the wheel build/install, and the conformance run are on 3.12 alone. An
+    unqualified sentence let a reader conclude the *wheel* they install had been exercised on
+    their interpreter. The README now states it per job, and this reads the workflow to keep the
+    two together.
+    """
+
+    def _workflow(self):
+        return yaml.safe_load(
+            (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
+
+    def _versions(self, job):
+        matrix = job.get("strategy", {}).get("matrix", {}).get("python")
+        if matrix:
+            return sorted(str(v) for v in matrix)
+        named = [step.get("with", {}).get("python-version") for step in job["steps"]
+                 if "setup-python" in str(step.get("uses", ""))]
+        return sorted(str(v) for v in named if v)
+
+    def test_every_supported_version_has_a_full_suite_and_an_artifact_witness(self):
+        """`requires-python >= 3.11` needs artifact evidence, not only source evidence."""
+        jobs = self._workflow()["jobs"]
+        supported = self._versions(jobs["test"])
+        self.assertIn("3.11", supported)
+        self.assertEqual(self._versions(jobs["sdist-self-audit"]), supported,
+                         "a supported version with no installed-artifact witness is a claim "
+                         "resting on the checkout alone")
+
+    def test_the_readme_states_the_coverage_per_job_rather_than_in_one_sentence(self):
+        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertNotRegex(
+            readme, r"integration covers 3\.11, 3\.12, and 3\.13",
+            "the unqualified coverage sentence is back; it is true of some jobs only")
+        for row in ("full source suite", "self-audited", "wheel built",
+                    "conformance kit", "release and security gates"):
+            self.assertIn(row, readme, "the per-job coverage table is missing %r" % row)
+
+    def test_the_supply_chain_boundary_is_written_down_not_implied(self):
+        """Mutable action tags are a real exposure. Stating it beats a partial pin."""
+        security = (REPO_ROOT / "docs" / "security.md").read_text(encoding="utf-8")
+        self.assertIn("mutable references", security)
+        self.assertIn("does not claim immutable action identity", security)
+        workflow = (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+        pinned = re.findall(r"uses: \S+@([0-9a-f]{40})", workflow)
+        floating = re.findall(r"uses: \S+@(v\d+)", workflow)
+        self.assertTrue(pinned or floating, "no actions found; this check reads nothing")
+        if pinned and floating:
+            self.fail("actions are pinned inconsistently: %r and %r; pick one and say which"
+                      % (sorted(set(pinned))[:2], sorted(set(floating))))

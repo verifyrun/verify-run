@@ -8,10 +8,12 @@ from a stranger. The store never evaluates, authorizes, issues, or executes anyt
 clock, randomness, environment, or network.
 """
 
+import errno
 import hashlib
 import json
 import os
 import re
+import stat
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -38,6 +40,14 @@ _TMP = "tmp"
 _INDEX = "index.json"
 _STORE = "store.json"
 _INPUTS_SUFFIX = ".inputs"
+# An action that executed but whose record could not be committed. Under `tmp/` on
+# purpose: it is evidence that something happened, not a committed record of it.
+_UNRECORDED_SUFFIX = ".unrecorded.json"
+# A receipt is a bounded document. Nothing in the store reads more than this from an
+# untrusted entry, so a local file cannot decide how much memory a listing allocates.
+# Derived from the envelope: identifiers, three digests, a result with its reason trace,
+# and one signature — orders of magnitude below this. A product bound, not a host one.
+MAX_RECEIPT_BYTES = 1 << 20
 _BODY_NAMES = ("rulebook", "candidate", "snapshot", "authorization")
 _MAX_CONSUMPTION_SLOTS = 64
 _MAX_INDEX_SLOTS = 64
@@ -67,6 +77,9 @@ class StoredRecord:
     authorization_canonical: str | None
     replay_verified: bool
     authorization_verified: bool
+    # Impossible instant orderings the verifier named. Empty for an ordinary
+    # record; a store never decides this, it only carries what replay reported.
+    timeline_anomalies: tuple = ()
 
     def receipt(self):
         return load.load_json_bytes(self.receipt_canonical.encode("utf-8"))
@@ -116,19 +129,53 @@ class StoreScan:
 
 
 class LocalStore:
+    """One local store root, opened either to write to or only to look at.
+
+    The two are different objects and not one object in two moods. A store opened for reading
+    creates nothing, and the only method that can create the layout is unreachable from it — so
+    "does `receipts list` initialize a store?" is answered by which constructor ran, not by
+    auditing every path a listing might take.
+    """
+
     def __init__(self, root):
-        if not isinstance(root, Path):
-            raise TypeError("store root must be a pathlib.Path")
-        self.root = root
-        _reject_symlink(root)
+        """Open the store for writing, creating the declared layout if it is not there."""
+        self.root = _store_root(root)
+        self._writable = True
+        self._initialize_layout()
+
+    @classmethod
+    def for_reading(cls, root):
+        """Open an existing store to read. Creates nothing, repairs nothing, migrates nothing.
+
+        A missing layout member is reported, never supplied: a command that only reads must be
+        unable to leave a trace, and a store that has lost `receipts/` has a problem worth being
+        told about rather than one worth papering over on the way past.
+        """
+        store = cls.__new__(cls)
+        store.root = _store_root(root)
+        store._writable = False
+        store._require_layout()
+        return store
+
+    def _initialize_layout(self):
+        """The only place in this class that creates anything at the layout level."""
+        root = self.root
         for child in (root, root / _RECEIPTS, root / _CONSUMED, root / _TMP):
             child.mkdir(parents=True, exist_ok=True)
             _reject_symlink(child)
         marker = root / _STORE
-        if not marker.exists():
+        if _entry_kind(marker) is None:
             _write_exact(marker, canon.canonical_bytes(
                 {"store_format_version": STORE_FORMAT_VERSION}))
-        _reject_symlink(marker)
+        _require_regular(marker)
+
+    def _require_layout(self):
+        """Say what the layout is missing or what has replaced it. Supplies nothing."""
+        _require_directory(self.root, StorePathInvalid(
+            "There is no store at " + str(self.root)))
+        _require_directory(self.root / _RECEIPTS, StorePathInvalid(
+            "The store has no receipts directory: " + str(self.root / _RECEIPTS)))
+        _require_regular(self.root / _STORE)
 
     # --- writing ------------------------------------------------------------------------------
 
@@ -141,7 +188,9 @@ class LocalStore:
         final_receipt = self._receipt_path(receipt_id)
         final_inputs = self._inputs_path(receipt_id)
 
-        if final_receipt.exists():
+        # `_entry_kind` and not `exists()`: a link planted at this name is an entry that is in the
+        # way, and following it would let a commit be redirected out of the store.
+        if _entry_kind(final_receipt) is not None:
             return self._idempotent_or_conflict(receipt_id, frozen_receipt, bodies)
 
         staging = self.root / _TMP / (receipt_id + ".staging")
@@ -159,7 +208,7 @@ class LocalStore:
                 if (staging / (name + ".json")).read_bytes() != text.encode("utf-8"):
                     raise StoreCommitConflict("A staged body did not write as written.")
 
-            if final_inputs.exists():
+            if _entry_kind(final_inputs) is not None:
                 raise StoreCommitConflict("An inputs directory already exists for " + receipt_id)
             staged_receipt = staging / "receipt.json"
             staged_receipt.rename(staging.parent / (receipt_id + ".json.staged"))
@@ -192,18 +241,18 @@ class LocalStore:
         return bodies
 
     def _idempotent_or_conflict(self, receipt_id, frozen_receipt, bodies):
-        existing_receipt = self._receipt_path(receipt_id)
-        _reject_symlink(existing_receipt)
-        if existing_receipt.read_bytes() != frozen_receipt.canonical_bytes:
+        existing = _require_store_file(
+            self._receipt_path(receipt_id),
+            StoreRecordMissing("No committed record for " + receipt_id))
+        if existing != frozen_receipt.canonical_bytes:
             raise StoreRecordConflict(
                 "A different receipt is already stored under " + receipt_id)
         inputs = self._inputs_path(receipt_id)
         for name, text in bodies.items():
-            path = inputs / (name + ".json")
-            if not path.exists():
-                raise StoreRecordIncomplete("Stored record is missing " + name)
-            _reject_symlink(path)
-            if path.read_bytes() != text.encode("utf-8"):
+            stored = _require_store_file(
+                inputs / (name + ".json"),
+                StoreRecordIncomplete("Stored record is missing " + name))
+            if stored != text.encode("utf-8"):
                 raise StoreRecordConflict("A different " + name + " is stored under " + receipt_id)
         return self.get_record(receipt_id, verify=False)
 
@@ -214,33 +263,31 @@ class LocalStore:
         """Load and re-verify one committed record. Local bytes are never trusted as such."""
         _check_storable(receipt_id)
         receipt_path = self._receipt_path(receipt_id)
-        if not receipt_path.exists():
-            raise StoreRecordMissing("No committed record for " + receipt_id)
-        _reject_symlink(receipt_path)
-
-        receipt_value = _load_canonical(receipt_path)
+        # Absence is decided by the same open that classifies the entry: a link to nothing is a
+        # link, not a missing record, and saying "no committed record" of one would let a store be
+        # emptied by planting symlinks.
+        receipt_value = _load_canonical(
+            receipt_path, StoreRecordMissing("No committed record for " + receipt_id))
         outcome = _receipt_outcome(receipt_value)
         inputs = self._inputs_path(receipt_id)
-        if not inputs.is_dir():
-            raise StoreRecordIncomplete("Record has no inputs directory: " + receipt_id)
-        _reject_symlink(inputs)
+        _require_directory(inputs, StoreRecordIncomplete(
+            "Record has no inputs directory: " + receipt_id))
 
         required = ["rulebook", "candidate", "snapshot"]
         if outcome == "ALLOW" and receipt_value.get("authorization_id") is not None:
             required.append("authorization")
         loaded = {}
         for name in required:
-            path = inputs / (name + ".json")
-            if not path.exists():
-                raise StoreRecordIncomplete("Record is missing " + name + ".json")
-            _reject_symlink(path)
-            loaded[name] = _load_canonical(path)
+            loaded[name] = _load_canonical(
+                inputs / (name + ".json"),
+                StoreRecordIncomplete("Record is missing " + name + ".json"))
         for name in _BODY_NAMES:
-            if name not in required and (inputs / (name + ".json")).exists():
+            if name not in required and _entry_kind(inputs / (name + ".json")) is not None:
                 raise StoreRecordConflict(
                     "A %s record must not store %s.json" % (outcome, name))
 
         replay_verified = authorization_verified = False
+        anomalies = ()
         if verify:
             if receipt_keys is None or registry is None:
                 raise TypeError("verification needs a receipt key registry and a schema registry")
@@ -253,6 +300,7 @@ class LocalStore:
                 verification_time=verification_time)
             replay_verified = report.result_matched
             authorization_verified = report.authorization_verified
+            anomalies = report.timeline_anomalies
 
         return StoredRecord(
             receipt_id=receipt_id, outcome=outcome,
@@ -262,7 +310,8 @@ class LocalStore:
             snapshot_canonical=canon.canonicalize(loaded["snapshot"]),
             authorization_canonical=(canon.canonicalize(loaded["authorization"])
                                      if "authorization" in loaded else None),
-            replay_verified=replay_verified, authorization_verified=authorization_verified)
+            replay_verified=replay_verified, authorization_verified=authorization_verified,
+            timeline_anomalies=anomalies)
 
     def list_receipts(self):
         """The summaries a listing could read. `listing()` also names what it refused."""
@@ -291,13 +340,20 @@ class LocalStore:
             summaries=listing.summaries, refused=listing.refused + (problem,))
 
     def _index_problem(self):
-        """Refuse the cache by name if it is unusable. An absent index is not a fault."""
+        """Refuse the cache by name if it is unusable. An absent index is not a fault.
+
+        `exists()` may not ask the first question here. It follows links, so it answers *false*
+        for a dangling symlink — and a store whose cache has been replaced by a link to nothing
+        would report a clean listing with no cache at all. The distinction that matters is
+        whether a **directory entry** is there, which only an open that follows nothing can make:
+        no entry is an absence, and an entry that is a link is a fault whatever it points at.
+        """
         index_path = self.root / _INDEX
-        if not index_path.exists():
-            return None                       # a store that has committed nothing has no cache
         try:
-            _reject_symlink(index_path)
-            _check_index(index_path)
+            raw = read_store_file(index_path)
+            if raw is None:
+                return None               # a store that has committed nothing has no cache
+            _check_index(raw)
         except VerifyError as typed:
             return RefusedRecord(_INDEX, typed.code, str(typed))
         except OSError as failure:
@@ -312,12 +368,12 @@ class LocalStore:
 
     def scan(self):
         """Report what is present but not committed. Nothing is deleted."""
-        staging = tuple(sorted(p.name for p in (self.root / _TMP).iterdir()))
+        staging = tuple(p.name for p in _entries(self.root / _TMP))
         orphans = []
-        for path in sorted((self.root / _RECEIPTS).iterdir()):
+        for path in _entries(self.root / _RECEIPTS):
             if path.name.endswith(_INPUTS_SUFFIX):
                 receipt_id = path.name[: -len(_INPUTS_SUFFIX)]
-                if not self._receipt_path(receipt_id).exists():
+                if _entry_kind(self._receipt_path(receipt_id)) is None:
                     orphans.append(receipt_id)
         return StoreScan(abandoned_staging=staging, orphaned_inputs=tuple(orphans))
 
@@ -383,8 +439,68 @@ class LocalStore:
         raise StoreCommitConflict(
             "Every consumption staging slot for this nonce is occupied; scan the store.")
 
+    def preserve_unrecorded(self, frozen_receipt):
+        """Keep the signed receipt for an action that happened but could not be committed.
+
+        Below the consume line the world may already have changed and the authority is spent, so
+        the signed account of it is the only thing left that can still be true. Losing it made
+        `receipts list` answer "no receipts yet" about a command that had run — the store denying
+        what the runtime did, which is the one thing a record keeper may never do.
+
+        This is **not** a committed record and must never be mistaken for one. It lives under
+        `tmp/`, so `list_receipts` (which globs `receipts/`) cannot see it and `scan` reports it
+        as present-but-uncommitted, exactly like any other artifact that is on disk without
+        having reached the commit point.
+
+        Returns the path written, or raises. The caller is already handling a failure; this one
+        is allowed to fail too, and says so rather than pretending.
+        """
+        receipt_id = frozen_receipt.receipt_id
+        _check_storable(receipt_id)
+        path = self.root / _TMP / (receipt_id + _UNRECORDED_SUFFIX)
+        payload = frozen_receipt.canonical_bytes
+        # Whatever is already at this path is untrusted local input, exactly like a committed
+        # receipt is, and it is read through the same primitive rather than a weaker local one.
+        # A FIFO here used to block the process until a writer appeared, and a directory escaped
+        # as a raw IsADirectoryError.
+        preserved = read_store_file(path)
+        if preserved is not None:
+            # Idempotent on identical bytes; a different receipt under one id is a conflict, not
+            # something to overwrite. Nothing here destroys an earlier account of an action.
+            if preserved != payload:
+                raise StoreRecordConflict(
+                    "A different unrecorded receipt is already preserved under " + receipt_id)
+            return path
+        staging = self.root / _TMP / (receipt_id + _UNRECORDED_SUFFIX + ".partial")
+        try:
+            descriptor = os.open(staging, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        except OSError as failure:
+            # Exclusive creation refuses anything already standing there, hostile or merely
+            # abandoned. Typed, so it is a store condition rather than a host traceback.
+            raise StoreCommitConflict(
+                "The unrecorded receipt could not be staged: %s" % failure) from None
+        try:
+            with os.fdopen(descriptor, "wb") as handle:
+                handle.write(payload)
+            staging.replace(path)          # the rename is the point at which it exists at all
+        except OSError as failure:
+            staging.unlink(missing_ok=True)
+            raise StoreCommitConflict(
+                "The unrecorded receipt could not be preserved: %s" % failure) from None
+        except BaseException:
+            staging.unlink(missing_ok=True)
+            raise
+        return path
+
+    def unrecorded_path(self, receipt_id):
+        """Where an unrecorded receipt for this id would be kept. Reads nothing."""
+        _check_storable(receipt_id)
+        return self.root / _TMP / (receipt_id + _UNRECORDED_SUFFIX)
+
     def is_consumed(self, nonce):
-        return self._consumption_path(nonce).exists()
+        # `_entry_kind` and not `exists()`: a link to nothing is still an entry, and answering
+        # "not consumed" about one would be a way to make a spent authorization look unspent.
+        return _entry_kind(self._consumption_path(nonce)) is not None
 
     # --- paths --------------------------------------------------------------------------------
 
@@ -404,7 +520,9 @@ class LocalStore:
         about a damaged artifact is inferred onto its neighbours.
         """
         summaries, refused = [], []
-        for path in sorted((self.root / _RECEIPTS).glob("*.json")):
+        for path in _entries(self.root / _RECEIPTS):
+            if path.suffix != ".json":
+                continue
             try:
                 summaries.append(_summary_of(path))
             except VerifyError as typed:
@@ -475,6 +593,159 @@ class LocalStore:
             "Every index staging slot is occupied; scan the store.")
 
 
+
+def _store_root(root):
+    if not isinstance(root, Path):
+        raise TypeError("store root must be a pathlib.Path")
+    _reject_symlink(root)
+    return root
+
+
+def _require_directory(path, absent):
+    """Require a real directory at this name, following nothing. `absent` says what is missing."""
+    info = _entry_kind(path)
+    if info is None:
+        raise absent
+    if stat.S_ISLNK(info.st_mode):
+        raise StorePathInvalid("A symlink is not permitted in the store layout: " + str(path))
+    if not stat.S_ISDIR(info.st_mode):
+        raise StorePathInvalid("Not a directory: " + str(path))
+    return info
+
+
+def _entries(directory):
+    """List a store directory, or say plainly that it could not be listed.
+
+    `Path.glob` answers an unreadable directory with an empty iterator, and an empty iterator is
+    how a store says *there is nothing here*. Those are different sentences and this product does
+    not merge them anywhere else either.
+    """
+    try:
+        with os.scandir(directory) as found:
+            return sorted(Path(entry.path) for entry in found)
+    except FileNotFoundError:
+        raise StorePathInvalid(
+            "The store has no receipts directory: " + str(directory)) from None
+    except OSError as failure:
+        raise StorePathInvalid(
+            "The store directory could not be listed: %s" % failure) from None
+
+
+def _entry_kind(path):
+    """lstat once and say what is there, following nothing. None when absent.
+
+    One observation, one object. `Path.is_file()` follows symlinks and is a *different* look at
+    the filesystem from the read that follows it, so a check-then-read pair can be given two
+    different objects. Everything that matters is decided from this single lstat.
+    """
+    try:
+        info = os.lstat(path)
+    except FileNotFoundError:
+        return None
+    except OSError as failure:
+        raise StorePathInvalid("The store entry could not be examined: %s" % failure) from None
+    return info
+
+
+def _require_regular(path, info=None):
+    """Refuse any store entry that is not a plain regular file, before reading a byte.
+
+    A FIFO at a receipt path blocks the reader until a writer appears — a local file that hangs
+    the command. A directory raises `IsADirectoryError`, a device reads unbounded. None of these
+    may reach a read, and none may escape as a raw host exception.
+    """
+    info = _entry_kind(path) if info is None else info
+    if info is None:
+        return None
+    if stat.S_ISLNK(info.st_mode):
+        raise StorePathInvalid("A symlink is not permitted in the store layout: " + str(path))
+    if not stat.S_ISREG(info.st_mode):
+        raise StorePathInvalid("Not a regular file: " + str(path))
+    if info.st_size > MAX_RECEIPT_BYTES:
+        raise StoreArtifactNoncanonical(
+            "The stored file is larger than a receipt may be: " + str(path))
+    return info
+
+
+# `O_NOFOLLOW` decides the symlink question inside the open itself, and `O_NONBLOCK` stops a FIFO
+# from parking the process there. Both are POSIX; where a host lacks either, the flag is absent
+# and the guarantee below narrows to what `_require_regular` can say from an lstat alone. That
+# narrowing is stated in spec/local-store.md rather than assumed away.
+_NO_FOLLOW = getattr(os, "O_NOFOLLOW", 0)
+_NON_BLOCKING = getattr(os, "O_NONBLOCK", 0)
+_FOLLOWS_NOTHING = bool(_NO_FOLLOW)
+
+
+def read_store_file(path, bound=None):
+    """Read one untrusted store entry, or refuse it. `None` means no directory entry exists.
+
+    The whole point is that **one object is classified, opened, and read**. `is_file()` then
+    `read_bytes()` is two separate looks at a name, and a name can be made to refer to two
+    different objects between them; so can `stat()` then `open()`. Here the open is the
+    classification: `O_NOFOLLOW` refuses a symlink as part of acquiring the descriptor, and every
+    later question — kind, size, contents — is asked of *that descriptor*, never of the path again.
+
+    A dangling symlink is therefore a symlink and not an absence, which is the distinction
+    `exists()` cannot make and the one a hostile store depends on.
+
+    The race this closes is between classification and read. It does not make the enclosing
+    directories immutable: a parent component may still be swapped before the open resolves, and
+    the store does not claim otherwise.
+    """
+    bound = MAX_RECEIPT_BYTES if bound is None else bound
+    try:
+        descriptor = os.open(path, os.O_RDONLY | _NO_FOLLOW | _NON_BLOCKING)
+    except FileNotFoundError:
+        return None
+    except IsADirectoryError:
+        raise StorePathInvalid("Not a regular file: " + str(path)) from None
+    except OSError as failure:
+        if failure.errno in (errno.ELOOP, errno.EMLINK):
+            raise StorePathInvalid(
+                "A symlink is not permitted in the store layout: " + str(path)) from None
+        raise StorePathInvalid(
+            "The store entry could not be opened: %s" % failure) from None
+    try:
+        info = os.fstat(descriptor)
+        if stat.S_ISLNK(info.st_mode):                       # only reachable without O_NOFOLLOW
+            raise StorePathInvalid(
+                "A symlink is not permitted in the store layout: " + str(path))
+        if not stat.S_ISREG(info.st_mode):
+            raise StorePathInvalid("Not a regular file: " + str(path))
+        if info.st_size > bound:
+            # Refused from the descriptor's own size, before any allocation proportional to it.
+            raise StoreArtifactNoncanonical(
+                "The stored file is larger than a receipt may be: " + str(path))
+        raw = _read_bounded(descriptor, bound)
+    finally:
+        os.close(descriptor)
+    return raw
+
+
+def _read_bounded(descriptor, bound):
+    """Read at most `bound` bytes and refuse a file that grew past it while being read."""
+    chunks, total = [], 0
+    while True:
+        try:
+            chunk = os.read(descriptor, 65536)
+        except OSError as failure:
+            raise StorePathInvalid("The store entry could not be read: %s" % failure) from None
+        if not chunk:
+            return b"".join(chunks)
+        total += len(chunk)
+        if total > bound:
+            raise StoreArtifactNoncanonical("The stored file is larger than a receipt may be.")
+        chunks.append(chunk)
+
+
+def _require_store_file(path, absent):
+    """`read_store_file`, but an absent entry is the caller's own typed refusal."""
+    raw = read_store_file(path)
+    if raw is None:
+        raise absent
+    return raw
+
+
 def _check_storable(receipt_id):
     if not isinstance(receipt_id, str):
         raise TypeError("a receipt id must be a string")
@@ -483,10 +754,10 @@ def _check_storable(receipt_id):
             "This receipt id cannot be stored as a filename: " + repr(receipt_id))
 
 
-def _check_index(path):
+def _check_index(raw):
     """Refuse a cache that is not the document this store writes. Nothing is believed from it."""
     try:
-        value = load.load_json_bytes(path.read_bytes())
+        value = load.load_json_bytes(raw)
     except VerifyError:
         raise StoreIndexInvalid("The index is not a canonical JSON document.") from None
     if not isinstance(value, dict) or "receipts" not in value:
@@ -508,8 +779,7 @@ def _summary_of(path):
     receipt cannot leave this function as anything but a typed refusal: a raw `KeyError` from a
     foreign document would cross the store boundary and be reported as an internal defect.
     """
-    _reject_symlink(path)
-    value = _load_canonical(path)
+    value = _load_canonical(path, StoreRecordMissing("No committed receipt at " + path.name))
     try:
         summary = ReceiptSummary(
             receipt_id=value["receipt_id"], created_at=value["created_at"],
@@ -566,9 +836,15 @@ def _write_exact(path, payload):
         handle.write(payload)
 
 
-def _load_canonical(path):
-    """Strict-load a stored file and require its bytes to be the canonical form."""
-    raw = path.read_bytes()
+def _load_canonical(path, absent=None):
+    """Strict-load a stored file and require its bytes to be the canonical form.
+
+    Every byte arrives through `read_store_file`, so a non-regular or oversized entry is refused
+    before there is anything to parse.
+    """
+    raw = read_store_file(path)
+    if raw is None:
+        raise absent or StoreRecordMissing("No stored file at " + str(path))
     value = load.load_json_bytes(raw)
     if canon.canonical_bytes(value) != raw:
         raise StoreArtifactNoncanonical("Stored bytes are not canonical: " + str(path))

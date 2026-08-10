@@ -5,7 +5,9 @@ import dataclasses
 import itertools
 import json
 import pathlib
+import sys
 import time
+import tokenize
 import unittest
 
 from vfy import canon, gate, load, rulebook, schema
@@ -75,6 +77,17 @@ def _probe_rulebook(case):
 
 OUTCOME_OF = {"ALLOW": "true", "BLOCK": "false", "HOLD": "unsettled"}
 
+
+
+def _executable_source(path):
+    """Return a module's code with comments and string literals removed."""
+    pieces = []
+    with open(path, "rb") as handle:
+        for token in tokenize.tokenize(handle.readline):
+            if token.type in (tokenize.COMMENT, tokenize.STRING, tokenize.NL, tokenize.NEWLINE):
+                continue
+            pieces.append(token.string)
+    return " ".join(pieces)
 
 class Probes(unittest.TestCase):
     """Each probe reports one expression's own value through the terminal outcome."""
@@ -614,3 +627,91 @@ def _reference_from(pattern, p, text, t):
         p += 1
         t += 1
     return t == len(text)
+
+
+class BoundedNumericOperands(unittest.TestCase):
+    """A numeric operand an adversary composes may not reach the host's arithmetic limits.
+
+    `_numeric_parts` converted operand text with `int(whole + fraction)`. CPython refuses that
+    conversion past `sys.set_int_max_str_digits` — 4300 digits by default — so a candidate
+    carrying a 6000-digit decimal raised a bare `ValueError` out of the evaluator, and the CLI
+    answered untrusted input with `internal error: ValueError`. Two things were wrong at once: a
+    runtime flag decided which candidates were admissible, and a defect message stood where a
+    decision belongs.
+
+    The bound is now declared here (`MAX_NUMERIC_DIGITS`) and is far below the host's, so the
+    host's limit is unreachable. An operand past it cannot settle, which the rulebook already
+    knows how to answer.
+    """
+
+    def _compare(self, left, right):
+        return gate._compare_numeric(left, right)
+
+    def test_an_operand_past_the_declared_bound_is_unsettled_not_a_crash(self):
+        """The bound counts every significant digit, integer part included."""
+        over = gate.MAX_NUMERIC_DIGITS + 1
+        for digits in (over, over + 1, 6000, 100_000):
+            with self.subTest(total_digits=digits):
+                # "0." + fraction carries one integer digit, so the fraction is one short.
+                self.assertIsNone(self._compare("0." + "1" * digits, 5))
+                self.assertIsNone(self._compare(5, "0." + "1" * digits))
+                self.assertIsNone(self._compare("1" * digits, 5))
+                self.assertIsNone(self._compare("-" + "1" * digits, 5))
+
+    def test_the_boundary_is_exact_and_counts_every_significant_digit(self):
+        bound = gate.MAX_NUMERIC_DIGITS
+        # "0." + fraction: one integer digit plus the fraction.
+        self.assertIsNotNone(self._compare("0." + "1" * (bound - 1), 5))
+        self.assertIsNone(self._compare("0." + "1" * bound, 5))
+        # An integer part alone is counted the same way.
+        self.assertIsNotNone(self._compare("1" * bound, 5))
+        self.assertIsNone(self._compare("1" * (bound + 1), 5))
+
+    def test_the_host_integer_limit_can_no_longer_decide_admissibility(self):
+        """The decisive property: move the host's limit, and nothing about the answer changes."""
+        original = sys.get_int_max_str_digits()
+        try:
+            for limit in (640, 4300, 100_000):
+                sys.set_int_max_str_digits(limit)
+                with self.subTest(int_max_str_digits=limit):
+                    self.assertEqual(self._compare("0." + "1" * 1000, 5), -1)
+                    self.assertEqual(self._compare("9" * 1000, 5), 1)
+                    self.assertIsNone(self._compare("0." + "1" * 6000, 5))
+        finally:
+            sys.set_int_max_str_digits(original)
+
+    def test_no_operand_makes_the_evaluator_raise(self):
+        hostile = ["0." + "1" * 5000, "9" * 5000, "-" + "9" * 5000, "-0." + "0" * 4999 + "1",
+                   "0." + "0" * 9999 + "1", "1" * 3000 + "." + "1" * 3000,
+                   "0", "-0", "0.0", "-0.0", "", " 1", "1.", ".1", "1e5", "+1", "abc",
+                   True, False, None, [], {}, 0, -1, 2 ** 53 - 1]
+        for left in hostile:
+            for right in hostile:
+                with self.subTest(left=repr(left)[:24], right=repr(right)[:24]):
+                    self._compare(left, right)   # must not raise; value is asserted elsewhere
+
+    def test_ordinary_comparison_semantics_are_unchanged(self):
+        cases = [("1", "2", -1), ("2", "1", 1), ("1", "1", 0), ("1.0", "1", 0),
+                 ("1.00", "1.0", 0), ("0.1", "0.10", 0), ("-1", "1", -1), ("1", "-1", 1),
+                 ("-2", "-1", -1), ("0", "-0", 0), ("0.0", "-0.0", 0),
+                 ("0.999", "1", -1), ("1000", "999.9", 1), ("123.456", "123.4560", 0),
+                 ("-0.1", "0", -1), (0, "0.0", 0), (5, "5", 0), (-5, "-5.000", 0)]
+        for left, right, expected in cases:
+            with self.subTest(left=left, right=right):
+                self.assertEqual(self._compare(left, right), expected)
+
+    def test_no_power_of_ten_is_materialized_for_a_scale_difference(self):
+        """The old form built `10 ** (scale - other_scale)` from operand-controlled scale.
+
+        Inspected as code rather than as text, because the comments here deliberately quote the
+        construct they replaced and a plain grep matches its own explanation.
+        """
+        code = _executable_source(REPO_ROOT / "vfy" / "gate.py")
+        self.assertNotIn("10 **", code, "a power of ten is still built in the evaluator")
+        self.assertNotIn("int ( whole", code, "operand text is still converted to an integer")
+
+    def test_equality_still_never_coerces_across_spellings(self):
+        """`==` is canonical equality, not numeric order. Repairing `<` must not change that."""
+        self.assertFalse(gate._equal("1.0", "1.00"))
+        self.assertFalse(gate._equal("1", 1))
+        self.assertEqual(self._compare("1.0", "1.00"), 0)

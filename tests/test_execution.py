@@ -11,10 +11,12 @@ import sys
 import tempfile
 import time
 import tokenize
+import types
 import unittest
 
 from vfy import authorization as auth_module
 from vfy import canon, gate, load, receipt as receipt_module, rulebook, runner, schema, snapshot
+from vfy import workflow
 from vfy import store as store_module
 from vfy.errors import ExecutionRecordingFailed, VerifyError
 
@@ -846,3 +848,351 @@ class Vocabulary(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class UnrecordedReceiptSurvives(unittest.TestCase):
+    """An action that happened may not be erased by the failure to file it.
+
+    Below the consume line the world may already have changed and the authority is spent, so the
+    signed receipt is the only thing left that can still be true about it. It was handed back on
+    the exception and then dropped: `receipts list` answered "no receipts yet" about a command
+    that had run, the store denying what the runtime did.
+    """
+
+    def setUp(self):
+        self.case = _case(EXEC_DIR / "accept_exit_zero.json")
+        self.registry = _registry()
+
+    def _failing_store_run(self, failure=OSError("the receipt store is unavailable")):
+        sandbox = _Sandbox(self.case["tree"])
+        self.addCleanup(sandbox.__exit__, None, None, None)
+        built = _build(self.case, sandbox, self.registry)
+        real = store_module.LocalStore.put_record
+
+        def broken(self, *args, **kwargs):
+            raise failure
+
+        store_module.LocalStore.put_record = broken
+        try:
+            with self.assertRaises(ExecutionRecordingFailed) as caught:
+                _run(self.case, sandbox, self.registry, *built)
+        finally:
+            store_module.LocalStore.put_record = real
+        return sandbox, built, caught.exception
+
+    def test_the_signed_receipt_is_preserved_where_a_person_can_find_it(self):
+        sandbox, built, failure = self._failing_store_run()
+        self.assertEqual(failure.stage, "store")
+        self.assertIsNotNone(failure.receipt)
+        self.assertIsNotNone(failure.preserved_at, "the signed receipt was not preserved")
+
+        preserved = pathlib.Path(failure.preserved_at)
+        self.assertTrue(preserved.is_file())
+        self.assertEqual(preserved.read_bytes(), failure.receipt.canonical_bytes)
+        self.assertTrue(preserved.name.endswith(".unrecorded.json"))
+
+    def test_the_preserved_bytes_are_canonical_and_the_signature_verifies(self):
+        sandbox, built, failure = self._failing_store_run()
+        raw = pathlib.Path(failure.preserved_at).read_bytes()
+        value = load.load_json_bytes(raw)
+        self.assertEqual(canon.canonical_bytes(value), raw)
+        report = receipt_module.verify_receipt(value, _receipt_registry(self.case), self.registry)
+        self.assertTrue(report.signature_valid)
+        self.assertEqual(report.receipt_id, self.case["receipt_id"])
+
+    def test_it_is_never_mistaken_for_a_committed_record(self):
+        sandbox, built, failure = self._failing_store_run()
+        self.assertEqual(sandbox.store.listing().summaries, ())
+        self.assertEqual(sandbox.store.listing().refused, ())
+        with self.assertRaises(VerifyError):
+            sandbox.store.get_record(self.case["receipt_id"], verify=False)
+        self.assertIn(pathlib.Path(failure.preserved_at).name, sandbox.store.scan().abandoned_staging)
+
+    def test_the_nonce_stays_spent_and_nothing_is_re_executed(self):
+        sandbox, built, failure = self._failing_store_run()
+        self.assertTrue(sandbox.store.is_consumed(built[4].nonce),
+                        "preserving a receipt must not un-spend the authority")
+
+    def test_preserving_twice_is_idempotent_and_a_conflict_fails_closed(self):
+        sandbox, built, failure = self._failing_store_run()
+        signed = failure.receipt
+        again = sandbox.store.preserve_unrecorded(signed)
+        self.assertEqual(pathlib.Path(again).read_bytes(), signed.canonical_bytes)
+
+        pathlib.Path(failure.preserved_at).write_bytes(b'{"different": true}')
+        with self.assertRaises(VerifyError) as conflict:
+            sandbox.store.preserve_unrecorded(signed)
+        self.assertEqual(conflict.exception.code, "store_record_conflict")
+
+    def test_a_symlinked_preservation_path_is_refused(self):
+        with _Sandbox(self.case["tree"]) as sandbox:
+            built = _build(self.case, sandbox, self.registry)
+            target = sandbox.base / "elsewhere.json"
+            link = sandbox.store.unrecorded_path(self.case["receipt_id"])
+            link.symlink_to(target)
+            signed = receipt_module.issue_receipt(
+                built[0], built[1], built[2], built[3], built[4],
+                {"acknowledged": True, "acknowledged_at": self.case["acknowledged_at"],
+                 "exit_status": 0},
+                self.case["receipt_id"], self.case["receipt_created_at"],
+                self.case["receipt_key"]["key_id"], self.case["receipt_key"]["key_version"],
+                bytes.fromhex(self.case["receipt_key"]["private_key_hex"]), self.registry)
+            with self.assertRaises(VerifyError) as caught:
+                sandbox.store.preserve_unrecorded(signed)
+            self.assertEqual(caught.exception.code, "store_path_invalid")
+            self.assertFalse(target.exists(), "the link was followed")
+
+    def test_preservation_failing_too_is_reported_rather_than_guessed(self):
+        sandbox = _Sandbox(self.case["tree"])
+        self.addCleanup(sandbox.__exit__, None, None, None)
+        built = _build(self.case, sandbox, self.registry)
+        real_put = store_module.LocalStore.put_record
+        real_preserve = store_module.LocalStore.preserve_unrecorded
+        store_module.LocalStore.put_record = lambda self, *a, **k: (_ for _ in ()).throw(OSError("x"))
+        store_module.LocalStore.preserve_unrecorded = \
+            lambda self, *a, **k: (_ for _ in ()).throw(OSError("tmp is gone too"))
+        try:
+            with self.assertRaises(ExecutionRecordingFailed) as caught:
+                _run(self.case, sandbox, self.registry, *built)
+        finally:
+            store_module.LocalStore.put_record = real_put
+            store_module.LocalStore.preserve_unrecorded = real_preserve
+        self.assertIsNone(caught.exception.preserved_at,
+                          "a preservation that did not happen must not be claimed")
+        self.assertIsNotNone(caught.exception.receipt, "the receipt still travels on the failure")
+
+
+class ExecutableIdentityDoesNotDependOnSpelling(unittest.TestCase):
+    """A receipt naming one program while another runs defeats the point of recording the action.
+
+    The two branches of `resolve_program` disagreed. A bare name was checked with
+    `not candidate.is_symlink()` and refused a link; a path form was checked with `is_file()`,
+    which **follows** one, and accepted it. So `bin/deploy.sh` pointing at `elsewhere.sh` was
+    ALLOWed and executed — with the receipt, the candidate digest and the authorization all
+    naming `bin/deploy.sh` — while the identical link written as `deploy.sh` was refused. How the
+    caller spelled argv[0] decided whether a symlink was permitted.
+
+    Refusal is the repair rather than canonicalization: the config, the signing keys, the trust
+    registry, every store entry and evidence paths already reject a symlink instead of resolving
+    one, and canonicalizing would change what a candidate digest denotes.
+
+    What is asserted here is **path identity** — the recorded name is a real regular executable
+    file and not an alias. Not content identity: nothing claims the bytes checked are the bytes
+    that run.
+    """
+
+    def setUp(self):
+        self.room = pathlib.Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.room, ignore_errors=True)
+        self.bin = self.room / "bin"
+        self.bin.mkdir()
+
+    def _executable(self, path, body="real"):
+        path.write_text("#!/bin/sh\necho %s\n" % body, encoding="utf-8")
+        os.chmod(path, 0o755)
+        return path
+
+    def _workspace(self, search_path=("bin",)):
+        class Config(dict):
+            pass
+
+        config = {"execution": {"working_directory": "."}, "search_path": list(search_path)}
+        return types.SimpleNamespace(
+            path=lambda relative: self.room / relative, config=config)
+
+    def test_both_spellings_accept_a_plain_executable(self):
+        self._executable(self.bin / "deploy.sh")
+        workspace = self._workspace()
+        self.assertEqual(workflow.resolve_program(workspace, "bin/deploy.sh"), "bin/deploy.sh")
+        self.assertEqual(workflow.resolve_program(workspace, "deploy.sh"),
+                         str(self.bin / "deploy.sh"))
+
+    def test_both_spellings_refuse_a_symlinked_executable(self):
+        self._executable(self.room / "elsewhere.sh", "decoy")
+        (self.bin / "deploy.sh").symlink_to(self.room / "elsewhere.sh")
+        workspace = self._workspace()
+        for spelling in ("bin/deploy.sh", "deploy.sh"):
+            with self.subTest(argv0=spelling):
+                with self.assertRaises(VerifyError) as caught:
+                    workflow.resolve_program(workspace, spelling)
+                self.assertEqual(caught.exception.code, "cli_executable_not_found")
+
+    def test_a_symlink_chain_is_refused_at_the_first_link(self):
+        self._executable(self.room / "target.sh")
+        (self.room / "hop.sh").symlink_to(self.room / "target.sh")
+        (self.bin / "deploy.sh").symlink_to(self.room / "hop.sh")
+        with self.assertRaises(VerifyError):
+            workflow.resolve_program(self._workspace(), "bin/deploy.sh")
+
+    def test_a_dangling_symlink_is_refused_and_named_as_a_symlink(self):
+        (self.bin / "deploy.sh").symlink_to(self.room / "absent.sh")
+        with self.assertRaises(VerifyError) as caught:
+            workflow.resolve_program(self._workspace(), "bin/deploy.sh")
+        self.assertIn("symlink", str(caught.exception).lower())
+
+    def test_a_directory_and_a_fifo_are_not_executables(self):
+        (self.bin / "adir").mkdir()
+        os.mkfifo(self.bin / "afifo")
+        for name in ("adir", "afifo"):
+            for spelling in ("bin/" + name, name):
+                with self.subTest(argv0=spelling):
+                    with self.assertRaises(VerifyError):
+                        workflow.resolve_program(self._workspace(), spelling)
+
+    def test_a_non_executable_regular_file_is_refused(self):
+        (self.bin / "notexec.sh").write_text("#!/bin/sh\n", encoding="utf-8")
+        os.chmod(self.bin / "notexec.sh", 0o644)
+        for spelling in ("bin/notexec.sh", "notexec.sh"):
+            with self.subTest(argv0=spelling):
+                with self.assertRaises(VerifyError):
+                    workflow.resolve_program(self._workspace(), spelling)
+
+
+class PostExecutionAccounting(unittest.TestCase):
+    """Once the action has crossed the launch line, later failures may add uncertainty about the
+    *record* and may never erase what the runtime already observed about the *execution*.
+
+    Two findings, one law.
+
+    F-AUDIT-11 — the completion clock is read after the child exits, and nothing compared it to
+    anything recorded earlier. A backward reading produced a **signed receipt created six years
+    before the authorization it records was issued** and before the evidence it evaluated was
+    frozen, and verify and replay both accepted it as ordinary.
+
+    F-AUDIT-12 — when that same clock *failed*, `ExecutionRecordingFailed` carried `receipt=None`
+    and nothing else. The child had run and exited 0, and no caller could be told so. That is the
+    F-AUDIT-02 shape one stage earlier.
+
+    The repairs are deliberately asymmetric, because the two situations are. An anomalous
+    timeline is **valid-but-anomalous**: the receipt keeps its observed instants, still verifies,
+    still replays, and the impossible ordering is named. Refusing it would destroy the only
+    record of a real action because of a clock; clamping the instants would destroy the evidence.
+    A missing instant is different — no signed receipt can exist without a `created_at`, so none
+    is fabricated, and the observed outcome travels on the failure instead.
+    """
+
+    def setUp(self):
+        self.case = _case(EXEC_DIR / "accept_exit_zero.json")
+        self.registry = _registry()
+
+    def _run_with(self, **over):
+        sandbox = _Sandbox(self.case["tree"])
+        self.addCleanup(sandbox.__exit__, None, None, None)
+        sandbox.__enter__()
+        built = _build(self.case, sandbox, self.registry)
+        return built, _run(self.case, sandbox, self.registry, *built,
+                           acknowledged_at=None, receipt_created_at=None, **over)
+
+    def _replay(self, built, record):
+        pinned, candidate, frozen, _result, authorization = built
+        return receipt_module.replay_receipt(
+            json.loads(record.receipt.canonical_bytes.decode()),
+            pinned.canonical.encode("utf-8"), candidate, json.loads(frozen.canonical),
+            _receipt_registry(self.case), self.registry,
+            authorization=authorization.value(), authorization_keys=_key_registry(self.case),
+            verification_time="2026-08-05T00:01:00Z")
+
+    # --- F-AUDIT-11 ---------------------------------------------------------------------------
+    def test_an_ordinary_completion_reports_no_anomaly(self):
+        built, record = self._run_with(completion_clock=lambda: "2026-08-05T00:00:30Z")
+        self.assertEqual(self._replay(built, record).timeline_anomalies, ())
+
+    def test_a_backward_completion_clock_still_signs_verifies_and_replays(self):
+        built, record = self._run_with(completion_clock=lambda: "2020-01-01T00:00:00Z")
+        report = self._replay(built, record)
+        self.assertTrue(report.signature_valid, "the account of a real action must survive")
+        self.assertTrue(report.result_matched)
+        self.assertTrue(report.authorization_verified)
+
+    def test_a_backward_completion_clock_is_named_and_not_ordinary(self):
+        built, record = self._run_with(completion_clock=lambda: "2020-01-01T00:00:00Z")
+        anomalies = self._replay(built, record).timeline_anomalies
+        self.assertTrue(anomalies, "an impossible timeline read as ordinary")
+        joined = " | ".join(anomalies)
+        self.assertIn("created_at", joined)
+        self.assertIn("issued_at", joined)
+
+    def test_the_observed_instants_are_recorded_exactly_and_never_clamped(self):
+        """Rewriting a timestamp to look ordered destroys the evidence it is there to be."""
+        _built, record = self._run_with(completion_clock=lambda: "2020-01-01T00:00:00Z")
+        document = json.loads(record.receipt.canonical_bytes.decode())
+        self.assertEqual(document["created_at"], "2020-01-01T00:00:00Z")
+        self.assertEqual(document["execution"]["acknowledged_at"], "2020-01-01T00:00:00Z")
+
+    def test_equal_instants_are_not_anomalies(self):
+        """The completion stage is one clock reading, and the runtime records whole seconds."""
+        self.assertEqual(
+            receipt_module.timeline_anomalies(
+                {"created_at": "2026-08-05T00:00:00Z",
+                 "execution": {"acknowledged_at": "2026-08-05T00:00:00Z"}},
+                {"frozen_at": "2026-08-05T00:00:00Z"},
+                {"issued_at": "2026-08-05T00:00:00Z"}), ())
+
+    def test_an_offset_spelling_of_the_same_instant_is_not_an_anomaly(self):
+        """Offsets sort differently from how they order in time; instants are compared, not text."""
+        self.assertEqual(
+            receipt_module.timeline_anomalies(
+                {"created_at": "2026-08-05T05:00:00+05:00",      # == 00:00:00Z
+                 "execution": {"acknowledged_at": "2026-08-05T00:00:01Z"}},
+                {"frozen_at": "2026-08-05T00:00:00Z"},
+                {"issued_at": "2026-08-04T19:00:00-05:00"}), ())  # == 2026-08-05T00:00:00Z
+
+    def test_an_offset_spelling_of_an_earlier_instant_is_still_an_anomaly(self):
+        found = receipt_module.timeline_anomalies(
+            {"created_at": "2026-08-05T00:00:00+05:00",           # == 2026-08-04T19:00:00Z
+             "execution": {"acknowledged_at": "2026-08-05T00:00:00+05:00"}},
+            {"frozen_at": "2026-08-05T00:00:00Z"}, {"issued_at": "2026-08-05T00:00:00Z"})
+        self.assertTrue(found, "an offset spelling hid a genuinely earlier instant")
+
+    def test_an_unreadable_instant_is_not_reported_as_a_timeline_anomaly(self):
+        """Malformedness is the schema's question and is answered where schemas are checked."""
+        self.assertEqual(
+            receipt_module.timeline_anomalies(
+                {"created_at": "not-an-instant", "execution": {"acknowledged_at": None}},
+                {"frozen_at": "2026-08-05T00:00:00Z"}, {"issued_at": "2026-08-05T00:00:00Z"}), ())
+
+    # --- F-AUDIT-12 ---------------------------------------------------------------------------
+    def _failure_from(self, clock):
+        with self.assertRaises(ExecutionRecordingFailed) as caught:
+            self._run_with(completion_clock=clock)
+        return caught.exception
+
+    def test_a_failed_completion_clock_keeps_what_the_child_already_did(self):
+        def unavailable():
+            raise OSError("the clock is unavailable")
+
+        failure = self._failure_from(unavailable)
+        self.assertEqual(failure.stage, "acknowledge")
+        self.assertIsNone(failure.receipt, "no receipt can exist without a created_at")
+        self.assertIsNotNone(failure.execution, "the execution outcome was discarded")
+        self.assertTrue(failure.execution["started"])
+        self.assertEqual(failure.execution["exit_status"], 0)
+
+    def test_a_completion_clock_returning_a_non_instant_keeps_it_too(self):
+        failure = self._failure_from(lambda: "not-a-date-time")
+        self.assertEqual(failure.stage, "acknowledge")
+        self.assertTrue(failure.execution["started"])
+        self.assertEqual(failure.execution["exit_status"], 0)
+
+    def test_no_receipt_is_fabricated_when_the_instant_is_unavailable(self):
+        def unavailable():
+            raise OSError("no clock")
+
+        failure = self._failure_from(unavailable)
+        self.assertIsNone(failure.receipt)
+        self.assertIsNone(failure.preserved_at,
+                          "an unrecorded receipt must not appear when no receipt was signed")
+
+    def test_the_two_terminal_states_stay_distinct(self):
+        """A signed-but-unrecorded receipt and an unreceipted execution are not the same report.
+
+        Routing one through the other would either invent a receipt that was never signed or lose
+        the one that was.
+        """
+        def unavailable():
+            raise OSError("no clock")
+
+        clock_failure = self._failure_from(unavailable)
+        self.assertEqual((clock_failure.stage, clock_failure.receipt is None,
+                          clock_failure.preserved_at is None), ("acknowledge", True, True))
+        self.assertIsNotNone(clock_failure.execution)

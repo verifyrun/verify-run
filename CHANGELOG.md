@@ -6,6 +6,87 @@ independently of the package version.
 
 [PEP 440]: https://peps.python.org/pep-0440/
 
+## 0.1.0a4 — 2026-08-10
+
+A re-audit closure release. It changes no decision semantics, no canonical form, no receipt or
+authorization payload, and no public reason code; every receipt written by an earlier alpha still
+verifies and replays. What it changes is how much of what this project says about itself is
+mechanically checked.
+
+Published as a new version rather than a rebuild of `0.1.0a3` because these bytes differ from the
+ones that tag names, and one version must not name two artifacts.
+
+### Fixed
+
+- **A hostile local file could hang or crash the store.** A FIFO at a receipt path blocked
+  `receipts list`, `replay`, and the index refresh that recording performs — one planted file froze
+  both reading the store and writing to it. Directories and sockets escaped as raw host errors, an
+  oversized file was read in full before being refused, and a dangling symlink was reported as *no
+  such record*. Every store read now classifies and opens one object in a single step, so absence
+  means "no directory entry" and a link to nothing is a link.
+- **A read-only command wrote to the store.** `vfy receipts list` recreated `store.json`,
+  `receipts/`, `consumed/` and `tmp/` when they were missing, reported an unreadable `receipts/` as
+  *no receipts yet*, and surfaced a replaced `receipts/` as an internal error. Reading and writing
+  are now separate constructions; a listing creates nothing and says what is missing.
+- **An executed action could lose its only signed account.** If the record could not be committed
+  after the command ran, the signed receipt was discarded — so the store said nothing had happened
+  about a command that had. The receipt is now preserved where a person can find it, and is never
+  presented as a committed record.
+- **A failure after execution could erase what was observed.** When the completion clock failed
+  after the child exited, the exit status was dropped. Every failure below the launch line now
+  carries what the runtime already saw.
+- **A backward completion clock produced a receipt that read as ordinary.** A receipt could be
+  created before the authorization it records was issued. Instants are kept exactly as observed —
+  clamping them would destroy the evidence — and verification now names every impossible ordering.
+- **A symlinked program was gated one way and refused another.** `bin/deploy.sh` pointing at
+  another executable was allowed and run, while the same link written as a bare name was refused;
+  the receipt named the link, not what ran. Both spellings now refuse a symlink.
+- **One signature had sixteen valid spellings.** Strict base64 does not refuse unused trailing
+  bits, so sixteen distinct texts decoded to the same signature and all verified. One byte string
+  now has one accepted encoding.
+- **An interpreter setting could decide whether an action was allowed.** A long decimal in a
+  candidate raised a raw error whose threshold came from the interpreter's own configuration, so
+  the same rulebook and the same candidate could settle differently on two machines. Numeric
+  operands are now bounded by this product, not by the host.
+
+### Fixed — release and conformance integrity
+
+- **The source distribution could not run the tests it shipped.** It carried `tests/` without the
+  conformance kit, the tools that drive it, or the ignore file the secret gate reads: 37 red tests
+  for anyone auditing the artifact instead of a git clone. CI now unpacks the artifact outside the
+  checkout and runs its own suite on every supported Python.
+- **A conformance result was never checked against the kit it claimed.** A document with zero
+  fixtures, zeroed counts, `PASS`, and a bogus manifest digest was reported acceptable. Results are
+  now joined to the kit's digests and fixture set, and counts and verdict are recomputed from the
+  rows.
+- **A version label could demand a PASS that nothing had measured.** The release gate required the
+  README to claim a result for whatever version was declared, before any such artifact existed.
+  The claim is now generated from `conformance/reference-result.json`, which is produced by
+  building the wheel, hashing it, installing that file, and running the kit against it.
+- **A version banner stood in for artifact identity.** A shell script printing the right banner was
+  accepted as the implementation, and the adapter described it as living in the checkout. Identity
+  now comes from the wheel digest the orchestrator measured, and every file the wheel declares is
+  checked against the installed environment.
+- **The package gate audited the wrong bytes.** It inspected whatever was newest in `dist/`, which
+  meant three artifact tests spent the whole `0.1.0a3` line passing against an `0.1.0a2` wheel.
+  Artifacts are selected by declared version, and a mismatch fails.
+
+### Fixed — what the project says about itself
+
+- The `--json` field set documented a key the CLI has never emitted and omitted one it always
+  does. Each command's fields are now tabled and checked against real output.
+- "CI covers 3.11–3.13" was true of two jobs and false of three. Coverage is stated per job.
+- The quickstart told a reader to replay a hardcoded receipt id. Ids are random, so the final step
+  — the one that demonstrates the point — failed for anyone who copied it. The README's commands
+  are now executed by the test suite against the installed wheel, and the mutable build
+  dependencies are written down rather than partially pinned.
+
+### Deferred, deliberately and in writing
+
+Single use is scoped to one local store, stated in `docs/security.md` and declared a nonclaim by
+the conformance profile. It is unreachable through this CLI, which mints its own nonce per run and
+accepts no externally supplied authorization.
+
 ## 0.1.0a3 — 2026-08-06
 
 Final hardening pass before `verify-run` is frozen. Closes the remaining findings from the

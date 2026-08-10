@@ -3,8 +3,12 @@
 import copy
 import dataclasses
 import json
+import os
+import signal
 import pathlib
 import shutil
+import socket
+import stat
 import tempfile
 import unittest
 
@@ -24,6 +28,25 @@ FROZEN_AT = "2026-08-05T00:00:00Z"
 
 def _public(seed):
     return Ed25519PrivateKey.from_private_bytes(seed).public_key().public_bytes_raw()
+
+
+def _tree_state(root):
+    """Every directory entry under root with its kind and size, following nothing.
+
+    A read-only command's whole promise is that this is the same before and after.
+    """
+    state = {}
+    for base, directories, files in os.walk(root):
+        directories.sort()
+        for name in sorted(directories) + sorted(files):
+            path = pathlib.Path(base) / name
+            try:
+                info = os.lstat(path)
+            except OSError:
+                state[str(path.relative_to(root))] = "gone"
+                continue
+            state[str(path.relative_to(root))] = (stat.S_IFMT(info.st_mode), info.st_size)
+    return state
 
 
 def _registry():
@@ -1071,3 +1094,477 @@ class CorruptHistoryDoesNotRevokeACommit(StoreTestCase):
         self.store.listing()
         self.assertEqual((self.root / "index.json").read_bytes(), before,
                          "a read command repaired the cache behind the caller")
+
+
+class HostileUnrecordedFallback(StoreTestCase):
+    """The recovery path F-AUDIT-02 introduced is itself untrusted local input.
+
+    Closing one trust boundary opened another. Preserving the receipt meant examining whatever
+    already stood at the fallback path, and the first version examined it with `exists()` and
+    then `read_bytes()` — so a FIFO planted there **hung the process** waiting for a writer, a
+    directory escaped as a raw `IsADirectoryError`, and a leftover staging file escaped as a raw
+    `FileExistsError`. That is the same defect class the store hardening exists to remove,
+    reintroduced in the repair for it.
+
+    Every case here runs under an alarm so a hang fails the suite instead of stopping it.
+    """
+
+    class _Receipt:
+        receipt_id = "r-fallback"
+        canonical_bytes = b'{"receipt_id":"r-fallback"}'
+
+    def setUp(self):
+        super().setUp()
+        self.receipt = self._Receipt()
+        previous = signal.signal(signal.SIGALRM, self._hung)
+        signal.alarm(30)
+        self.addCleanup(signal.signal, signal.SIGALRM, previous)
+        self.addCleanup(signal.alarm, 0)
+
+    @staticmethod
+    def _hung(*_):
+        raise AssertionError("a hostile store entry blocked the store; it was read, not examined")
+
+    def _fallback(self):
+        return self.store.unrecorded_path(self.receipt.receipt_id)
+
+    def _staging(self):
+        return self.store.root / "tmp" / (self.receipt.receipt_id + ".unrecorded.json.partial")
+
+    def test_a_fifo_at_the_fallback_path_is_refused_rather_than_read(self):
+        os.mkfifo(self._fallback())
+        with self.assertRaises(VerifyError) as caught:
+            self.store.preserve_unrecorded(self.receipt)
+        self.assertEqual(caught.exception.code, "store_path_invalid")
+
+    def test_a_directory_at_the_fallback_path_is_typed_not_a_host_error(self):
+        self._fallback().mkdir()
+        with self.assertRaises(VerifyError) as caught:
+            self.store.preserve_unrecorded(self.receipt)
+        self.assertEqual(caught.exception.code, "store_path_invalid")
+
+    def test_a_symlink_at_the_fallback_path_is_refused_live_or_dangling(self):
+        for target, label in ((self.parent / "absent.json", "dangling"),
+                              (self.parent / "present.json", "live")):
+            with self.subTest(link=label):
+                if label == "live":
+                    target.write_bytes(b"x")
+                self._fallback().unlink(missing_ok=True)
+                self._fallback().symlink_to(target)
+                with self.assertRaises(VerifyError) as caught:
+                    self.store.preserve_unrecorded(self.receipt)
+                self.assertEqual(caught.exception.code, "store_path_invalid")
+                self.assertFalse(target.exists() and target.read_bytes() != b"x",
+                                 "the link was written through")
+
+    def test_an_oversized_entry_is_refused_before_it_is_read(self):
+        self._fallback().write_bytes(b"x" * (store.MAX_RECEIPT_BYTES + 1))
+        with self.assertRaises(VerifyError) as caught:
+            self.store.preserve_unrecorded(self.receipt)
+        self.assertEqual(caught.exception.code, "store_artifact_noncanonical")
+
+    def test_the_size_bound_is_a_product_bound_at_an_exact_boundary(self):
+        self.assertEqual(store.MAX_RECEIPT_BYTES, 1 << 20)
+        self._fallback().write_bytes(b"x" * store.MAX_RECEIPT_BYTES)
+        with self.assertRaises(VerifyError) as caught:
+            self.store.preserve_unrecorded(self.receipt)
+        # At the bound it is read and compared, so the refusal is about content, not size.
+        self.assertEqual(caught.exception.code, "store_record_conflict")
+
+    def test_a_hostile_or_stale_staging_path_is_typed(self):
+        for plant, label in ((lambda p: p.write_bytes(b"stale"), "stale regular file"),
+                             (os.mkfifo, "FIFO")):
+            with self.subTest(staging=label):
+                staging = self._staging()
+                staging.unlink(missing_ok=True)
+                plant(staging)
+                with self.assertRaises(VerifyError) as caught:
+                    self.store.preserve_unrecorded(self.receipt)
+                self.assertEqual(caught.exception.code, "store_commit_conflict")
+
+    def test_a_traversal_identifier_never_reaches_the_filesystem(self):
+        class Escaping:
+            receipt_id = "../escape"
+            canonical_bytes = b"{}"
+        with self.assertRaises(VerifyError) as caught:
+            self.store.preserve_unrecorded(Escaping())
+        self.assertEqual(caught.exception.code, "store_path_invalid")
+
+    def test_the_healthy_path_still_works_and_stays_idempotent(self):
+        first = self.store.preserve_unrecorded(self.receipt)
+        self.assertEqual(pathlib.Path(first).read_bytes(), self.receipt.canonical_bytes)
+        self.assertEqual(self.store.preserve_unrecorded(self.receipt), first)
+        self.assertEqual(self.store.listing().summaries, ())
+
+
+class HostileCommittedReceipts(StoreTestCase):
+    """A file under `receipts/` is untrusted local input, whatever kind of file it is.
+
+    Every read here used to be two separate looks at one name — `is_file()` or `exists()`, then
+    `read_bytes()` — and the gap between them is where a hostile store lives. Reproduced before
+    the repair: a **FIFO** at a receipt path hung `listing()`, `get_record()` and the index
+    refresh that recording performs, so one planted file froze both reading the store and writing
+    to it; a directory and a socket escaped `get_record()` as raw `IsADirectoryError`/`OSError`;
+    an oversized file was read in full before anything refused it; and a **dangling symlink** was
+    reported as *no committed record*, because `exists()` follows links and answers for what they
+    point at rather than for the entry that is there.
+
+    The alarm is part of the assertion: a hang is the defect, and a test that waits for one is
+    not testing anything.
+    """
+
+    HEALTHY = "r-healthy"
+    HOSTILE = "r-hostile"
+
+    def setUp(self):
+        super().setUp()
+        self.built = self.build(receipt_id=self.HEALTHY)
+        self.store.put_record(self.built.receipt, self.built.pinned, self.built.candidate,
+                              self.built.snapshot, self.built.authorization)
+        previous = signal.signal(signal.SIGALRM, self._hung)
+        signal.alarm(30)
+        self.addCleanup(signal.signal, signal.SIGALRM, previous)
+        self.addCleanup(signal.alarm, 0)
+
+    @staticmethod
+    def _hung(*_):
+        raise AssertionError("a hostile store entry blocked the store; it was read, not examined")
+
+    def _hostile_path(self):
+        return self.root / "receipts" / (self.HOSTILE + ".json")
+
+    def _plant_fifo(self):
+        os.mkfifo(self._hostile_path())
+
+    def _plant_directory(self):
+        self._hostile_path().mkdir()
+
+    def _plant_socket(self):
+        here = os.getcwd()                     # AF_UNIX paths are short; bind from the directory
+        os.chdir(self._hostile_path().parent)
+        try:
+            endpoint = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            self.addCleanup(endpoint.close)
+            endpoint.bind(self._hostile_path().name)
+        finally:
+            os.chdir(here)
+
+    def _plant_live_symlink(self):
+        self._hostile_path().symlink_to(self.root / "receipts" / (self.HEALTHY + ".json"))
+
+    def _plant_dangling_symlink(self):
+        self._hostile_path().symlink_to(self.parent / "nothing-is-here.json")
+
+    def _plant_oversized(self):
+        self._hostile_path().write_bytes(
+            b'{"pad":"' + b"x" * (store.MAX_RECEIPT_BYTES + 16) + b'"}')
+
+    def _plant_malformed(self):
+        self._hostile_path().write_bytes(b"this is not a receipt")
+
+    def _plants(self):
+        return {"fifo": self._plant_fifo, "directory": self._plant_directory,
+                "socket": self._plant_socket, "live symlink": self._plant_live_symlink,
+                "dangling symlink": self._plant_dangling_symlink,
+                "oversized": self._plant_oversized, "malformed": self._plant_malformed}
+
+    def test_no_hostile_receipt_hides_a_healthy_one_or_passes_as_healthy(self):
+        for name, plant in self._plants().items():
+            with self.subTest(planted=name):
+                plant()
+                try:
+                    listing = self.store.listing()
+                    self.assertEqual([s.receipt_id for s in listing.summaries], [self.HEALTHY],
+                                     "the healthy receipt must survive a hostile neighbour")
+                    self.assertEqual([r.filename for r in listing.refused],
+                                     [self.HOSTILE + ".json"])
+                    self.assertTrue(listing.refused[0].code.startswith("store_")
+                                    or listing.refused[0].code.startswith("source_"))
+                finally:
+                    self._remove_hostile()
+
+    def test_every_hostile_receipt_is_a_typed_refusal_from_get_record(self):
+        for name, plant in self._plants().items():
+            with self.subTest(planted=name):
+                plant()
+                try:
+                    with self.assertRaises(VerifyError) as caught:
+                        self.store.get_record(self.HOSTILE, verify=False)
+                    self.assertNotEqual(
+                        caught.exception.code, "store_record_missing",
+                        "an entry that is there is not a missing record")
+                finally:
+                    self._remove_hostile()
+
+    def test_a_hostile_receipt_does_not_block_recording_another_action(self):
+        """The index refresh a commit performs walks the same files a listing does."""
+        for name, plant in self._plants().items():
+            with self.subTest(planted=name):
+                plant()
+                try:
+                    second = self.build(receipt_id="r-second")
+                    self.store.put_record(second.receipt, second.pinned, second.candidate,
+                                          second.snapshot, second.authorization)
+                    self.assertEqual(self.store.get_record("r-second", verify=False).receipt_id,
+                                     "r-second")
+                    self.store.rebuild_index()
+                finally:
+                    shutil.rmtree(self.root / "receipts" / "r-second.inputs",
+                                  ignore_errors=True)
+                    (self.root / "receipts" / "r-second.json").unlink(missing_ok=True)
+                    self._remove_hostile()
+
+    def test_an_oversized_receipt_is_refused_before_its_bytes_are_read(self):
+        self._plant_oversized()
+        with self.assertRaises(VerifyError) as caught:
+            store.read_store_file(self._hostile_path())
+        self.assertEqual(caught.exception.code, "store_artifact_noncanonical")
+
+    def test_the_bound_admits_a_file_of_exactly_the_maximum_size(self):
+        path = self.root / "receipts" / "r-sized.json"
+        for size, admitted in ((store.MAX_RECEIPT_BYTES - 1, True),
+                               (store.MAX_RECEIPT_BYTES, True),
+                               (store.MAX_RECEIPT_BYTES + 1, False)):
+            with self.subTest(size=size):
+                path.write_bytes(b"x" * size)
+                if admitted:
+                    self.assertEqual(len(store.read_store_file(path)), size)
+                else:
+                    with self.assertRaises(VerifyError):
+                        store.read_store_file(path)
+        path.unlink()
+
+    def test_a_dangling_symlink_is_an_entry_and_not_an_absence(self):
+        self._plant_dangling_symlink()
+        self.assertIsNone(store._entry_kind(self.root / "receipts" / "r-absent.json"))
+        with self.assertRaises(VerifyError) as caught:
+            store.read_store_file(self._hostile_path())
+        self.assertEqual(caught.exception.code, "store_path_invalid")
+
+    def test_reading_a_hostile_store_changes_nothing_on_disk(self):
+        for name, plant in self._plants().items():
+            with self.subTest(planted=name):
+                plant()
+                try:
+                    before = _tree_state(self.root)
+                    self.store.listing()
+                    try:
+                        self.store.get_record(self.HOSTILE, verify=False)
+                    except VerifyError:
+                        pass
+                    self.assertEqual(_tree_state(self.root), before)
+                finally:
+                    self._remove_hostile()
+
+    def _remove_hostile(self):
+        path = self._hostile_path()
+        if path.is_dir() and not path.is_symlink():
+            shutil.rmtree(path)
+        else:
+            path.unlink(missing_ok=True)
+
+
+class HostileIndexObject(StoreTestCase):
+    """The cache is subordinate, but it is still read, so it is still untrusted input.
+
+    `_index_problem` asked `exists()` first, and `exists()` follows links — so an index replaced
+    by a **dangling symlink** answered *false* and the store reported a clean listing with no
+    cache at all. A hostile object was invisible precisely because it pointed at nothing. A FIFO
+    at the same name hung the listing outright.
+    """
+
+    def setUp(self):
+        super().setUp()
+        built = self.build(receipt_id="r-healthy")
+        self.store.put_record(built.receipt, built.pinned, built.candidate, built.snapshot,
+                              built.authorization)
+        (self.root / "index.json").unlink(missing_ok=True)
+        previous = signal.signal(signal.SIGALRM, self._hung)
+        signal.alarm(30)
+        self.addCleanup(signal.signal, signal.SIGALRM, previous)
+        self.addCleanup(signal.alarm, 0)
+
+    @staticmethod
+    def _hung(*_):
+        raise AssertionError("a hostile index blocked the listing; it was read, not examined")
+
+    def test_an_absent_index_is_not_a_fault(self):
+        listing = self.store.listing()
+        self.assertEqual(listing.refused, ())
+        self.assertEqual([s.receipt_id for s in listing.summaries], ["r-healthy"])
+
+    def test_every_hostile_index_object_is_named_and_the_records_still_answer(self):
+        index = self.root / "index.json"
+        plants = {
+            "dangling symlink": lambda: index.symlink_to(self.parent / "nothing-here.json"),
+            "live symlink": lambda: index.symlink_to(self.root / "store.json"),
+            "fifo": lambda: os.mkfifo(index),
+            "directory": lambda: index.mkdir(),
+            "oversized": lambda: index.write_bytes(b"x" * (store.MAX_RECEIPT_BYTES + 1)),
+            "malformed": lambda: index.write_bytes(b"not an index"),
+        }
+        for name, plant in plants.items():
+            with self.subTest(planted=name):
+                plant()
+                try:
+                    listing = self.store.listing()
+                    self.assertEqual([s.receipt_id for s in listing.summaries], ["r-healthy"],
+                                     "a damaged cache never hides a committed record")
+                    self.assertEqual([r.filename for r in listing.refused], ["index.json"])
+                finally:
+                    if index.is_dir() and not index.is_symlink():
+                        index.rmdir()
+                    else:
+                        index.unlink(missing_ok=True)
+
+
+class ReadingCreatesNothing(StoreTestCase):
+    """A store opened to read must be structurally unable to create the layout.
+
+    One constructor used to create `store.json`, `receipts/`, `consumed/` and `tmp/` whichever
+    method was called next, so `vfy receipts list` against a store missing any of them silently
+    supplied it — a read-only command writing four objects. Worse, an **unreadable** `receipts/`
+    was answered `no receipts yet`: `Path.glob` returns an empty iterator on a directory it
+    cannot open, and this product does not merge *I cannot see* with *there is nothing*.
+    """
+
+    def setUp(self):
+        super().setUp()
+        built = self.build(receipt_id="r-healthy")
+        self.store.put_record(built.receipt, built.pinned, built.candidate, built.snapshot,
+                              built.authorization)
+
+    def _reading(self):
+        return store.LocalStore.for_reading(self.root)
+
+    def test_a_reading_store_lists_what_a_writing_store_committed(self):
+        self.assertEqual([s.receipt_id for s in self._reading().listing().summaries],
+                         ["r-healthy"])
+
+    def test_reading_a_healthy_store_changes_nothing_on_disk(self):
+        before = _tree_state(self.root)
+        self._reading().listing()
+        self.assertEqual(_tree_state(self.root), before)
+
+    def test_a_missing_layout_member_is_reported_and_never_supplied(self):
+        for member, is_directory in (("receipts", True), ("consumed", True), ("tmp", True)):
+            with self.subTest(member=member):
+                shutil.rmtree(self.root / member)
+                before = _tree_state(self.parent)
+                try:
+                    self._reading().listing()
+                except VerifyError as refusal:
+                    self.assertEqual(refusal.code, "store_path_invalid")
+                self.assertEqual(_tree_state(self.parent), before,
+                                 "a reading store may not create " + member)
+                (self.root / member).mkdir()
+
+    def test_an_absent_store_is_refused_without_being_created(self):
+        missing = self.parent / "not-a-store"
+        before = _tree_state(self.parent)
+        with self.assertRaises(VerifyError) as caught:
+            store.LocalStore.for_reading(missing)
+        self.assertEqual(caught.exception.code, "store_path_invalid")
+        self.assertEqual(_tree_state(self.parent), before)
+        self.assertFalse(missing.exists())
+
+    def test_a_receipts_directory_replaced_by_a_file_is_typed_not_an_internal_error(self):
+        shutil.rmtree(self.root / "receipts")
+        (self.root / "receipts").write_text("not a directory")
+        with self.assertRaises(VerifyError) as caught:
+            self._reading()
+        self.assertEqual(caught.exception.code, "store_path_invalid")
+
+    def test_an_unreadable_receipts_directory_is_not_reported_as_no_receipts(self):
+        os.chmod(self.root / "receipts", 0o000)
+        self.addCleanup(os.chmod, self.root / "receipts", 0o755)
+        if os.access(self.root / "receipts", os.R_OK):
+            self.skipTest("this user can read a mode-000 directory")
+        with self.assertRaises(VerifyError) as caught:
+            self._reading().listing()
+        self.assertEqual(caught.exception.code, "store_path_invalid")
+
+    def test_a_store_layout_member_that_is_a_symlink_is_refused(self):
+        real = self.parent / "real-receipts"
+        shutil.move(str(self.root / "receipts"), str(real))
+        (self.root / "receipts").symlink_to(real)
+        with self.assertRaises(VerifyError) as caught:
+            self._reading()
+        self.assertEqual(caught.exception.code, "store_path_invalid")
+
+    def test_a_reading_store_cannot_reach_a_call_that_creates_anything(self):
+        """Behavioural, not spelling: every creating primitive is made to fail, and it still reads.
+
+        Asserting which method contains a `mkdir` would test how the code is written. Removing
+        the ability to create anything at all and requiring the answer to be unchanged tests the
+        property the finding is actually about.
+        """
+        def refuse(*_arguments, **_keywords):
+            raise AssertionError("a reading store called a creating primitive")
+
+        forbidden = ((os, "mkdir"), (os, "makedirs"), (os, "link"), (os, "rename"),
+                     (os, "replace"), (os, "unlink"), (pathlib.Path, "mkdir"),
+                     (pathlib.Path, "write_bytes"), (pathlib.Path, "write_text"),
+                     (store, "_write_exact"))
+        restore = [(owner, name, getattr(owner, name)) for owner, name in forbidden]
+        # Restored here rather than by addCleanup: cleanups run *after* tearDown, and tearDown
+        # legitimately deletes the temporary tree.
+        try:
+            for owner, name in forbidden:
+                setattr(owner, name, refuse)
+            reading = store.LocalStore.for_reading(self.root)
+            self.assertEqual([s.receipt_id for s in reading.listing().summaries], ["r-healthy"])
+            self.assertEqual(reading.get_record("r-healthy", verify=False).receipt_id,
+                             "r-healthy")
+        finally:
+            for owner, name, original in restore:
+                setattr(owner, name, original)
+
+    def test_opening_for_writing_still_creates_the_layout_it_declares(self):
+        """The split must not have turned the write path into a second read-only path."""
+        fresh = self.parent / "brand-new"
+        store.LocalStore(fresh)
+        for member in ("receipts", "consumed", "tmp"):
+            self.assertTrue((fresh / member).is_dir())
+        self.assertTrue((fresh / "store.json").is_file())
+
+
+class SingleUseIsScopedToOneStore(StoreTestCase):
+    """F9, pinned as a declared scope rather than left as folklore.
+
+    A nonce is consumed by creating one exclusive entry under a store's `consumed/`. Two stores
+    therefore each enforce single use **within themselves**, and copying a store copies its
+    consumption state. `docs/security.md` says this, and the conformance profile lists uniqueness
+    beyond the declared store scope as a **nonclaim** — so this is a documented boundary and not
+    an unmet promise.
+
+    It is pinned here because the difference between "documented scope" and "defect" is exactly
+    the sentence in the contract, and a later reader who assumes the stronger property would be
+    assuming something no test ever checked.
+    """
+
+    def test_a_second_store_does_not_know_what_the_first_consumed(self):
+        built = self.build()
+        self.store.consume_once(built.authorization)
+        with self.assertRaises(VerifyError) as caught:
+            self.store.consume_once(built.authorization)
+        self.assertEqual(caught.exception.code, "authorization_nonce_reused")
+
+        elsewhere = store.LocalStore(self.parent / "second-store")
+        self.assertFalse(elsewhere.is_consumed(built.authorization.value()["nonce"]),
+                         "a separate store must not be assumed to share consumption state")
+        elsewhere.consume_once(built.authorization)      # documented scope, not a defect
+
+    def test_a_copied_store_carries_the_consumption_it_was_copied_with(self):
+        built = self.build()
+        self.store.consume_once(built.authorization)
+        copy = self.parent / "copied-store"
+        shutil.copytree(self.root, copy, symlinks=True)
+        self.assertTrue(store.LocalStore(copy).is_consumed(built.authorization.value()["nonce"]),
+                        "copying a store must copy what it had already spent")
+
+    def test_the_contract_states_the_scope_rather_than_leaving_it_to_be_discovered(self):
+        security = (pathlib.Path(__file__).resolve().parent.parent
+                    / "docs" / "security.md").read_text(encoding="utf-8")
+        self.assertIn("within themselves", security)
+        self.assertIn("beyond the declared store", security)

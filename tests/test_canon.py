@@ -11,6 +11,8 @@ import json
 import pathlib
 import sys
 import unicodedata
+import base64
+import pathlib
 import unittest
 
 from vfy import canon
@@ -521,3 +523,72 @@ class HostTypeBoundary(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class OneSignatureHasOneEncoding(unittest.TestCase):
+    """Sixteen distinct texts decoded to the same 64 bytes, and all sixteen verified.
+
+    No forgery: the bytes are identical and Ed25519 is untouched. But strict base64 refuses a bad
+    alphabet and bad padding and does **not** refuse unused trailing bits — a 64-byte signature
+    encodes to 88 characters whose third-from-last carries four bits that decode to nothing. An
+    artifact whose whole value is having one canonical form had sixteen spellings of its signature,
+    and anything comparing, indexing, deduping or digesting the encoded text would have disagreed
+    with itself.
+
+    Length is deliberately not this function's question. `fixtures/` pins a truncated signature as
+    `signature_invalid`, which is Ed25519's own answer, and a length guard here would re-answer it.
+    """
+
+    def _equivalents(self, raw):
+        alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+        canonical = base64.b64encode(raw).decode("ascii")
+        index = alphabet.index(canonical[-3])
+        found = []
+        for bump in range(16):
+            text = canonical[:-3] + alphabet[(index & ~0b1111) | bump] + "=="
+            if base64.b64decode(text, validate=True) == raw:
+                found.append(text)
+        return canonical, found
+
+    def test_exactly_one_of_the_sixteen_equivalent_texts_is_accepted(self):
+        raw = bytes(range(64))
+        canonical, equivalents = self._equivalents(raw)
+        self.assertEqual(len(equivalents), 16, "the malleability this test exists for is gone")
+        accepted = []
+        for text in equivalents:
+            try:
+                self.assertEqual(canon.decode_signature(text), raw)
+                accepted.append(text)
+            except CanonicalFormInvalid:
+                pass
+        self.assertEqual(accepted, [canonical],
+                         "%d of 16 equivalent encodings were accepted" % len(accepted))
+
+    def test_the_canonical_encoding_of_every_signing_key_round_trips(self):
+        for seed in (b"\x00" * 64, b"\xff" * 64, bytes(range(255, 191, -1))):
+            with self.subTest(signature=seed[:4].hex()):
+                text = base64.b64encode(seed).decode("ascii")
+                self.assertEqual(canon.decode_signature(text), seed)
+
+    def test_a_malformed_or_non_ascii_encoding_is_refused(self):
+        canonical = base64.b64encode(bytes(range(64))).decode("ascii")
+        for label, text in (
+                ("url-safe alphabet", canonical.replace("+", "-").replace("/", "_")),
+                ("stripped padding", canonical.rstrip("=")),
+                ("extra padding", canonical + "="),
+                ("leading whitespace", " " + canonical),
+                ("embedded newline", canonical[:40] + "\n" + canonical[40:]),
+                ("outside the alphabet", canonical.replace("A", "!", 1)),
+                ("not a string", None),
+        ):
+            with self.subTest(encoding=label):
+                with self.assertRaises((CanonicalFormInvalid, TypeError)):
+                    canon.decode_signature(text)
+
+    def test_both_signature_bearing_structures_use_the_one_decoder(self):
+        """Receipts and authorizations must not drift apart on this."""
+        for name in ("vfy/receipt.py", "vfy/authorization.py"):
+            source = pathlib.Path(name).read_text(encoding="utf-8")
+            self.assertIn("canon.decode_signature(", source, name)
+            self.assertNotIn("base64.b64decode(block", source,
+                             "%s still decodes a signature without the canonicality check" % name)

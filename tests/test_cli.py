@@ -1134,3 +1134,87 @@ class CorruptHistoryDoesNotFailALaterRun(unittest.TestCase):
             self.assertEqual(code, 1)
             self.assertIn("store_artifact_noncanonical", err)
             self.assertTrue(corrupt.exists(), "a corrupt artifact is never silently deleted")
+
+
+class TheJsonFieldSetsAreWhatTheSpecSays(unittest.TestCase):
+    """`spec/cli.md` names the `--json` fields. It named one that has never existed.
+
+    The paragraph advertised "a stable field set" containing `exit_code` — the CLI has never
+    emitted that key — and omitted `notes`, which it does emit. A reader writing against the spec
+    would have parsed for a field that is never present and missed one that always is. It also
+    presented a single list, while `receipts list` and `replay` carry entirely different sets.
+
+    This is the executable witness for that table. It reads the documented sets **out of
+    `spec/cli.md`** and compares them to real command output, so the spec cannot drift from the
+    CLI without failing here — and correcting one without the other is not possible.
+    """
+
+    SPEC = pathlib.Path(__file__).resolve().parent.parent / "spec" / "cli.md"
+
+    @classmethod
+    def documented(cls, row_label):
+        """The field list `spec/cli.md` gives for one row of the `--json` table."""
+        for line in cls.SPEC.read_text(encoding="utf-8").splitlines():
+            if line.startswith("| `%s`" % row_label) or line.startswith("| %s" % row_label):
+                cells = [cell.strip() for cell in line.strip("|").split("|")]
+                return sorted(name.strip(" `") for name in cells[-1].split(","))
+        raise AssertionError("spec/cli.md documents no --json row for %r" % row_label)
+
+    def _gated_workspace(self):
+        workspace = _Workspace(template="pipeline-gate")
+        (workspace.root / "ci").mkdir(exist_ok=True)
+        script = workspace.root / "ci" / "last-test-result.sh"
+        script.write_text('#!/bin/sh\nprintf \'"passed"\'\n', encoding="utf-8")
+        os.chmod(script, 0o755)
+        (workspace.root / "bin").mkdir(exist_ok=True)
+        program = workspace.root / "bin" / "deploy.sh"
+        program.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+        os.chmod(program, 0o755)
+        return workspace
+
+    def test_run_emits_exactly_the_documented_fields(self):
+        with self._gated_workspace() as workspace:
+            code, out, err = workspace.cli("--json", "run", "--identity", "branch=main",
+                                           "--", "bin/deploy.sh")
+            self.assertEqual(code, 0, err)
+            emitted = sorted(json.loads(out))
+            self.assertEqual(emitted, self.documented("check`, `run"),
+                             "spec/cli.md and `vfy run --json` disagree")
+            self.assertNotIn("exit_code", emitted,
+                             "exit_code is the CLI's process status, not a document field")
+            self.assertIn("notes", emitted)
+
+    def test_receipts_list_emits_exactly_the_documented_fields(self):
+        with self._gated_workspace() as workspace:
+            workspace.cli("run", "--identity", "branch=main", "--", "bin/deploy.sh")
+            code, out, _err = workspace.cli("--json", "receipts", "list")
+            self.assertEqual(code, 0)
+            self.assertEqual(sorted(json.loads(out)), self.documented("receipts list"))
+
+    def test_replay_emits_exactly_the_documented_fields(self):
+        with self._gated_workspace() as workspace:
+            workspace.cli("run", "--identity", "branch=main", "--", "bin/deploy.sh")
+            receipt = workspace.receipts()[0]
+            code, out, err = workspace.cli("--json", "replay", str(receipt))
+            self.assertEqual(code, 0, err)
+            self.assertEqual(sorted(json.loads(out)),
+                             self.documented("replay`, `receipts show"))
+
+    def test_the_spec_does_not_advertise_a_field_no_command_emits(self):
+        """The defect in one sentence: a documented key that appears in no output at all."""
+        with self._gated_workspace() as workspace:
+            workspace.cli("run", "--identity", "branch=main", "--", "bin/deploy.sh")
+            receipt = workspace.receipts()[0]
+            seen = set()
+            for arguments in (("--json", "receipts", "list"),
+                              ("--json", "replay", str(receipt))):
+                _code, out, _err = workspace.cli(*arguments)
+                seen |= set(json.loads(out))
+            with self._gated_workspace() as second:
+                _code, out, _err = second.cli("--json", "run", "--identity", "branch=main",
+                                              "--", "bin/deploy.sh")
+                seen |= set(json.loads(out))
+        for row in ("check`, `run", "receipts list", "replay`, `receipts show"):
+            for name in self.documented(row):
+                self.assertIn(name, seen,
+                              "spec/cli.md documents %r and no command emits it" % name)

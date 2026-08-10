@@ -30,15 +30,15 @@
   },
   {
    "file": "tools/run_conformance.py",
-   "sha256": "4806023e565d74f7813acc38828620c2cbbfac94e522b9ba172bcf16683f0c5c"
+   "sha256": "a0c5c57234471dc9ea224f3863f77a3db09afcade9ae7e0196c5a9e179b19a9b"
   },
   {
    "file": "tools/conformance_adapter.py",
-   "sha256": "7c69bca2768ae8275968321c4db1dce28d15ff70e8d3d6a9396e05e0c9ead5c3"
+   "sha256": "0e2bdbe178cbf52e1698fa3465f4897c49319d2045e1715763813a72f6759751"
   },
   {
    "file": "tools/check_conformance_result.py",
-   "sha256": "b35b38285e9ad996734a6c4b84281766666284db3ece1632b4815935dc65b051"
+   "sha256": "e55633e7ff7fd3b789047c6891dd05c1798977b8db8e6e78cd9716e500480821"
   },
   {
    "file": "tools/conformance_reference_run.sh",
@@ -58,7 +58,7 @@
   },
   {
    "file": "tests/test_conformance.py",
-   "sha256": "854bec4f1987fd90bac67c59403aaca3cc6b281a3cbc2a5f1354ab391d7683eb"
+   "sha256": "eec4a063c4e0761d96f12bfc564b1b56df012aa50c32c23c365f7cba423adb22"
   }
  ],
  "fixture_bundles": [
