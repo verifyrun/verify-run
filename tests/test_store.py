@@ -1527,3 +1527,44 @@ class ReadingCreatesNothing(StoreTestCase):
         for member in ("receipts", "consumed", "tmp"):
             self.assertTrue((fresh / member).is_dir())
         self.assertTrue((fresh / "store.json").is_file())
+
+
+class SingleUseIsScopedToOneStore(StoreTestCase):
+    """F9, pinned as a declared scope rather than left as folklore.
+
+    A nonce is consumed by creating one exclusive entry under a store's `consumed/`. Two stores
+    therefore each enforce single use **within themselves**, and copying a store copies its
+    consumption state. `docs/security.md` says this, and the conformance profile lists uniqueness
+    beyond the declared store scope as a **nonclaim** — so this is a documented boundary and not
+    an unmet promise.
+
+    It is pinned here because the difference between "documented scope" and "defect" is exactly
+    the sentence in the contract, and a later reader who assumes the stronger property would be
+    assuming something no test ever checked.
+    """
+
+    def test_a_second_store_does_not_know_what_the_first_consumed(self):
+        built = self.build()
+        self.store.consume_once(built.authorization)
+        with self.assertRaises(VerifyError) as caught:
+            self.store.consume_once(built.authorization)
+        self.assertEqual(caught.exception.code, "authorization_nonce_reused")
+
+        elsewhere = store.LocalStore(self.parent / "second-store")
+        self.assertFalse(elsewhere.is_consumed(built.authorization.value()["nonce"]),
+                         "a separate store must not be assumed to share consumption state")
+        elsewhere.consume_once(built.authorization)      # documented scope, not a defect
+
+    def test_a_copied_store_carries_the_consumption_it_was_copied_with(self):
+        built = self.build()
+        self.store.consume_once(built.authorization)
+        copy = self.parent / "copied-store"
+        shutil.copytree(self.root, copy, symlinks=True)
+        self.assertTrue(store.LocalStore(copy).is_consumed(built.authorization.value()["nonce"]),
+                        "copying a store must copy what it had already spent")
+
+    def test_the_contract_states_the_scope_rather_than_leaving_it_to_be_discovered(self):
+        security = (pathlib.Path(__file__).resolve().parent.parent
+                    / "docs" / "security.md").read_text(encoding="utf-8")
+        self.assertIn("within themselves", security)
+        self.assertIn("beyond the declared store", security)

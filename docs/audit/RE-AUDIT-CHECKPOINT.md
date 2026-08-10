@@ -3,7 +3,7 @@
 Working notes for the closure arc. Not a public document: it records what was reproduced, what was
 repaired, and what the next session does not need to re-derive. Delete before a stable release.
 
-Local HEAD `37830db`, 18 commits ahead of `origin/main` `58c49dd`, unpushed, clean tree.
+Local HEAD (see git), 24 commits ahead of `origin/main` `58c49dd`, unpushed, clean tree.
 `pyproject` version `0.1.0a3` — **unchanged on purpose**; `v0.1.0a3` is published and these
 repairs mean the next release needs a new version.
 
@@ -27,9 +27,9 @@ repairs mean the next release needs a new version.
 | 14 | read-only listing that writes | **yes** | **CLOSED** | `cdffbd3` |
 | 15 | secret-leak verdict asymmetry | yes | CLOSED (re-proved) | `2feb303` |
 | 16 | docs / spec drift | **yes** | **CLOSED** | `edbd854`, `7aa765d` |
-| 17 | F9 nonce scope across store clones | not yet | **FOUNDER_DECISION_REQUIRED** (unreproduced) | — |
-| 18 | implementation identity behind a banner | **yes** | **PARTLY CLOSED** — banner/module_location and the checker artifact join done; RECORD-to-wheel binding not | `37830db` |
-| 19 | CI matrix / supply-chain cluster | not yet | **KNOWN_DEFERRED** | — |
+| 17 | F9 nonce scope across store clones | **yes** | **KNOWN_DEFERRED — documented scope**, no founder decision needed | (this commit) |
+| 18 | implementation identity behind a banner | **yes** | **CLOSED** | `37830db`, `1b55c60` |
+| 19 | CI matrix / supply-chain cluster | **yes** | **CLOSED** — 19A refuted, 19B narrowed, 19C documented | `e0519be` |
 
 ## Baselines, taken twice with no edit between them
 
@@ -222,11 +222,34 @@ with `additionalProperties: false`.
 - Editing any file under the kit MANIFEST invalidates the kit until
   `tools/build_conformance_manifest_of_record.py` is re-run — including the checker itself.
 
+## F-AUDIT-17 / F9 — reproduced, and it is a documented scope
+
+Consumption is one exclusive entry under a store's `consumed/`, so two stores each enforce single
+use within themselves and a copied store carries the consumption it was copied with. Both are now
+pinned by test.
+
+**This is not an unmet promise.** `docs/security.md` already says two stores "each enforce single
+use **within themselves**", and the vendor-neutral profile lists *uniqueness of a single-use
+identifier beyond the declared store scope* as an explicit **nonclaim**. The same section records
+why a store identity was left out and what would have to change first.
+
+It is also unreachable through the public CLI: `vfy run` mints its own nonce per run and accepts no
+externally supplied authorization, so there is no surface on which to present a stored one. It
+would become reachable the day a hosted plane hands out authorizations to spend later — which
+`docs/security.md` already names as the trigger.
+
+Classification: **KNOWN_DEFERRED — documented scope. No founder decision required**, because
+closing it would not correct a broken promise. My earlier `FOUNDER_DECISION_REQUIRED` was recorded
+before reproducing it and was wrong.
+
 ## Next dependency
 
-**F-AUDIT-18's remaining step** — assert the installed distribution's `RECORD` corresponds to the
-measured wheel. Then `19` (three separate subfindings: TTL-at-spend reachability, the Python matrix
-claim, CI action mutability), then `17`/F9 reproduction-only.
+**None locally dischargeable.** Every finding 01–19 is CLOSED, REFUTED, or a documented scope.
+What remains is not audit work:
+
+1. **RELEASE VERSION DECISION** — published `v0.1.0a3` names different bytes than this tree.
+2. Bump, regenerate `reference-result.json` **from the newly built wheel** (never by hand), rebuild
+   both artifacts, re-run everything, push `main`, then tag.
 
 Note on the governing mandates: their prose uses several words this repository's own vocabulary
 gate bans. None were written into any source, spec, or doc file — the gate fails the build if they

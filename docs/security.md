@@ -157,8 +157,9 @@ atomicity are weaker, and coordination across machines.
 
 ## Platform
 
-Developed and fully tested on CPython 3.14, macOS on arm64, APFS. CI covers Python 3.11–3.13 on
-Linux. Windows is not tested; the process-group and file-mode behavior above is POSIX-specific.
+Developed and fully tested on CPython 3.14, macOS on arm64, APFS. On Linux, CI runs the full
+suite and the installed source distribution on 3.11, 3.12 and 3.13; the wheel, the release gates
+and the conformance kit run on 3.12. The README states that per job. Windows is not tested; the process-group and file-mode behavior above is POSIX-specific.
 Cross-platform support is not claimed.
 
 ## Three bindings this deliberately does not add
