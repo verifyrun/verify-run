@@ -1,10 +1,17 @@
 # verify-run
 
-**Deterministic decision execution for consequential software.**
+**The open reference runtime for verifiable consequential decisions.**
 
-`verify-run` sits between a proposed action and the action itself. It evaluates the action against
+`verify-run` is the small, auditable execution boundary at the foundation of VERIFY. It
+deterministically evaluates a declared decision, governs whether an exact action may execute, and
+leaves a signed record that can be independently verified and replayed offline.
+
+Mechanically: it sits between a proposed action and the action itself, evaluates that action against
 a rulebook you declare, refuses what it cannot settle, and — only if the rules and the evidence
-allow it — runs the command and leaves a signed receipt anyone can verify and replay offline.
+allow it — runs the command and writes a receipt anyone can recompute.
+
+It is deliberately small. That is a trust property, not an early stage: you can read all of it, run
+all of it locally, and reproduce any decision it has ever made without asking us anything.
 
 Alpha. Everything runs on your machine: no account, no database, no browser, no network call, no
 telemetry.
@@ -243,6 +250,22 @@ Current reference result: **PASS**, 30/30 fixtures, `verify-run 0.1.0a4`, fixtur
 That sentence is checked against [`conformance/reference-result.json`](conformance/reference-result.json),
 which names the exact wheel it was measured against by SHA-256. A version number alone would not
 distinguish two artifacts that print the same banner.
+
+## Reference runtime
+
+`verify-run` is small enough to inspect, run locally, and reproduce independently — and that is what
+it is for. The decision and conformance contracts in [`spec/`](spec) and
+[`docs/conformance/`](docs/conformance) are the interoperability boundary: another implementation, in
+another language, can target the same contract and be checked against the same fixtures without
+reproducing anything else in VERIFY. This one is the first implementation of that contract, not the
+definition of it.
+
+VERIFY's hosted systems add construction, distribution, organizational controls, durable records,
+integrations, and lifecycle management *around* this boundary. They do not redefine what a verified
+runtime decision means. That is the point of publishing the runtime and the contract separately.
+
+No adoption claim is intended by any of this. What exists is a written contract, a fixture set, and
+one implementation that passes it.
 
 ## Where verify-run fits
 
