@@ -146,13 +146,20 @@ index never hides a committed receipt and an index entry naming no record is nev
 
 ## Key retirement
 
-For **authorizations**, a retired key authorizes nothing at all. An authorization lives seconds;
-nothing durable is lost.
+For **present spending**, a retired authorization key permits nothing. Historical replay still
+checks the recorded authorization under historical trust policy, including its rulebook-derived TTL.
 
 For **receipts**, a retired key **still verifies receipts it already signed** — it simply may not
 sign new ones. Otherwise replay would fail exactly when it matters most, and "any emitted receipt
 replays" would become false. Retirement means *stop signing with it*, not *repudiate what it
-signed*. A key that must repudiate its history is a revoked key, which this version does not have.
+signed*. A key that must repudiate its trusted history is a `revoked` key. Either registry now
+accepts that status and reports `signing_key_revoked`, distinct from retirement or expiry. A
+signature may remain mathematically valid while trust policy refuses it. No trusted compromise
+time is available, so this policy refuses all history for a revoked key.
+
+The existing `authorization_verified` report means historical signature and binding checks
+passed; it is not present permission, proof of consumption, evidence checking, or execution.
+Expiry prevents spending and does not expire replay. Replaying never launches the action.
 
 ## Writing the same id twice
 

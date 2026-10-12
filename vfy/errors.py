@@ -199,6 +199,12 @@ class SigningKeyRetired(VerifyError):
     code = "signing_key_retired"
 
 
+class SigningKeyRevoked(SigningKeyRetired):
+    """Trust policy rejects this key's history as well as present authority."""
+
+    code = "signing_key_revoked"
+
+
 class SigningKeyInvalid(VerifyError):
     """Key material is not a well-formed Ed25519 key."""
 

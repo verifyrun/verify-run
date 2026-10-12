@@ -29,6 +29,7 @@ from vfy.errors import (
     SignatureMalformed,
     SigningKeyInvalid,
     SigningKeyRetired,
+    SigningKeyRevoked,
     SigningKeyUnknown,
 )
 
@@ -42,6 +43,18 @@ NANOS_PER_SECOND = 1000000000
 
 ACTIVE = "active"
 RETIRED = "retired"
+REVOKED = "revoked"
+
+
+def check_key_status(entry, *, historical=False):
+    """Apply caller trust policy; historical validity never grants present permission."""
+    status = entry.get("status", ACTIVE)
+    if status not in (ACTIVE, RETIRED, REVOKED):
+        raise SigningKeyInvalid("A key status is active, retired, or revoked.")
+    if status == REVOKED:
+        raise SigningKeyRevoked("The signing key is revoked; trusted verification is refused.")
+    if status == RETIRED and not historical:
+        raise SigningKeyRetired("The signing key is retired and authorizes nothing.")
 
 
 @dataclass(frozen=True)
@@ -85,8 +98,8 @@ def build_key_registry(entries):
                 % (identities[public_key],))
         identities[public_key] = identity
         status = entry.get("status", ACTIVE)
-        if status not in (ACTIVE, RETIRED):
-            raise SigningKeyInvalid("A key status is active or retired.")
+        if status not in (ACTIVE, RETIRED, REVOKED):
+            raise SigningKeyInvalid("A key status is active, retired, or revoked.")
         registry[identity] = {"public_key": public_key, "status": status}
     return registry
 
@@ -146,7 +159,8 @@ def issue_authorization(pinned, candidate, snapshot, result, authorization_id, n
 
 
 def verify_authorization(value, pinned, candidate, snapshot, result, runtime_id,
-                         verification_time, keys, registry, consumed_nonces=None):
+                         verification_time, keys, registry, consumed_nonces=None, *,
+                         historical=False):
     """Verify one authorization against the objects a caller is actually holding.
 
     A signature proves who produced the bytes. It proves nothing about whether those bytes describe
@@ -159,14 +173,16 @@ def verify_authorization(value, pinned, candidate, snapshot, result, runtime_id,
     validity interval is always checked for internal consistency — issued at or after the freeze,
     expiring after it was issued — and is additionally compared against that instant when one is
     supplied. Passing `None` asks the historical question instead: *was this a well-formed
-    authorization over these exact objects?* Replay uses `None`, because replay spends nothing and
-    a receipt must not stop verifying because time passed. A runtime about to consume an
+    authorization over these exact objects?* Replay uses `None` and `historical=True`: it spends
+    nothing, and a receipt must not stop verifying because time passed. A runtime about to consume an
     authorization must always supply the instant; `runner.execute_authorized_command` does.
     """
     if not isinstance(value, dict):
         raise TypeError("an authorization value must be a mapping")
     if not isinstance(runtime_id, str):
         raise TypeError("runtime_id must be a string")
+    if not isinstance(historical, bool):
+        raise TypeError("historical must be a boolean")
 
     schema.validate(value, AUTHORIZATION_SCHEMA_ID, registry)
 
@@ -175,8 +191,7 @@ def verify_authorization(value, pinned, candidate, snapshot, result, runtime_id,
     entry = keys.get(identity)
     if entry is None:
         raise SigningKeyUnknown("No key in the registry matches " + repr(identity))
-    if entry["status"] == RETIRED:
-        raise SigningKeyRetired("The signing key is retired and authorizes nothing.")
+    check_key_status(entry, historical=historical)
 
     # One signature byte string, one accepted encoding. Strict base64 refuses a bad alphabet and
     # bad padding but not unused trailing bits, so sixteen distinct texts decoded to the same
@@ -219,6 +234,12 @@ def verify_authorization(value, pinned, candidate, snapshot, result, runtime_id,
             "The authorization was issued before the evidence it rests on was frozen.")
     if expires <= issued:
         raise AuthorizationExpired("The authorization expires at or before it was issued.")
+    ttl = pinned.value().get("authorization", {}).get("ttl_seconds", DEFAULT_TTL_SECONDS)
+    # Match v1's whole-second issuance precision without rendering a possibly out-of-range year.
+    expected_expiry = (issued // NANOS_PER_SECOND + ttl) * NANOS_PER_SECOND
+    if expires != expected_expiry:
+        raise AuthorizationBindingMismatch(
+            "The authorization's expiry is not derived from the bound rulebook's TTL.")
 
     if verification_time is not None:
         now = _instant(verification_time, "verification_time")

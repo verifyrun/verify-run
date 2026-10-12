@@ -6,6 +6,36 @@ independently of the package version.
 
 [PEP 440]: https://peps.python.org/pep-0440/
 
+## 0.1.0a5 — local successor candidate, publication held
+
+Includes the separately reviewed signing-key preflight for BOTH signing roles: the seed's public
+key must match the active trusted identity before consumption or launch. Adds opt-in
+`--json --execution-report run` operational reporting; default JSON and signed artifacts are unchanged.
+Unknown failures require reconciliation, and checker/context observations remain explicitly unobserved.
+The original 0.1.0a4 artifacts, reference evidence and frozen conformance kit remain unchanged.
+
+## Earlier unreleased local engineering repairs
+
+No new release identity or publication is assigned. Existing 0.1.0a4 artifacts and the frozen
+conformance kit remain historical evidence; temporary candidate builds are identified by digest.
+
+- Verify rulebook-derived authorization TTL, including historical verification and equivalent
+  offset spellings. Validly signed out-of-policy intervals are now refused.
+- Preserve historical authorization verification after retirement without allowing live spending.
+  Add explicit revoked trust status and `signing_key_revoked`; unknown statuses refuse. The CLI
+  refuses inactive receipt signers before candidate execution.
+- End ordinary evidence-process descendants at timeout and cleanup, including an already-exited
+  leader; this is not isolation and does not contain descendants that escape the process group.
+- Report consumption race-test worker outcomes to the test thread instead of letting exceptions
+  disappear into a passing test. Add independent signed-mutation and real-process checks.
+- Draft the versioned engineering profile and cross-team handoff. It is not runtime support and
+  does not claim immutable execution, requirement satisfaction, or improvement from generic ALLOW.
+
+Compatibility: protected artifact formats, canonical bytes and decision semantics are unchanged.
+Malformed signed TTLs previously accepted are refused; revoked-key failures now have a distinct
+reason code (the exception remains a subclass of SigningKeyRetired for existing Python catches).
+Old trust loaders reject the new revoked status. No historical artifact is rewritten.
+
 ## 0.1.0a4 — 2026-08-10
 
 A re-audit closure release. It changes no decision semantics, no canonical form, no receipt or

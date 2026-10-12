@@ -7,6 +7,6 @@
   "stage": "verification",
   "expected": {
     "outcome": "ERROR",
-    "reason_code": "signing_key_retired"
+    "reason_code": "signing_key_revoked"
   }
 }

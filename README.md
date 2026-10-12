@@ -230,9 +230,9 @@ That claim is written down as a public, vendor-neutral contract with fixtures an
 sh tools/conformance_reference_run.sh
 ```
 
-That installs the version this checkout declares — currently `0.1.0a4` — from PyPI into a clean
-environment, runs the 30 fixtures against it, and writes a result document. Name any published
-version to test it instead: `sh tools/conformance_reference_run.sh out 0.1.0a2`.
+That script defaults to the version this checkout declares. This local `0.1.0a6` successor
+is not a published reference from this work; use an explicitly published version for the remote
+reference run. It runs 30 fixtures and writes a result document. For example: `sh tools/conformance_reference_run.sh out 0.1.0a2`.
 
 That script needs the version to be *published*, so it cannot test a candidate that only exists on
 your machine. For that, `tools/build_reference_result.py` builds the wheel from this tree, hashes
@@ -243,6 +243,9 @@ than written by hand — a claim about an artifact has to come from the artifact
 A result is a *self-test*, not certification: nobody accredits this profile, and a PASS is
 meaningful only together with the profile version and fixture-manifest digest it names. See
 [docs/conformance/claims.md](docs/conformance/claims.md) for exactly what a result lets you say.
+
+The retained reference record below is historical evidence for its named artifact, not this
+local successor. Successor verification is recorded separately without changing the frozen kit.
 
 Current reference result: **PASS**, 30/30 fixtures, `verify-run 0.1.0a4`, fixture manifest
 `756029f681ad7587…`.
@@ -299,9 +302,11 @@ others:
 | wheel built, installed, and exercised | | ✓ | |
 | conformance kit | | ✓ | |
 
-So every supported version has the whole suite run against it *and* against an installed source
-distribution; the wheel and the conformance run are proven on 3.12. Other platforms are expected
-to work but are not yet proven — see [docs/security.md](docs/security.md) for the exact caveats.
+This table describes the configured CI jobs, not evidence that every candidate has passed them.
+The held local a5 candidate is verified on macOS arm64, CPython 3.14.2. Its Linux and Python
+3.11–3.13 results remain unverified until matching candidate-specific CI records are available.
+Windows execution is unsupported by the current POSIX process and file-permission contract.
+See [docs/security.md](docs/security.md) and [SECURITY.md](SECURITY.md).
 
 ## Development
 
@@ -315,7 +320,12 @@ and `fixtures/` holds the golden vectors; implementations conform to them, never
 
 ## Alpha status
 
-Version `0.1.0a4`. The decision semantics, canonical form, and receipt format are frozen and
+Local source may include the **unreleased engineering repairs** described in CHANGELOG.md.
+Those changes are not the published artifact or a supported engineering profile. Existing
+reference-result evidence concerns its named wheel digest; local candidates need their own
+measured identity. Release and deployment remain on hold for this work.
+
+Version `0.1.0a6`. This is a local successor candidate; publication remains on hold. The decision semantics, canonical form, and receipt format are frozen and
 covered by golden vectors — none of `0.1.0a2`, `0.1.0a3`, or `0.1.0a4` changed any of them, and
 every receipt written by an earlier alpha still verifies and replays. The command surface is the five
 commands above. Interfaces may still change before 1.0; recorded artifacts carry a `spec_version`

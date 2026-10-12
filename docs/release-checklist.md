@@ -1,4 +1,27 @@
+# Documentation/package successor — local only
+
+Accepted runtime a5 remains unchanged. This a6 package candidate contains documentation,
+packaging and future verification-harness corrections; it grants no release permission.
+Internal coordination and exact historical evidence are retained separately in the local auditor
+packet and are not shipped here. The public execution contract is spec/execution-report.md.
+
 # Release checklist
+
+## Local engineering repair status — 2026-09-18
+
+This checklist below is a historical release ledger, not the current baseline. The checkout
+already has a GitHub origin and HEAD `2de202eda9fbb6590234bdb5246b4c3bdf680c11`; statements below
+about no commit/repository and the old script PIN must not be used as present facts.
+See `ENGINEERING_SCOPE_AND_ESTIMATE.md` for intake identity, estimates and local repair evidence.
+The engineering profile in `docs/engineering-profile-v1.md` is a draft, not a supported feature.
+
+Release remains on hold. Local candidate builds keep the existing metadata version for testing
+only and are distinguished by digest; they must never replace an existing 0.1.0a4 artifact under that identity.
+Before any future release: choose a new version, complete supported CI and consumer acceptance,
+regenerate artifact-bound reference evidence, and obtain the separately required release authority.
+The frozen decision-replay-v1 kit is unchanged; its 30 cases do not certify the new repair matrix.
+
+## Historical ledger
 
 A step is marked done only when it has actually been performed. Nothing below is aspirational.
 

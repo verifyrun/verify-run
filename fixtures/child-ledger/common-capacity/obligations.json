@@ -1,0 +1,17 @@
+{
+  "positive": [
+    "same pool distinct exact parents",
+    "real verifier settlement releases unused captured-byte hold",
+    "slots nonrefundable",
+    "simultaneous independent opens serialize"
+  ],
+  "negative": [
+    "duplicate across ledgers",
+    "unselected pool/config/issuer",
+    "wrong observer",
+    "forged known settlement",
+    "overlap exhausted bytes/slots",
+    "UNKNOWN does not release",
+    "pending quarantines"
+  ]
+}

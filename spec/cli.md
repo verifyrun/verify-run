@@ -83,7 +83,9 @@ boundary a configuration file may not talk its way out of.
 
 `.vfy/keys/trust.json` is checked the same way: `trust_version` exactly `1`, and `authorization`
 and `receipt` lists of `{key_id, key_version, public_key_hex, status}` with a 64-hex public key
-and a status of `active` or `retired`. Nothing else.
+and a status of `active`, `retired`, or `revoked`. Nothing else. Retired keys preserve historical
+verification but cannot sign or authorize new actions. Revoked keys refuse trusted verification
+of history as well as new actions. See spec/authorization.md for the explicit trust modes.
 
 `environment` defaults to `{}` and is the **only** way a variable reaches a gated command or an
 evidence command. The parent environment is never inherited, so what a gated action sees is a
@@ -498,3 +500,12 @@ For a fixed injected clock, a fixed injected identifier source, fixed keys, and 
 configuration, the CLI's artifacts and its `--json` output are byte-identical across runs, hash
 seeds, locales, timezones, and UTF-8 modes. Human text may repeat a path the user supplied; it
 never prints an object's memory representation or anything else unstable.
+
+
+## Opt-in execution report
+
+`vfy --json --execution-report run -- <command>` adds the `execution_report` object specified in
+[execution-report.md](execution-report.md). The option is invalid for other commands or without
+`--json`. Default fields, signed receipts and decision meanings are unchanged. Nested checker and
+context facts remain `not_observed` until an external adapter provides authenticated observations.
+Unknown failures require reconciliation; a missing response never means nothing executed.
