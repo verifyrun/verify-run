@@ -325,7 +325,7 @@ Those changes are not the published artifact or a supported engineering profile.
 reference-result evidence concerns its named wheel digest; local candidates need their own
 measured identity. Release and deployment remain on hold for this work.
 
-Version `0.1.0a6`. This is a local successor candidate; publication remains on hold. The decision semantics, canonical form, and receipt format are frozen and
+Version `0.1.0a7`. This is a local successor candidate; publication remains on hold. The decision semantics, canonical form, and receipt format are frozen and
 covered by golden vectors — none of `0.1.0a2`, `0.1.0a3`, or `0.1.0a4` changed any of them, and
 every receipt written by an earlier alpha still verifies and replays. The command surface is the five
 commands above. Interfaces may still change before 1.0; recorded artifacts carry a `spec_version`

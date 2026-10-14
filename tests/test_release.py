@@ -126,7 +126,13 @@ class LegacyGate(unittest.TestCase):
         self.assertEqual(findings, [])
 
     def test_the_extraction_guide_creates_no_linkage(self):
-        text = _text(REPO_ROOT / "docs" / "EXTRACTION_GUIDE.md")
+        guide = REPO_ROOT / "docs" / "EXTRACTION_GUIDE.md"
+        if not guide.exists():
+            # Public source deliberately omits the private extraction notes.
+            self.assertFalse(guide.is_symlink(), "missing guide must not be a dangling link")
+            return
+        text = _text(guide)
+        self.assertIsNotNone(text, "an included extraction guide must be readable UTF-8")
         for instruction in ("pip install", "npm install", "git clone", "sys.path", "import "):
             self.assertNotIn(instruction, text,
                              "the extraction guide instructs a reader to obtain legacy code")

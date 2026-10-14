@@ -1,3 +1,7 @@
+# 0.1.0a7 — unreleased source candidate
+
+Distinct version for the prepared current source. Not published to PyPI; prior artifacts and consumer pins are unchanged.
+
 # Changelog
 
 Notable changes to `verify-run`. This project follows [PEP 440] versioning; the decision
