@@ -827,9 +827,13 @@ class Vocabulary(unittest.TestCase):
 
     def test_no_banned_vocabulary_in_this_unit_or_the_repaired_guide(self):
         # This file is the scanner and is not scanned; the repo-wide grep excludes it likewise.
-        paths = ([RUNNER_SOURCE, REPO_ROOT / "spec" / "execution.md",
-                  REPO_ROOT / "docs" / "EXTRACTION_GUIDE.md"]
+        paths = ([RUNNER_SOURCE, REPO_ROOT / "spec" / "execution.md"]
                  + sorted(EXEC_DIR.glob("*.json")))
+        # The private extraction guide is excluded from the public source release.
+        guide = REPO_ROOT / "docs" / "EXTRACTION_GUIDE.md"
+        self.assertFalse(guide.is_symlink() and not guide.exists())
+        if guide.exists():
+            paths.append(guide)
         for path in paths:
             text = path.read_text(encoding="utf-8")
             for word in self.BANNED_EXACT:
