@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding,PublicFormat
-from test_child_observer import setup
+from tests.child_observer_fixture import setup, install_profile
 from vfy import common_capacity as cap,child_observer as obs,child_ledger as m,runner
 
 def owner(root,ledger,slots=9,byte_limit=786432):
@@ -15,7 +15,7 @@ def owner(root,ledger,slots=9,byte_limit=786432):
 
 class CommonTests(unittest.TestCase):
     def setUp(self):
-        self.tmp=tempfile.TemporaryDirectory();self.base=Path(self.tmp.name).resolve();self.a=setup(self.base/'a');self.b=setup(self.base/'b')
+        self.tmp=tempfile.TemporaryDirectory();self.base=Path(self.tmp.name).resolve();install_profile(self,self.base);self.a=setup(self.base/'a');self.b=setup(self.base/'b')
     def tearDown(self):self.tmp.cleanup()
     def dispatch(self,o,job,**kw):return cap.dispatch_common(*[job[0],o,job[1],job[2]],selected_observer=obs.identity(),recorded_at='2026-10-08T00:00:00Z',**kw)
     def test_real_common_known_then_exhausted_slot(self):

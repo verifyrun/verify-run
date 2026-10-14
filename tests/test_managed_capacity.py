@@ -6,8 +6,8 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from test_common_capacity import owner
-from test_child_observer import setup
+from tests.test_common_capacity import owner
+from tests.child_observer_fixture import setup, install_profile
 from vfy import managed_capacity as mc, child_ledger as m, common_capacity as cap
 
 
@@ -85,6 +85,7 @@ def consume(g,a):
 class ManagedTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.base=Path(self.temp.name).resolve()
+        install_profile(self,self.base)
         self.old,self.o,self.grant,self.kw=fixture(self.base)
         self.o.apply_grant(m.raw(self.grant),recorded_at='TEST')
     def tearDown(self):self.temp.cleanup()

@@ -1,7 +1,7 @@
 """Focused r2 original state anchor versus exact current same-subject inspection."""
-import copy, importlib.util,json
+import copy, hashlib, importlib.util,json
 from pathlib import Path
-from test_managed_capacity import ManagedTests,action,seal,file_ref,prepare,local_start,consume
+from tests.test_managed_capacity import ManagedTests,action,seal,file_ref,prepare,local_start,consume
 from vfy import managed_capacity as mc,child_ledger as m
 
 
@@ -44,7 +44,8 @@ class AnchorTests(ManagedTests):
         with self.assertRaises(m.Refused):prepare(self.o,a)
     def test_old_source_reproduces_follow_on_refusal(self):
         a=revised(action(self.base,self.o));q=dict(a[0]);q.pop('binding_basis')
-        oldpath=Path(mc.__file__).resolve().parents[2]/'source/vfy/managed_capacity.py'
+        oldpath=Path(__file__).parent/'fixtures/managed_capacity_r1.py'
+        self.assertEqual(hashlib.sha256(oldpath.read_bytes()).hexdigest(), 'de244ec23488221853500789d571e5a022ab28d4937c391ad9c8ef8ffccb4642')
         spec=importlib.util.spec_from_file_location('frozen_managed_r1',oldpath);old=importlib.util.module_from_spec(spec);spec.loader.exec_module(old)
         view=object.__new__(old.ManagedCapacityOwner);view.__dict__.update(self.o.__dict__)
         with self.assertRaises(m.Refused):view.inspect_managed_request(m.raw(q),*a[1:])
