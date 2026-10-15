@@ -82,8 +82,8 @@ public key carries one identity.** `build_key_registry` refuses the same public 
 `(key_id, key_version)` pairs with `signing_key_invalid`. Registered twice, the substitution above
 would look up the *same* key and the relabelled artifact would verify under an identity that never
 signed it — and because status is held per identity while signing authority is held by the key, a
-retired identity could be escaped by relabelling to an active one. Distinct keys under distinct
-identities, and one key under several versions, are unaffected.
+retired identity could be escaped by relabelling to an active one. Distinct public keys under distinct identities are unaffected. Reusing the same public key
+under a second version is refused too; a new identity/version needs distinct key material.
 
 ## Time
 Every instant is supplied by the caller and compared as exact integer nanoseconds. No clock.
@@ -94,6 +94,11 @@ Every instant is supplied by the caller and compared as exact integer nanosecond
   declaration omits it — the schema's declared default, applied here by the consumer exactly as
   `spec/rulebook-loading.md` says defaults are applied.
 - `expires_at` must be strictly after `issued_at`.
+- Verification MUST also compare expiry to the rulebook-derived expiry, as instants, including
+  during historical verification. A valid signature over a longer or shorter interval is an
+  `authorization_binding_mismatch`. Equivalent offset spellings are accepted without rewriting
+  signed bytes. The v1 issuer renders expiry at whole-second precision; verification uses that
+  same derivation so already-issued fractional-start artifacts retain their original meaning.
 - **Expiry is exclusive**: an authorization is valid while `verification_time < expires_at`. At
   `expires_at` it has expired — that is what an expiry instant means, and it is the shorter of the
   two readings. No source settles it, so the narrower one is chosen and pinned here.
@@ -135,10 +140,28 @@ block carries, and holds a 32-byte Ed25519 public key and a status.
 Unknown and retired stay distinct because `fixtures/tamper/ATTACK_CLASSES.md` lists them as
 separate classes with separate repairs.
 
-**Retired means retired for authorization verification**, not merely for new issuance: a retired
-key authorizes nothing. Authorizations live for seconds, so nothing durable is lost. Whether a
-retired key should still verify a *historical receipt* is a different question with a different
-answer, and it belongs to the receipt closure — recorded here, not decided here.
+Key status is caller-supplied trust policy, separate from cryptographic validity:
+
+- `active`: may verify history and permit present spending, subject to all other checks.
+- `retired`: no new signing or spending; historical verification remains possible.
+  No trusted retirement instant is recorded, so acceptance does not prove when a signature was
+  made relative to retirement. Retirement assumes the key was not compromised; use revocation
+  if that assumption is withdrawn.
+- `revoked`: refuse both trusted history and spending with `signing_key_revoked`. This is the
+  conservative policy for suspected compromise. It does not mean the signature bytes are
+  mathematically invalid. No trusted compromise time exists in v1, so partial-history revocation
+  is not inferred from a signer's timestamp.
+- Any other status: `signing_key_invalid`; no fail-open status handling.
+
+`verify_authorization(..., historical=True)` explicitly selects historical trust policy.
+The default is false; omitting a verification time does not permit a retired key. Replay passes
+true; the execution runner never does and always supplies the spend instant. A historical result
+confers no present permission, proves no past consumption, and cannot be passed to the runner
+without fresh live verification. Optional historical verification time constrains the interval
+only; it is not evidence of the real launch time.
+
+Pure issuance accepts key bytes, not a trust registry; its caller must select an active signing
+key. The CLI checks the receipt signer before acting and the authorization signer before issue.
 
 The registry is a small immutable in-memory mapping the caller assembles. Nothing is fetched.
 
@@ -147,7 +170,7 @@ Fixed, so an authorization wrong in several ways always reports the same first f
 
 1. argument types — a programmer defect raises `TypeError`, not an outcome;
 2. authorization schema;
-3. key lookup by `(key_id, key_version)`, then key status, then key material;
+3. key lookup by `(key_id, key_version)`, then status under the explicit trust mode, then material;
 4. signature encoding;
 5. signature over the canonical payload;
 6. rulebook binding;
@@ -156,7 +179,7 @@ Fixed, so an authorization wrong in several ways always reports the same first f
 9. result binding, by recomputing the evaluation;
 10. outcome eligibility;
 11. runtime binding;
-12. `issued_at` against the snapshot freeze, and `expires_at` after `issued_at`;
+12. `issued_at` against the snapshot freeze, `expires_at` after `issued_at`, and derived TTL;
 13. verification time within the interval;
 14. nonce consumption, if a view was supplied.
 
@@ -164,3 +187,18 @@ Fixed, so an authorization wrong in several ways always reports the same first f
 The frozen authorization is a record of strings with the canonical complete authorization as
 authority and the value reconstructed on request — the pattern Units 4 through 7 established, and
 forced by the same reason: the frozen value model admits only `dict` and `list`.
+
+## Local signing preflight and trust snapshot
+
+Before the CLI workflow consumes authority or starts the action, each configured signing seed
+MUST derive the public key registered under its intended active identity. A mismatch is
+`signing_key_invalid`, with no execution, consumption or receipt publication. Checking status
+alone does not validate the signer. Private key material must never enter the diagnostic.
+
+The local CLI loads a caller-controlled trust snapshot once for this attempt. Live verification
+means time/outcome/binding/status checks against THAT supplied snapshot; it does not poll a
+revocation service or serialize arbitrary filesystem edits with launch. A trust-file edit after
+the snapshot load is not guaranteed to stop an in-flight attempt. Subsequent replay uses the
+then-supplied trust policy and can refuse it. An adapter promising immediate update ordering must
+serialize trust publication and admission/launch in an authority owner boundary. Another unsynchronized
+file read is insufficient. Snapshot acceptance is not proof of organizational approval.

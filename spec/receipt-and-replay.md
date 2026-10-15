@@ -124,8 +124,8 @@ separate arguments. Nothing requires them to be the same key, and a system that 
 not rotate the other.
 
 ## Key retirement differs from Unit 8, deliberately
-For **authorizations**, `spec/authorization.md` refuses a retired key entirely: an authorization
-lives seconds, and a retired key must authorize nothing.
+For **present authorization spending**, `spec/authorization.md` refuses a retired key entirely.
+Historical authorization verification uses an explicit historical trust mode and permits retirement.
 
 For **receipts**, a retired key **still verifies receipts it already signed**. It may not sign new
 ones. The reason is in the schema's own title — "signed; **offline-replayable**" — and in
@@ -135,7 +135,16 @@ exactly when it matters most, and both statements would become false.
 
 So retirement means *stop signing with it*, not *repudiate what it signed*. This asymmetry is
 deliberate and is the one place this unit does not reuse Unit 8's rule. A key that must repudiate
-its history is a revoked key, which is a different concept this version does not have.
+its history is a revoked key: the caller may now declare `revoked` for either key registry.
+Revocation refuses trusted verification with `signing_key_revoked`, distinct from retirement and
+expiry. Unknown statuses are invalid. This local trust-policy extension changes no signed bytes.
+Old trust loaders do not understand revoked status and must refuse rather than downgrade it.
+
+`authorization_verified` means the recorded authorization's signature, bindings, rulebook TTL,
+and ALLOW were verified under historical trust policy. It does not prove present permission,
+consumption, actual execution time, external effects, or semantic truth of evidence. The low-level
+API may replay the decision without a supplied authorization and reports false for that field;
+the CLI store path requires a referenced authorization body.
 
 ## Verification is not replay
 Two operations, two claims, and conflating them is the failure this section exists to prevent.

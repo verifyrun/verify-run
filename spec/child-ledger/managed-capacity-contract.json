@@ -1,0 +1,105 @@
+{
+  "api": {
+    "apply_grant": "apply_grant(grant_request_bytes, *, recorded_at) -> signed current snapshot",
+    "before_callback": "guard.before_callback(*, capture_bytes, callback_identity, destination, receipt_bytes) -> signed snapshot; called by Engineer before_write after runtime identity check and immediately before fixed atomic write",
+    "constructor": "ManagedCapacityOwner(root, owner_seed, owner_issuer, owner_trust, *, expected_config_bytes, child_trust, selected_observer, legacy_snapshot_bytes, expected_child_trusts, selected_callback_identity)",
+    "inspect": "inspect_managed_request(request_bytes, parent_start_bytes, capture_bytes, expected_receipt_bytes, expected_complete_bytes) -> checked binding; read only, not actual origin/admission proof",
+    "prepare": "prepare_managed(same five byte arguments, *, recorded_at) -> fresh ManagedGuard",
+    "public_verify": "verify_managed_snapshot(snapshot_bytes, owner_trust, expected_config_bytes, *, expected_pool_root, legacy_snapshot_bytes, expected_child_trusts, selected_observer, selected_callback_identity, selected_managed_identity, minimum_revision=0)",
+    "recovery": "owner.guard(key) may settle exact completed files or mark_unknown; cannot call before_callback",
+    "settle": "guard.settle(*, callback_bytes, complete_bytes, recorded_at) -> signed snapshot after exact immutable files exist",
+    "unknown": "guard.mark_unknown(*, reason, recorded_at) -> terminal signed UNKNOWN with full hold"
+  },
+  "authority_granted": false,
+  "automatic_retry": false,
+  "failures": "Any uncertainty before/after write preserves full4096 hold; cumulative slot never refunded. pending.json quarantines. Invalid consumption burns in-memory capability without lowering hold. New parent START cannot reuse same capture_identity OR attempt OR destination. Crash cannot reconstruct dispatch capability.",
+  "grant": {
+    "additions": {
+      "dispatch_slots": 3,
+      "managed_receipt_bytes": 12288
+    },
+    "authentication": "existing selected pool owner signs whole new snapshot containing exact grant request; supplied grant intent alone is not authenticated",
+    "head_bound": [
+      "raw_sha256",
+      "envelope_sha256",
+      "revision"
+    ],
+    "one_epoch_only": true,
+    "schema": "vfy.local-capacity-grant-request/1",
+    "scope": "EXPLICIT_NONFINANCIAL_LOCAL_DEVELOPMENT_GRANT_NOT_ACTION_AUTHORITY"
+  },
+  "legacy": {
+    "effective_capacities": {
+      "dispatch_slots": 12,
+      "managed_receipt_bytes": 12288,
+      "retained_output_bytes": 786432
+    },
+    "exact_raw_snapshot": "hex embedded without resigning/rewriting legacy entries; validated by unchanged source/profile and externally selected per-request trusts",
+    "expected_prior_usage": {
+      "dispatch_slots": 9,
+      "retained_output_bytes": 266427
+    },
+    "old_mutations": "old reader/mutator refuses new managed profile; legacy entries immutable in this bounded managed epoch",
+    "retained_output_cap": 786432,
+    "unknown_hold_bytes": 262144
+  },
+  "limits": [
+    "source-mode managed-json-receipt/1 only; installed_runtime refused",
+    "trusted selected in-process Engineer bridge and fixed writer; no callable accepted by Run",
+    "caller owns evidence freshness, actual parent origin, managed lock, eligibility/authority and runtime code identity; bytes alone do not authenticate world truth",
+    "no native authority, external or provider effects, subprocess/grandchild completion, verifier success, CPU/wall enforcement, hostile-owner rollback/freshness or full-lifecycle accounting",
+    "managed_receipt_bytes counts CALLBACK payload only; COMPLETE/capture/signature/metadata/storage not charged by this dimension",
+    "legacy version string retained for original signer compatibility; new module exact source profile/archive selection mandatory",
+    "no automatic retry, refund, fresh pool, migration, activation or release",
+    "a later verifier-dispatch epoch or additional grant needs a separately agreed protocol, not an implicit bypass"
+  ],
+  "locking": "managed-state then pool; Run never takes managed-state lock, calls arbitrary callback, or acquires lock in reverse order",
+  "numeric": "Opaque Engineer evidence parsed duplicate-free/no floats/nonfinite with signed64 integers; Engineer identity uses its sorted compact JSON bytes. Run signed envelopes retain existing safe53 canonical domain. No global canonicalizer change.",
+  "ordering": [
+    "Engineer holds managed-state exclusive lock",
+    "Run validates and atomically reserves one cumulative slot +4096 managed bytes and capture/attempt/destination uniqueness before managed START",
+    "Engineer writes sealed managed START",
+    "Engineer validates runtime callback identity and invokes fixed callback",
+    "before_write calls Run before_callback with exact serialized bytes; durable one-use consume before any write",
+    "fixed atomic CALLBACK write",
+    "Engineer writes exact COMPLETE",
+    "Run reads and settles exact bytes; only managed receipt charge reduces to callback byte length"
+  ],
+  "owner": "Run",
+  "profile": "vfy.managed-capacity/1",
+  "request": {
+    "binding_basis": "Exact original inspection path+sha256 matching immutable CAPACITY.task.inspection_sha256; both original/current inspections must have exact typed task_id+subject and same repository. Current START/capture observation remain bound to current basis.",
+    "child_id": "managed-json-callback",
+    "exact_fields": [
+      "schema",
+      "authority_granted",
+      "automatic_retry",
+      "task_key",
+      "task_identity",
+      "operation_id",
+      "attempt_id",
+      "parent_start",
+      "basis",
+      "child_id",
+      "capture",
+      "capture_identity",
+      "managed_state",
+      "managed_attempt",
+      "destination",
+      "callback_identity",
+      "receipt_sha256",
+      "receipt_bytes",
+      "complete_sha256",
+      "complete_bytes",
+      "source_refs",
+      "binding_ref",
+      "binding_basis"
+    ],
+    "parent_origin": "Engineer scoped current_child_parent actual persisted raw START declared before dispatch; representative fixture is read-only compatibility evidence only",
+    "refs": "exact path+sha256 objects; parent_START raw bytes, basis, CAPTURE, CAPACITY binding, all capture refs plus exactly one pinned callback adapter source",
+    "schema": "vfy.managed-dispatch-request/1"
+  },
+  "revision": "r2-original-binding-anchor-distinct-from-current-basis",
+  "schema": "vfy.managed-capacity-contract/1",
+  "subject": "source-only additive module over byte-identical capacity.dev1; no distribution version or installed activation"
+}

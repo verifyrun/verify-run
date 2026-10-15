@@ -39,6 +39,8 @@ def build_parser():
                         help="workspace root (default: the current directory)")
     parser.add_argument("--json", action="store_true", dest="as_json",
                         help="print one canonical JSON object on stdout")
+    parser.add_argument("--execution-report", action="store_true",
+                        help="with --json run, include versioned execution and recovery facts")
     commands = parser.add_subparsers(dest="command", required=True, metavar="command")
 
     initialize = commands.add_parser("init", help="create a workspace from a template")
@@ -49,6 +51,7 @@ def build_parser():
     checker.add_argument("candidate", help="path to a candidate JSON document")
 
     runner_parser = commands.add_parser("run", help="gate a command")
+    runner_parser.add_argument("--custody-handoff", help="exact opt-in local custody envelope")
     runner_parser.add_argument("--identity", action="append", default=[], metavar="NAME=VALUE",
                                help="a value for one of the rulebook's track fields; repeatable")
     runner_parser.add_argument("argv", nargs=argparse.REMAINDER,
@@ -87,6 +90,10 @@ def main(argv=None, clock=None, identifiers=None, out=None, err=None):
     finally:
         sys.stderr, sys.stdout = previous_stderr, previous_stdout
 
+    if options.execution_report and (not options.as_json or options.command != "run"):
+        print("--execution-report requires --json and run", file=err)
+        return EXIT_USAGE
+
     clock = workflow.Clock() if clock is None else clock
     identifiers = workflow.Identifiers() if identifiers is None else identifiers
 
@@ -102,6 +109,9 @@ def main(argv=None, clock=None, identifiers=None, out=None, err=None):
         if os.environ.get(_DEVELOPER_TRACEBACK):
             raise
         print("internal error: %s" % type(defect).__name__, file=err)
+        if options.execution_report:
+            _emit({"command": "run", "error": "internal_error",
+                   "execution_report": _execution_report()}, out)
         return EXIT_OPERATIONAL
 
 
@@ -152,7 +162,9 @@ def _run(options, clock, identifiers, out, err):
     workspace = workflow.open_workspace(options.workspace, resources.schema_dir())
     _warn_on_permissive_keys(workspace, err)
     try:
-        decision = workflow.run(workspace, argv, clock, identifiers, identity or None)
+        decision = workflow.run(workspace, argv, clock, identifiers, identity or None,
+                                **({} if options.custody_handoff is None else
+                                   {"custody_handoff": options.custody_handoff}))
     except VerifyError as typed:
         if typed.code == "execution_recording_failed":
             # The authorization is spent and the action may have happened. Say so plainly, and
@@ -196,6 +208,14 @@ def _run(options, clock, identifiers, out, err):
                         "receipt_id": receipt.receipt_id if receipt is not None else None,
                         "preserved_at": preserved,
                         "receipt": receipt.value() if receipt is not None else None}
+                if options.execution_report:
+                    availability = ("preserved_uncommitted" if preserved else
+                                    "inline_uncommitted" if receipt is not None else "unavailable")
+                    body["execution_report"] = _execution_report(
+                        launcher=("started" if execution["started"] else "not_started")
+                        if "started" in execution else "unknown",
+                        consumption="consumed", availability=availability,
+                        completion=_completion(execution))
                 _emit(body, out)
             return EXIT_RECORDING_FAILED
         raise
@@ -281,7 +301,7 @@ def _receipts(options, clock, identifiers, out, err):
 
 def _render(decision, options, out, err, previewed=False):
     if options.as_json:
-        _emit({"command": "check" if previewed else "run",
+        body = {"command": "check" if previewed else "run",
                "outcome": decision.outcome,
                "matched_rule": decision.matched_rule,
                "reasons": [dict(reason) for reason in decision.reasons],
@@ -289,7 +309,17 @@ def _render(decision, options, out, err, previewed=False):
                "receipt_path": decision.receipt_path,
                "executed": decision.executed,
                "exit_status": decision.exit_status,
-               "notes": list(decision.notes)}, out)
+               "notes": list(decision.notes)}
+        if getattr(options, "execution_report", False):
+            body["execution_report"] = _execution_report(
+                launcher="started" if decision.executed else "not_started",
+                consumption="consumed" if decision.nonce_consumed else "not_consumed",
+                availability="committed" if decision.receipt_id else "unavailable",
+                completion=_completion({"started": decision.executed,
+                                        "exit_status": decision.exit_status,
+                                        "timed_out": decision.timed_out,
+                                        "signal_number": 1 if decision.signalled else None}))
+        _emit(body, out)
         return
     rule = ("   rule: " + decision.matched_rule) if decision.matched_rule else ""
     print("%-7s %s%s" % (decision.outcome, decision.summary, rule), file=out)
@@ -312,6 +342,31 @@ def _render(decision, options, out, err, previewed=False):
         print("        nothing executed", file=out)
 
 
+def _completion(observed):
+    if observed.get("timed_out"):
+        return "timed_out"
+    if observed.get("signal_number") is not None:
+        return "signalled"
+    if observed.get("started") and observed.get("exit_status") is not None:
+        return "exited"
+    if observed.get("started") is False:
+        return "not_started"
+    return "unknown"
+
+
+def _execution_report(*, launcher="unknown", consumption="unknown", availability="unknown",
+                      completion="unknown"):
+    """Only observed runtime facts; a child exit code is not a checker attestation."""
+    recovery = ("new_request_only" if consumption == "not_consumed" else
+                "inspect_recorded_attempt" if availability == "committed" else
+                "reconcile_before_new_request")
+    return {"version": 1, "launcher_execution": launcher,
+            "checker_execution": "not_observed", "context_refusal": "not_observed",
+            "nonce_consumption": consumption, "receipt_availability": availability,
+            "completion": completion, "trust_policy": "supplied_snapshot",
+            "automatic_retry_permitted": False, "recovery": recovery}
+
+
 def _emit(body, out):
     # Canonical because the frozen canonicalizer produced it, not because it is JSON.
     print(canon.canonicalize(body), file=out)
@@ -323,7 +378,10 @@ def _typed_failure(typed, options, out, err):
     if typed.code in _DECISION_EXIT:  # pragma: no cover - reason codes are not outcome names
         return _DECISION_EXIT[typed.code]
     if getattr(options, "as_json", False):
-        _emit({"command": options.command, "error": typed.code}, out)
+        body = {"command": options.command, "error": typed.code}
+        if getattr(options, "execution_report", False):
+            body["execution_report"] = _execution_report()
+        _emit(body, out)
     return EXIT_OPERATIONAL
 
 

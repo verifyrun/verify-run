@@ -1,0 +1,18 @@
+{
+  "description": "Verifier obligations independent of the issuer; mutations are signed with published test-only fixture keys.",
+  "large_ttl_seconds": 9007199254740991,
+  "ttl": [
+    {"expires_at": "2026-08-05T00:04:59Z", "expected": "authorization_binding_mismatch"},
+    {"expires_at": "2026-08-05T00:05:01Z", "expected": "authorization_binding_mismatch"},
+    {"expires_at": "2027-08-05T00:05:00Z", "expected": "authorization_binding_mismatch"},
+    {"expires_at": "2026-08-05T01:05:00+01:00", "expected": "accept"}
+  ],
+  "trust": [
+    {"status": "active", "historical": true, "expected": "accept"},
+    {"status": "retired", "historical": true, "expected": "accept"},
+    {"status": "retired", "historical": false, "expected": "signing_key_retired"},
+    {"status": "revoked", "historical": true, "expected": "signing_key_revoked"},
+    {"status": "revoked", "historical": false, "expected": "signing_key_revoked"},
+    {"status": "unknown-status", "historical": true, "expected": "signing_key_invalid"}
+  ]
+}

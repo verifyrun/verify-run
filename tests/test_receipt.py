@@ -379,7 +379,7 @@ class KeyStates(unittest.TestCase):
         case = _case(RECEIPT_DIR / "accept_block_decision.json")
         with self.assertRaises(VerifyError) as caught:
             receipt.verify_receipt(case["receipt"], _receipt_keys(status="revoked"), registry)
-        self.assertEqual(caught.exception.code, "signing_key_retired")
+        self.assertEqual(caught.exception.code, "signing_key_revoked")
 
     def test_an_untrusted_key_is_unknown_however_valid_its_signature(self):
         registry = _registry()

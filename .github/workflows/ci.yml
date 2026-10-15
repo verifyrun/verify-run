@@ -13,6 +13,10 @@ on:
 permissions:
   contents: read
 
+# Match tools/build_reference_result.py so rebuilt wheels match the recorded artifact.
+env:
+  SOURCE_DATE_EPOCH: "1735689600"
+
 jobs:
   test:
     name: tests (Python ${{ matrix.python }})

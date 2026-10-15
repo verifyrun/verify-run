@@ -24,6 +24,13 @@ environment variable. If a key file's mode grants group or other access, `vfy ru
 
 There is no key-rotation command in this alpha.
 
+Local repair: registries distinguish `active`, `retired`, and `revoked`. Retirement stops new
+authority and CLI signing but preserves historical verification for both signing roles.
+Revocation refuses trusted history and present authority with `signing_key_revoked`; the signature
+may still be mathematically valid. There is no trusted compromise timestamp, so partial-history
+revocation is not claimed. The raw issuance functions accept key bytes; their caller must govern
+signer selection. Historical verification never establishes present permission to act.
+
 ## Authorization
 
 Issued **only on ALLOW**. There is no signed negative authorization, because authorization means
@@ -157,10 +164,11 @@ atomicity are weaker, and coordination across machines.
 
 ## Platform
 
-Developed and fully tested on CPython 3.14, macOS on arm64, APFS. On Linux, CI runs the full
-suite and the installed source distribution on 3.11, 3.12 and 3.13; the wheel, the release gates
-and the conformance kit run on 3.12. The README states that per job. Windows is not tested; the process-group and file-mode behavior above is POSIX-specific.
-Cross-platform support is not claimed.
+The held local a5 candidate was verified on CPython 3.14.2, macOS arm64, APFS. CI is configured
+for full source and installed-source checks on Linux Python 3.11–3.13 and wheel/conformance jobs
+on 3.12; configuration is not a passing result for this candidate. Matching Linux/matrix evidence
+remains required before a support claim. Windows execution is unsupported by the POSIX-specific
+process-group and file-mode contract. Cross-platform support is not established here.
 
 ## Three bindings this deliberately does not add
 
@@ -245,8 +253,8 @@ being bolted onto a local cache now.
 
 ## Reporting a problem
 
-Open an issue describing the behavior and the smallest reproduction. For anything you believe is
-exploitable, please report privately to the maintainer before disclosing publicly.
+Open an issue describing the behavior and the smallest reproduction. For a suspected vulnerability, follow [the security reporting policy](../SECURITY.md).
+Do not include secrets or exploit details in a public issue.
 
 ## Build and release dependencies
 
