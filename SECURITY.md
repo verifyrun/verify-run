@@ -14,6 +14,6 @@ available**. Do not post exploit details in a public issue. If unavailable, requ
 contact from the maintainer without disclosing technical details publicly.
 
 Release prerequisite: the maintainer must enable and test receipt of a private report or publish
-an approved private contact. That route is not verified by this local candidate. No response-time
+an approved private contact. Private reporting was enabled and its enabled setting read back on 15 October 2026 UTC. Receipt testing remains open; enabled configuration alone does not prove report delivery. No response-time
 promise or contact address is invented here. See GitHub's private reporting setup documentation:
 https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/configure-vulnerability-reporting/configure-for-a-repository

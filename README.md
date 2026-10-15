@@ -244,10 +244,10 @@ A result is a *self-test*, not certification: nobody accredits this profile, and
 meaningful only together with the profile version and fixture-manifest digest it names. See
 [docs/conformance/claims.md](docs/conformance/claims.md) for exactly what a result lets you say.
 
-The retained reference record below is historical evidence for its named artifact, not this
-local successor. Successor verification is recorded separately without changing the frozen kit.
+The reference record below identifies the tested candidate wheel by digest. It is not a
+PyPI publication claim or acceptance of the hosted service. The frozen kit is unchanged.
 
-Current reference result: **PASS**, 30/30 fixtures, `verify-run 0.1.0a4`, fixture manifest
+Current reference result: **PASS**, 30/30 fixtures, `verify-run 0.1.0a7`, fixture manifest
 `756029f681ad7587…`.
 
 That sentence is checked against [`conformance/reference-result.json`](conformance/reference-result.json),
