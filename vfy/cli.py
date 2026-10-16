@@ -73,6 +73,10 @@ def build_parser():
     session = commands.add_parser("service-accounting-session", help="selected development pool session; no execution")
     session.add_argument("--profile", required=True)
     session.add_argument("--profile-sha256", required=True)
+    adoption = commands.add_parser("adopt-service-copy", help="separately authorized managed development copy adoption")
+    adoption.add_argument("--profile", required=True)
+    adoption.add_argument("--profile-sha256", required=True)
+    adoption.add_argument("--request-sha256", required=True)
     return parser
 
 
@@ -110,6 +114,20 @@ def main(argv=None, clock=None, identifiers=None, out=None, err=None):
         from vfy import service_tests_cli
         return service_tests_cli.run(request_sha256=options.request_sha256, stdin=sys.stdin.buffer, out=out)
 
+    if options.command == "adopt-service-copy":
+        from vfy.service_adoption_cli import adopt_selected
+        from vfy.service_read_cli import MAX_STDIN
+        try:
+            raw = sys.stdin.buffer.read(MAX_STDIN + 1)
+            response = adopt_selected(raw, options.request_sha256,
+                options.profile, options.profile_sha256)
+            print(json.dumps(response, sort_keys=True), file=out)
+            return 0
+        except (OSError, ValueError, KeyError, TypeError, VerifyError) as exc:
+            print(json.dumps({'state': 'ADOPTION_REFUSED_OR_INCOMPLETE',
+                'reason': str(exc), 'automatic_retry': False,
+                'next': 'Inspect retained state; never resend uncertain adoption.'}), file=err)
+            return 1
     if options.command == "service-accounting-session":
         from vfy import service_accounting_cli
         import time
