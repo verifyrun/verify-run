@@ -7,6 +7,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import sys
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -29,17 +30,19 @@ def main():
         and p['root']==str(attempt) and attempt==attempt.resolve())
     service.resources(p['limits'],positive=True)
     m.need(not any(os.path.lexists(attempt/n) for n in ('START.json','ACCOUNTING.json')))
+    label=attempt.name.removeprefix("verify-service-").upper()
+    m.need(re.fullmatch(r"[A-Z0-9_]{1,64}",label) is not None, "INVALID_DISPOSABLE_LABEL")
     root=Path(destination)
     m.need(root.is_absolute() and root==root.resolve() and not root.exists())
     root.mkdir(mode=0o700);m.sync_dir(root.parent)
     owner_seed=os.urandom(32);owner_key=Ed25519PrivateKey.from_private_bytes(owner_seed)
     child_key=Ed25519PrivateKey.generate();approval_key=Ed25519PrivateKey.generate()
-    owner_trust={'DISPOSABLE_SERVICE_OWNER_71KBDB5S':public(owner_key)}
-    child_trust={'DISPOSABLE_UNUSED_CHILD_71KBDB5S':public(child_key)}
-    approval_trust={'DISPOSABLE_SERVICE_APPROVER_71KBDB5S':public(approval_key)}
+    owner_trust={'DISPOSABLE_SERVICE_OWNER_'+label:public(owner_key)}
+    child_trust={'DISPOSABLE_UNUSED_CHILD_'+label:public(child_key)}
+    approval_trust={'DISPOSABLE_SERVICE_APPROVER_'+label:public(approval_key)}
     # Explicit empty predecessor: no measured-child acceptance or dispatch claimed.
     observer={'scope':'NO_CHILD_DISPATCH_SELECTED','service_identity':service.identity()}
-    config=m.raw(dict(schema=common.PROFILE,pool_id='DISPOSABLE_SERVICE_71KBDB5S',
+    config=m.raw(dict(schema=common.PROFILE,pool_id='DISPOSABLE_SERVICE_'+label,
         owner_issuer=next(iter(owner_trust)),capacities=dict(dispatch_slots=1,
         retained_output_bytes=p['limits']['output_bytes']),scope='REVIEWED_LOCAL_VERIFIER_ONLY'))
     owner=common.CapacityOwner.create(root/'pool',config,owner_seed,next(iter(owner_trust)),owner_trust,
@@ -51,7 +54,7 @@ def main():
         resource_capacities=p['limits'],**service.FLAGS))
     pool=service.ServicePool.attach(owner,predecessor_snapshot_bytes=predecessor,policy_bytes=policy)
     snapshot=pool.snapshot()
-    request=m.raw(dict(schema=service.PROFILE,attempt_id='SERVICE_71KBDB5S_ONCE',attempt_root=str(attempt),
+    request=m.raw(dict(schema=service.PROFILE,attempt_id='SERVICE_'+label+'_ONCE',attempt_root=str(attempt),
         pool_root=str(owner.root),policy_sha256=m.sha(policy),preview_sha256=expected,resources=p['limits'],**service.FLAGS))
     approval=m.raw(m.envelope(pool._approval_body(request,expected),approval_key,next(iter(approval_trust))))
     seed_path=root/'owner.seed';m.fresh(seed_path,owner_seed);seed_path.chmod(0o600)
@@ -62,7 +65,9 @@ def main():
             owner_trust=owner_trust,child_trust=child_trust,selected_observer=observer,expected_child_trusts={},
             minimum_revision=1,selected_callback_identity=None,selected_managed_identity=None),
         key_file=str(seed_path),session_seconds=300,service_identity=service.identity()))
-    items={'PROFILE.json':profile,'REQUEST.json':request,'APPROVAL.json':approval,'POLICY.json':policy,
+    context=m.raw(dict(pool_root=str(owner.root),config_hex=config.hex(),owner_trust=owner_trust,
+        child_trust=child_trust,observer=observer,head_hex=predecessor.hex(),policy_hex=policy.hex()))
+    items={'CONSUMER_CONTEXT.json':context,'PROFILE.json':profile,'REQUEST.json':request,'APPROVAL.json':approval,'POLICY.json':policy,
         'CONFIG.json':config,'PREDECESSOR.json':predecessor,'SELECTED_HEAD.json':snapshot}
     for name,data in items.items():m.fresh(root/name,data)
     # Exact installed loading, authentication and correspondence only; no admit/consume.

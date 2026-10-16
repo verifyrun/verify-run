@@ -6,6 +6,7 @@ Output is a derived observation, not a new owner-signed receipt or semantic trut
 """
 import argparse
 import json
+import hashlib
 from pathlib import Path
 import sys
 
@@ -13,8 +14,14 @@ p=argparse.ArgumentParser(description=__doc__)
 for flag in ('installed-root','attempt-root','context','context-sha256','snapshot-sha256','output'):
     p.add_argument('--'+flag,required=True)
 p.add_argument('--minimum-revision',type=int,required=True)
+p.add_argument('--requirements',help='Selected frozen requirements; defaults to attempt/FROZEN_REQUIREMENTS.json')
+p.add_argument('--request',help='Selected accounting request; defaults to attempt/TEST_REQUEST.json')
+p.add_argument('--checker-sha256',help='Independently selected installed service_tests.py digest')
 args=p.parse_args()
 installed=Path(args.installed_root).resolve(strict=True)
+if args.checker_sha256 is not None:
+    if hashlib.sha256((installed/'vfy'/'service_tests.py').read_bytes()).hexdigest()!=args.checker_sha256:
+        raise SystemExit('Selected checker hash mismatch')
 sys.path.insert(0,str(installed))
 from vfy import child_ledger as m, service_tests as tests
 if not Path(tests.__file__).resolve().is_relative_to(installed):raise SystemExit('Wrong checker origin')
@@ -34,12 +41,12 @@ pool=tests.load_service_pool(snapshot_bytes=snapshot,expected_snapshot_sha256=ar
     expected_child_trusts={},minimum_revision=args.minimum_revision)
 runner=m.read_file(root/'runner'/'verify_service_runner.py')
 checker=tests.TestObservationChecker(pool,selection_bytes=m.read_file(root/'TEST_SELECTION.json'),
-    requirements_bytes=m.read_file(root/'FROZEN_REQUIREMENTS.json'),runner_bytes=runner,
+    requirements_bytes=m.read_file(Path(args.requirements) if args.requirements else root/'FROZEN_REQUIREMENTS.json'),runner_bytes=runner,
     limits=dict(input_bytes=16777216,cases=4096,requirements=1024,retained_bytes=33554432))
 observed=checker.check(preview_bytes=m.read_file(root/'PREVIEW.json'),start_bytes=m.read_file(root/'START.json'),
     result_bytes=m.read_file(root/'RESULT.json'),stdout_bytes=m.read_file(root/'stdout.bin'),
     stderr_bytes=m.read_file(root/'stderr.bin'),accounting_snapshot_bytes=snapshot,
-    request_sha256=m.sha(m.read_file(root/'TEST_REQUEST.json')))
+    request_sha256=m.sha(m.read_file(Path(args.request) if args.request else root/'TEST_REQUEST.json')))
 output=Path(args.output)
 m.need(output.is_absolute() and output==output.resolve(),'Canonical output path required')
 m.fresh(output,m.raw(observed))
