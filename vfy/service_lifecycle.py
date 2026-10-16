@@ -59,11 +59,11 @@ class Ledger:
         m.need(action['public_key_hex'] not in excluded,'Independent action key required.')
 
     @contextlib.contextmanager
-    def locked(self):
+    def locked(self, *, inspect_pending=False):
         fd=os.open(self.root/'lock',os.O_RDWR|os.O_NOFOLLOW|os.O_NONBLOCK)
         try:
             fcntl.flock(fd,fcntl.LOCK_EX|fcntl.LOCK_NB)
-            m.need(not os.path.lexists(self.root/'pending.json'),'Interrupted publication; retained UNKNOWN.')
+            m.need(inspect_pending or not os.path.lexists(self.root/'pending.json'),'Interrupted publication; retained UNKNOWN.')
             self.current=bounded_file(self.root/'state.json',m.MAX_BYTES)
             m.need(m.sha(self.current)==self.expected,'Current head changed; no replay or reconstruction.')
             self.check_profile()
@@ -101,7 +101,7 @@ class Ledger:
             legacy_sha256=m.sha(self.legacy),pool_root=str(self.root),task_id=p['task_id'],attempt_id=p['attempt_id'],
             payload_sha256=p['payload_sha256'],phase='PREPARING',reserved=dict(dispatch_slots=2,retained_output_bytes=hold,
             preparation=limits,adoption=p['adoption_limits'],recovery_bytes=p['recovery_bytes']),
-            measured={},managed_root=None,plan=None,preparation_receipt=None,completion=None,recovery_used=False,
+            input_inventory={},managed_root=None,plan=None,preparation_receipt=None,completion=None,recovery_used=False,
             full_physical_cost='UNKNOWN',authority_granted=False,automatic_retry=False,acquisition='bounded profile, trust and state reads outside these logical payload measures'))
 
 
@@ -118,15 +118,16 @@ def prepare(ledger,payload_path):
             raw=bounded_file(payload_path,limits['payload_bytes'])
             m.need(m.sha(raw)==p['payload_sha256'],'Prepared input identity differs.')
             q=m.load.load_json_bytes(raw)
-            m.need(set(q)=={'base_manifest','base_files','candidate_manifest','candidate_files','original_root','check_inputs'})
+            m.need(set(q)=={'base_manifest','base_files','candidate_manifest','candidate_files','original_root','check_inputs','checker_inputs'})
             base=decode_files(q['base_files']);candidate=decode_files(q['candidate_files'])
             inputs={k:(v if k=='request_sha256' else base64.b64decode(v,validate=True)) for k,v in q['check_inputs'].items()}
-            selected={k:base64.b64decode(v,validate=True) for k,v in p['checker']['inputs'].items()}
+            selected={k:base64.b64decode(v,validate=True) for k,v in q['checker_inputs'].items()}
+            m.need(set(selected)==set(p['checker']['digests']) and all(m.sha(v)==p['checker']['digests'][k] for k,v in selected.items()),'Unselected checker evidence.')
             counts=dict(payload_bytes=len(raw),copy_bytes=sum(map(len,base.values())),
                 staged_bytes=sum(map(len,candidate.values())),checked_bytes=sum(len(v) for k,v in inputs.items() if k!='request_sha256')+sum(map(len,selected.values())),
                 files=len(base)+len(candidate),artifact_bytes=4*len(raw)+2*sum(map(len,base.values()))+sum(map(len,candidate.values()))+262144)
             m.need(all(counts[k]<=limits[k] for k in PREP_AXES),'Preparation resource bound exceeded.')
-            ledger.body['measured']=counts;ledger.publish(ledger.body)
+            ledger.body['input_inventory']=counts;ledger.publish(ledger.body)
             checker=service_tests.TestObservationChecker(ledger.service,**selected,limits=p['checker']['limits'])
             root=a.provision_managed_copy(base_manifest_bytes=m.raw(q['base_manifest']),base_files=base,
                 original_root=q['original_root'],limits=p['adoption_limits'])
@@ -135,7 +136,7 @@ def prepare(ledger,payload_path):
                 task_id=p['task_id'],checker=checker,check_inputs=inputs,limits=p['adoption_limits'])
             receipt=m.envelope(dict(schema=FORMAT+'/prepared',profile_sha256=ledger.profile_sha,
                 task_id=p['task_id'],attempt_id=p['attempt_id'],payload_sha256=p['payload_sha256'],
-                base_plan_sha256=m.digest(plan),measured=counts,reserved=ledger.body['reserved'],
+                base_plan_sha256=m.digest(plan),input_inventory=counts,inventory_scope='supplied payload and content sizes; artifact_bytes is conservative estimate; repeated reads and physical work not measured',reserved=ledger.body['reserved'],
                 predecessor_sha256=m.sha(ledger.current),identity=identity(),full_physical_cost='UNKNOWN',authority_granted=False,automatic_retry=False),ledger.owner.key,ledger.owner.issuer)
             plan=dict(plan,preparation_receipt_sha256=m.digest(receipt))
             # Complete private construction, never execution/adoption. An interruption
@@ -192,7 +193,33 @@ def adopt(ledger,request):
 
 
 def recover(ledger):
-    with ledger.locked():
+    with ledger.locked(inspect_pending=True):
+        pending_path=ledger.root/'pending.json'
+        if os.path.lexists(pending_path):
+            marker=ledger.root/('recovery-'+ledger.profile_sha+'.json')
+            m.need(not os.path.lexists(marker),'Recovery budget consumed; no repeat.')
+            raw=bounded_file(pending_path,ledger.profile['recovery_bytes'])
+            record=m.load.load_json_bytes(raw);b=m.authenticate(record,ledger.owner.trust)
+            m.need(record['issuer_identity']==ledger.owner.issuer and b['schema']==FORMAT
+                and b['identity']==identity() and b['profile_sha256']==ledger.profile_sha
+                and b['legacy_sha256']==m.sha(ledger.legacy) and b['previous']==m.sha(ledger.current)
+                and b['task_id']==ledger.profile['task_id'] and b['attempt_id']==ledger.profile['attempt_id']
+                and b['reserved']['recovery_bytes']==ledger.profile['recovery_bytes']
+                and not b['recovery_used'])
+            current=m.load.load_json_bytes(ledger.current)
+            if ledger.current==ledger.legacy:
+                m.need(b['phase']=='PREPARING' and b['revision']==1)
+            else:
+                old=ledger.load()
+                m.need(b['revision']==old['revision']+1 and not old['recovery_used'])
+            marker=ledger.root/('recovery-'+ledger.profile_sha+'.json')
+            m.need(not os.path.lexists(marker),'Recovery budget consumed; no repeat.')
+            receipt=m.envelope(dict(schema=FORMAT+'/publication-recovery',current_sha256=m.sha(ledger.current),
+                pending_sha256=m.sha(raw),state='UNKNOWN_PUBLICATION',charged_recovery_bytes=ledger.profile['recovery_bytes'],
+                authority_granted=False,automatic_retry=False),ledger.owner.key,ledger.owner.issuer)
+            m.fresh(marker,m.raw(receipt));m.sync_dir(ledger.root)
+            return dict(state='UNKNOWN_PUBLICATION',head_sha256=m.sha(ledger.current),receipt=receipt,
+                construction_resumed=False,authority_granted=False,automatic_retry=False)
         b=ledger.load();m.need(not b['recovery_used'],'Recovery budget consumed; no repeat.')
         m.need(len(ledger.current)<=ledger.profile['recovery_bytes'],'Recovery input exceeds reserved bytes.')
         b['recovery_used']=True;head=ledger.publish(b)

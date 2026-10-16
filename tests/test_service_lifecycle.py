@@ -14,14 +14,14 @@ class LifecycleTests(unittest.TestCase):
         encode=lambda b:base64.b64encode(b).decode()
         payload=dict(base_manifest=manifest(f.base),base_files={k:encode(v) for k,v in f.base.items()},
             candidate_manifest=manifest(f.candidate),candidate_files={k:encode(v) for k,v in f.candidate.items()},
-            original_root=str(f.original),check_inputs={k:(v if k=='request_sha256' else encode(v)) for k,v in f.o.args.items()})
+            original_root=str(f.original),checker_inputs={k:encode(v) for k,v in f.o.checker.selected.items()},check_inputs={k:(v if k=='request_sha256' else encode(v)) for k,v in f.o.args.items()})
         self.payload=f.f.base/'paid-payload.json';self.payload.write_bytes(m.raw(payload))
         self.profile=dict(schema=lifecycle.FORMAT,scope='DISPOSABLE_DEVELOPMENT_ONLY',
             service_profile=str(self.f.service_path),service_profile_sha256=m.sha(self.f.service_path.read_bytes()),
             task_id='TEST-REQUIREMENTS',attempt_id='fresh-paid-attempt',payload_sha256=m.sha(self.payload.read_bytes()),
             preparation_limits=dict(payload_bytes=1000000,copy_bytes=1000,staged_bytes=1000,checked_bytes=1000000,files=10,artifact_bytes=2000000),
             adoption_limits=f.limits,recovery_bytes=1000000,
-            checker=dict(inputs={k:encode(v) for k,v in f.o.checker.selected.items()},limits=f.o.limits),
+            checker=dict(digests={k:m.sha(v) for k,v in f.o.checker.selected.items()},limits=f.o.limits),
             action_key=dict(**f.policy['action_key'],status='active'),runtime_id='runtime-1',authorization_store_root=str(f.nonces.root))
         self.path=f.f.base/'paid-profile.json';self.path.write_bytes(m.raw(self.profile))
         self.initial=m.sha(f.f.pool.snapshot())
@@ -85,3 +85,15 @@ class LifecycleTests(unittest.TestCase):
         self.assertIsNotNone(record['managed_root'])
         self.assertEqual((self.f.f.original/'app/a.py').read_bytes(),b'base a')
         with self.assertRaises(Exception):lifecycle.adopt(self.ledger(self.current()),{})
+
+    def test_pending_publication_recovery_preserves_both_records(self):
+        root=self.f.f.f.pool.root
+        before=(root/'state.json').read_bytes()
+        with patch.object(lifecycle.os,'replace',side_effect=OSError('publication interrupted')):
+            with self.assertRaises(OSError):lifecycle.prepare(self.ledger(self.initial),self.payload)
+        pending=(root/'pending.json').read_bytes()
+        recovered=lifecycle.recover(self.ledger(self.initial))
+        self.assertEqual(recovered['state'],'UNKNOWN_PUBLICATION')
+        self.assertEqual(before,(root/'state.json').read_bytes())
+        self.assertEqual(pending,(root/'pending.json').read_bytes())
+        with self.assertRaises(Exception):lifecycle.recover(self.ledger(self.initial))
