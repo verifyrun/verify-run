@@ -56,7 +56,8 @@ def adopt_selected(request_raw, expected_request, profile_path, expected_profile
         ticket = pool.reserve(request['plan'], recorded_at=now)
         receipt = adoption.adopt(request['root'], request['plan'], pool=pool,
             ticket=ticket, pinned=pinned, snapshot=frozen, result=result,
-            authorization=auth, runtime_id=policy['runtime_id'], verification_time=now,
+            authorization=auth, runtime_id=policy['runtime_id'],
+            verification_time=datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
             authorization_keys=keys, registry=registry, authorization_store=nonces)
     return {'schema': 'vfy.service-adoption-entry-response/1',
         'request_sha256': expected_request, 'profile_sha256': expected_profile,
