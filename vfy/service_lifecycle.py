@@ -203,6 +203,9 @@ def recover(ledger):
             m.need(record['issuer_identity']==ledger.owner.issuer and b['schema']==FORMAT
                 and b['identity']==identity() and b['profile_sha256']==ledger.profile_sha
                 and b['legacy_sha256']==m.sha(ledger.legacy) and b['previous']==m.sha(ledger.current)
+                and b['pool_root']==str(ledger.root) and b['payload_sha256']==ledger.profile['payload_sha256']
+                and b['phase'] in {'PREPARING','UNKNOWN','PREPARED','ADOPTING','COMPLETE'}
+                and type(b['revision']) is int and b['revision']>0 and b['automatic_retry'] is False
                 and b['task_id']==ledger.profile['task_id'] and b['attempt_id']==ledger.profile['attempt_id']
                 and b['reserved']['recovery_bytes']==ledger.profile['recovery_bytes']
                 and not b['recovery_used'])
