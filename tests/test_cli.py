@@ -164,13 +164,14 @@ class Parsing(unittest.TestCase):
                 code, _, _ = workspace.cli(*case["argv"])
                 self.assertEqual(code, case["expected"]["exit"], path.name)
 
-    def test_the_command_set_is_exactly_the_five(self):
+    def test_the_command_set_is_exactly_the_five_plus_selected_service_readers(self):
         parser = cli.build_parser()
         commands = set()
         for action in parser._actions:
             if getattr(action, "choices", None) and hasattr(action.choices, "keys"):
                 commands |= set(action.choices)
-        self.assertEqual(commands, {"init", "check", "run", "replay", "receipts"})
+        self.assertEqual(commands, {"init", "check", "run", "replay", "receipts",
+                                    "verify-service-receipt", "reconcile-service-repair"})
 
     def test_help_renders_for_every_command(self):
         for argv in ([], ["init"], ["check"], ["run"], ["replay"], ["receipts"]):

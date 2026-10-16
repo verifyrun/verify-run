@@ -509,3 +509,15 @@ never prints an object's memory representation or anything else unstable.
 `--json`. Default fields, signed receipts and decision meanings are unchanged. Nested checker and
 context facts remain `not_observed` until an external adapter provides authenticated observations.
 Unknown failures require reconciliation; a missing response never means nothing executed.
+
+## Explicit selected service readers (private development distribution)
+
+The authorized additive service profile adds exactly two public read-only commands:
+`vfy verify-service-receipt --request-sha256 HEX` and
+`vfy reconcile-service-repair --request-sha256 HEX`.
+Their versioned bounded stdin/stdout contract is specified in
+`docs/SERVICE_READ_CLI_CONTRACT.md`. They do not open or initialize the ordinary
+workspace, do not execute/retry a service or adoption, and do not restore live
+accounting capabilities. Existing commands and historical record identities remain
+unchanged. Read response exit0 is not ALLOW or current readiness; historical UNKNOWN
+is preserved in the exact nested result. Public release remains separately held.

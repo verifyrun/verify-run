@@ -66,6 +66,10 @@ def build_parser():
     actions.add_parser("list", help="list committed receipts")
     show = actions.add_parser("show", help="load, verify, and replay one receipt")
     show.add_argument("receipt_id", help="the receipt id")
+    for name in ("verify-service-receipt", "reconcile-service-repair"):
+        reader = commands.add_parser(name, help="bounded selected service reading; no action or retry")
+        reader.add_argument("--request-sha256", required=True,
+                            help="independently selected SHA256 of exact JSON stdin bytes")
     return parser
 
 
@@ -93,6 +97,11 @@ def main(argv=None, clock=None, identifiers=None, out=None, err=None):
     if options.execution_report and (not options.as_json or options.command != "run"):
         print("--execution-report requires --json and run", file=err)
         return EXIT_USAGE
+
+    if options.command in ("verify-service-receipt", "reconcile-service-repair"):
+        from vfy import service_read_cli
+        return service_read_cli.run(command=options.command, request_sha256=options.request_sha256,
+                                    stdin=sys.stdin.buffer, out=out)
 
     clock = workflow.Clock() if clock is None else clock
     identifiers = workflow.Identifiers() if identifiers is None else identifiers
