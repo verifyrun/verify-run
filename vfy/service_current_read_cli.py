@@ -40,6 +40,8 @@ def run(*,request_sha256,stdin,out):
     except Exception as exc:
         response.update(state='REFUSED',result=None,error=type(exc).__name__)
         data=m.raw(response)+b'\n';code=12
+        if len(data)>1024:
+            data=m.raw(dict(schema='vfy.service-read-cli-response/2',state='REFUSED',error='INVALID_REQUEST',**legacy.FLAGS))+b'\n'
     try:out.write(data.decode('utf-8'))
     except (OSError,ValueError):return 1
     return code
