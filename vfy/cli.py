@@ -83,6 +83,10 @@ def build_parser():
     lifecycle.add_argument("--profile-sha256", required=True)
     lifecycle.add_argument("--expected-head", required=True)
     lifecycle.add_argument("--payload")
+    workflow_service = commands.add_parser("service-workflow", help="held pre-observation development workflow")
+    workflow_service.add_argument("operation", choices=("session", "adopt", "recover"))
+    for field in ("profile", "profile-sha256", "expected-head"):
+        workflow_service.add_argument("--" + field, required=True)
     return parser
 
 
@@ -119,6 +123,29 @@ def main(argv=None, clock=None, identifiers=None, out=None, err=None):
     if options.command == "check-service-tests":
         from vfy import service_tests_cli
         return service_tests_cli.run(request_sha256=options.request_sha256, stdin=sys.stdin.buffer, out=out)
+
+    if options.command == "service-workflow":
+        from vfy import service_workflow as service_workflow, service_lifecycle
+        import time
+        try:
+            if options.operation == "session":
+                selected_clock = workflow.Clock() if clock is None else clock
+                selected_ids = workflow.Identifiers() if identifiers is None else identifiers
+                return service_workflow.session(profile=options.profile, profile_sha256=options.profile_sha256,
+                    expected_head=options.expected_head, input_fd=sys.stdin.fileno(), output_fd=out.fileno(),
+                    session_id=selected_ids.nonce(), now=selected_clock.now_utc, monotonic=time.monotonic)
+            ledger = service_workflow.Ledger(options.profile, options.profile_sha256, options.expected_head)
+            if options.operation == "adopt":
+                raw = sys.stdin.buffer.read(service_workflow.MAX_STDIN + 1)
+                if len(raw) > service_workflow.MAX_STDIN: raise ValueError("Request bound exceeded")
+                result = service_lifecycle.adopt(ledger, service_workflow.m.load.load_json_bytes(raw))
+            else:
+                result = service_workflow.recover(ledger)
+            print(json.dumps(result, sort_keys=True), file=out)
+            return 0
+        except Exception as exc:
+            print(json.dumps({"state":"REFUSED_OR_UNKNOWN", "reason":str(exc), "automatic_retry":False}),file=out)
+            return 12
 
     if options.command == "service-lifecycle":
         from vfy import service_lifecycle as lifecycle
