@@ -50,10 +50,12 @@ def adopt_selected(request_raw, expected_request, profile_path, expected_profile
         policy['runtime_id'], now, keys, registry, consumed_nonces=consumed)
     # Existing selector retains the one allocator lock and refuses stale heads.
     with selected_pool(profile['service_profile'], profile['service_profile_sha256']) as (service, _):
+        m.need(bounded_file(profile_path, MAX_STDIN) == raw, 'Action trust profile changed while awaiting pool lock.')
         head = service.snapshot()
         pool = adoption.AdoptionPool.attach(service, expected_snapshot_bytes=head,
             policy_bytes=m.raw(policy))
         ticket = pool.reserve(request['plan'], recorded_at=now)
+        m.need(bounded_file(profile_path, MAX_STDIN) == raw, 'Action trust profile changed before adoption.')
         receipt = adoption.adopt(request['root'], request['plan'], pool=pool,
             ticket=ticket, pinned=pinned, snapshot=frozen, result=result,
             authorization=auth, runtime_id=policy['runtime_id'],
