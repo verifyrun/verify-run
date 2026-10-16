@@ -14,6 +14,8 @@ from vfy.service_accounting_cli import bounded_file,MAX_STDIN
 from vfy.service_read_cli import _inputs,MAX_INPUTS
 
 FORMAT='vfy.service-workflow/1'
+OBLIGATION_FORMAT='vfy.service-workflow/2'
+OBLIGATION_FIELDS={'obligation','obligation_sha256','review','review_sha256','review_profile','review_profile_sha256','baseline_profile','baseline_profile_sha256','baseline_head'}
 ACQUISITION={'read_bytes','read_files','write_bytes','write_files'}
 FIELDS={'schema','scope','service_profile','service_profile_sha256','task_id','attempt_id','paths',
  'acquisition_limits','observation_limits','preparation_limits','adoption_limits','recovery_bytes',
@@ -29,7 +31,10 @@ class Ledger:
   self.path=path;self.raw=bounded_file(path,MAX_STDIN)
   m.need(m.sha(self.raw)==digest and m.hex64(expected_head))
   self.profile=p=m.load.load_json_bytes(self.raw)
-  m.need(type(p) is dict and set(p)==FIELDS and p['schema']==FORMAT and p['scope']=='DISPOSABLE_DEVELOPMENT_ONLY')
+  m.need(type(p) is dict and p.get('schema') in (FORMAT,OBLIGATION_FORMAT) and set(p)==FIELDS|({'obligation_binding'} if p['schema']==OBLIGATION_FORMAT else set()) and p['scope']=='DISPOSABLE_DEVELOPMENT_ONLY')
+  if p['schema']==OBLIGATION_FORMAT:
+   ob=p['obligation_binding'];m.need(type(ob) is dict and set(ob)==OBLIGATION_FIELDS)
+   m.need(all(m.hex64(v) if k.endswith('sha256') or k=='baseline_head' else type(v) is str and Path(v).is_absolute() for k,v in ob.items()))
   m.need(m.text(p['task_id']) and m.text(p['attempt_id']) and set(p['paths'])==PATHS)
   m.need(type(p['labels']) is list and bool(p['labels']) and all(type(v) is str and v and all(c.isalnum() or c in '._' for c in v) for v in p['labels']))
   m.need(all(type(v) is str and Path(v).is_absolute() for v in p['paths'].values()))
@@ -185,10 +190,14 @@ def prepare(ledger):
   checker=service_tests.TestObservationChecker(readonly,**selected,limits=dict(input_bytes=p['preparation_limits']['checked_bytes'],cases=64,requirements=64,retained_bytes=p['preparation_limits']['artifact_bytes']))
   counts=dict(copy_bytes=sum(map(len,base.values())),staged_bytes=sum(map(len,candidate.values())),files=len(base)+len(candidate),checked_bytes=sum(len(v) for k,v in inputs.items() if k!='request_sha256')+sum(map(len,selected.values())))
   m.need(all(v<=p['preparation_limits'][k] for k,v in counts.items()))
+  obligation_result=None
+  if p['schema']==OBLIGATION_FORMAT:
+   obligation_result=check_obligation(ledger,meter,base_manifest,base,checker,inputs)
   managed=adoption.provision_managed_copy(base_manifest_bytes=m.raw(base_manifest),base_files=base,original_root=p['paths']['repository'],limits=p['adoption_limits'])
   b['managed_root']=str(managed);ledger.publish(b);fault('after_managed_copy')
   plan=adoption.prepare_adoption(managed,candidate_manifest_bytes=m.raw(candidate_manifest),candidate_files=candidate,task_id=p['task_id'],checker=checker,check_inputs=inputs,limits=p['adoption_limits'])
-  receipt=m.envelope(dict(schema=FORMAT+'/prepared',profile_sha256=ledger.profile_sha,task_id=p['task_id'],attempt_id=p['attempt_id'],base_plan_sha256=m.digest(plan),input_inventory=counts,acquisition_used=b['acquisition_used'],nested_snapshot_sha256=m.sha(nested),predecessor_sha256=m.sha(ledger.current),full_physical_cost='UNKNOWN',authority_granted=False,automatic_retry=False),ledger.owner.key,ledger.owner.issuer)
+  if obligation_result is not None:refresh_obligation_review(ledger,meter,obligation_result)
+  receipt=m.envelope(dict(schema=FORMAT+'/prepared',profile_sha256=ledger.profile_sha,task_id=p['task_id'],attempt_id=p['attempt_id'],base_plan_sha256=m.digest(plan),input_inventory=counts,acquisition_used=b['acquisition_used'],nested_snapshot_sha256=m.sha(nested),predecessor_sha256=m.sha(ledger.current),full_physical_cost='UNKNOWN',authority_granted=False,automatic_retry=False,obligation_result=obligation_result),ledger.owner.key,ledger.owner.issuer)
   plan=dict(plan,preparation_receipt_sha256=m.digest(receipt))
   (managed/'PLAN.json').write_bytes(m.raw(plan))
   with (managed/'PLAN.json').open('rb') as stream:os.fsync(stream.fileno())
@@ -227,6 +236,10 @@ def session(*,profile,profile_sha256,expected_head,input_fd,output_fd,session_id
       m.need(ledger.body['phase']=='OBSERVATION_SETTLED' and set(used)==ACQUISITION)
       m.need(all(type(v) is int and ledger.body['acquisition_used'][k]<=v<=ledger.profile['acquisition_limits'][k] for k,v in used.items()))
       ledger.body['acquisition_used']=used;ledger.publish(ledger.body);record=dict(head_sha256=m.sha(ledger.current));state='METERED'
+     elif op=='RETAIN':
+      m.need(q['inputs']=={} and ledger.body['phase']=='OBSERVATION_SETTLED')
+      ledger.body['phase']='OBSERVATION_RETAINED';head=ledger.publish(ledger.body)
+      record=dict(head_sha256=head,automatic_retry=False);state='OBSERVATION_RETAINED';done=True
      elif op=='PREPARE':
       m.need(q['inputs']=={});record=prepare(ledger);state='PREPARED';done=True
      else:raise ValueError('Unsupported workflow stage')
@@ -264,3 +277,67 @@ def recover(ledger):
   b=ledger.load();m.need(not b['recovery_used'] and len(ledger.current)<=ledger.profile['recovery_bytes'],'Recovery allowance unavailable.')
   b['recovery_used']=True;head=ledger.publish(b)
   return dict(state=b['phase'],head_sha256=head,completion=b['completion'],construction_resumed=False,automatic_retry=False,authority_granted=False,full_physical_cost='UNKNOWN')
+
+def check_obligation(ledger,meter,base_manifest,base_files,candidate_checker,candidate_inputs):
+ """Compare two authenticated paid observations and one fixed scoped examination."""
+ from vfy import service_obligation as obligation,resources,schema,store
+ from vfy.service_lifecycle import now
+ spec=ledger.profile['obligation_binding']
+ def read(name):
+  raw=meter.read(Path(spec[name]));m.need(m.sha(raw)==spec[name+'_sha256'],'Frozen obligation input changed: '+name)
+  return raw,m.load.load_json_bytes(raw)
+ obligation_raw,o=read('obligation');review_raw,review_request=read('review');profile_raw,review_profile=read('review_profile')
+ obligation.validate(o)
+ for e in o['finding']['evidence']:
+  m.need(e['end_line']<=len(base_files[e['path']].splitlines()),'Proposed source span is outside original source')
+ handoff=o['analysis_handoff'];m.need(set(handoff)=={'schema','session_id','source_sha256','completion','application_authority'} and handoff['schema']=='engineer-analysis-handoff/1' and handoff['application_authority'] is False)
+ completion=Path(handoff['completion']['path']);m.need(completion.name=='COMPLETED.json')
+ done_raw=meter.read(completion);m.need(m.sha(done_raw)==handoff['completion']['sha256'])
+ done=m.load.load_json_bytes(done_raw);started_raw=meter.read(completion.parent/'STARTED.json');report_raw=meter.read(completion.parent/'analysis.json')
+ m.need(m.sha(started_raw)==done['started_sha256'] and m.sha(report_raw)==done['analysis_sha256'])
+ started=m.load.load_json_bytes(started_raw);report=m.load.load_json_bytes(report_raw)
+ expected={k:dict(sha256=v['sha256'],bytes=v['bytes'],mode='100755' if v['executable'] else '100644') for k,v in base_manifest.items()}
+ m.need(started['goal']==report['goal']==o['goal'] and started['source_inventory']==expected and started['source_sha256']==report['source_sha256']==handoff['source_sha256']==m.digest(expected),'Goal or original analysis source differs')
+ m.need(str(Path(started['repository']))==ledger.profile['paths']['repository'] and done['session_id']==handoff['session_id'])
+ # The protected workflow profile selects the original predecessor and review
+ # authority. Uploaded obligation data cannot select either trust context.
+ baseline=Ledger(spec['baseline_profile'],spec['baseline_profile_sha256'],spec['baseline_head'])
+ m.need(baseline.root!=ledger.root,'Baseline must use separate previously paid observation allocation')
+ with baseline.locked():
+  b=baseline.load();m.need(b['phase']=='OBSERVATION_RETAINED','Baseline is not retained paid observation')
+  root=Path(b['attempt_root']);p=baseline.profile
+  selected=dict(selection_bytes=meter.read(root/'TEST_SELECTION.json'),requirements_bytes=meter.read(p['paths']['requirements']),runner_bytes=meter.read(root/'runner/verify_service_runner.py'))
+  inputs={k:meter.read(root/name) for k,name in [('preview_bytes','PREVIEW.json'),('start_bytes','START.json'),('result_bytes','RESULT.json'),('stdout_bytes','stdout.bin'),('stderr_bytes','stderr.bin')]}
+  nested=bytes.fromhex(b['nested_raw_hex']);inputs['accounting_snapshot_bytes']=nested
+  nb=baseline.selected._validate(m.load.load_json_bytes(nested))['body'];inputs['request_sha256']=nb['entries'][-1]['request_sha256']
+  kwargs=dict(baseline.service_profile['selection']);kwargs['expected_snapshot_sha256']=m.sha(nested)
+  readonly=service_tests.load_service_pool(**kwargs,snapshot_bytes=nested,expected_config_bytes=baseline.data['config'],predecessor_snapshot_bytes=baseline.data['predecessor'],policy_bytes=baseline.data['policy'],managed_legacy_snapshot_bytes=baseline.data['managed_legacy'] or None)
+  checker=service_tests.TestObservationChecker(readonly,**selected,limits=candidate_checker.limits)
+  before=checker.check(**inputs);after=candidate_checker.check(**candidate_inputs)
+  result=obligation.compare(o,baseline=before,candidate=after,baseline_preview=service.evidence(inputs['preview_bytes']),candidate_preview=service.evidence(candidate_inputs['preview_bytes']),baseline_selection=checker.selection,candidate_selection=candidate_checker.selection,requirements=m.load.load_json_bytes(selected['requirements_bytes']),original_manifest=base_manifest,task_id=ledger.profile['task_id'])
+  m.need(selected['requirements_bytes']==candidate_checker.selected['requirements_bytes'],'Baseline requirements differ from candidate')
+  # One immutable review observation, not a second action authorization or
+  # claim that a signature proves arbitrary semantic adequacy.
+  registry=schema.build_registry([m.load.load_json_bytes(f.read_bytes()) for f in sorted(resources.schema_dir().glob('*.schema.json'))])
+  nonce=review_request['authorization']['nonce'];local_store=store.LocalStore(Path(ledger.profile['authorization_store_root']))
+  consumed={nonce} if local_store.is_consumed(nonce) else set()
+  ledger.check_profile();baseline.check_profile()
+  m.need(meter.read(Path(spec['review_profile']))==profile_raw,'Review authority changed during observation comparison')
+  reviewed=obligation.review(o,review_request,review_profile,registry,now(),consumed)
+  return dict(comparison=result,review=reviewed,obligation_sha256=m.sha(obligation_raw),review_profile_sha256=m.sha(profile_raw),baseline_head_sha256=m.sha(baseline.current),baseline_profile_sha256=baseline.profile_sha,authority_granted=False)
+
+
+def refresh_obligation_review(ledger,meter,observed):
+ """Recheck current review trust/time at prepared-publication boundary."""
+ from vfy import service_obligation as obligation,resources,schema,store
+ from vfy.service_lifecycle import now
+ spec=ledger.profile['obligation_binding'];values={}
+ for name in ('obligation','review','review_profile'):
+  raw=meter.read(Path(spec[name]));m.need(m.sha(raw)==spec[name+'_sha256'],'Scoped review changed before preparation publication')
+  values[name]=m.load.load_json_bytes(raw)
+ registry=schema.build_registry([m.load.load_json_bytes(f.read_bytes()) for f in sorted(resources.schema_dir().glob('*.schema.json'))])
+ nonce=values['review']['authorization']['nonce'];local=store.LocalStore(Path(ledger.profile['authorization_store_root']))
+ consumed={nonce} if local.is_consumed(nonce) else set()
+ ledger.check_profile()
+ current=obligation.review(values['obligation'],values['review'],values['review_profile'],registry,now(),consumed)
+ m.need(current==observed['review'],'Scoped review identity changed before preparation publication')
