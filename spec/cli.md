@@ -521,3 +521,12 @@ workspace, do not execute/retry a service or adoption, and do not restore live
 accounting capabilities. Existing commands and historical record identities remain
 unchanged. Read response exit0 is not ALLOW or current readiness; historical UNKNOWN
 is preserved in the exact nested result. Public release remains separately held.
+
+## Selected development service accounting pipe
+
+`vfy service-accounting-session --profile PATH --profile-sha256 HEX` exposes the
+existing service accounting epoch through a bounded, single-attempt pipe. It does
+not launch a service or provide action authority. See
+`docs/SERVICE_ACCOUNTING_CLI_CONTRACT.md` for exact profile, framing, limits,
+acknowledgment/no-retry, resource exclusions and development key-provider scope.
+Public release and Engineer execution acceptance remain separately held.

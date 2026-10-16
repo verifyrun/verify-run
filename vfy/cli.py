@@ -70,6 +70,9 @@ def build_parser():
         reader = commands.add_parser(name, help="bounded selected service reading; no action or retry")
         reader.add_argument("--request-sha256", required=True,
                             help="independently selected SHA256 of exact JSON stdin bytes")
+    session = commands.add_parser("service-accounting-session", help="selected development pool session; no execution")
+    session.add_argument("--profile", required=True)
+    session.add_argument("--profile-sha256", required=True)
     return parser
 
 
@@ -102,6 +105,16 @@ def main(argv=None, clock=None, identifiers=None, out=None, err=None):
         from vfy import service_read_cli
         return service_read_cli.run(command=options.command, request_sha256=options.request_sha256,
                                     stdin=sys.stdin.buffer, out=out)
+
+    if options.command == "service-accounting-session":
+        from vfy import service_accounting_cli
+        import time
+        session_clock = workflow.Clock() if clock is None else clock
+        session_identifiers = workflow.Identifiers() if identifiers is None else identifiers
+        return service_accounting_cli.run(profile=options.profile, profile_sha256=options.profile_sha256,
+                                          input_fd=sys.stdin.fileno(), output_fd=out.fileno(),
+                                          session_id=session_identifiers.nonce(), now=session_clock.now_utc,
+                                          monotonic=time.monotonic)
 
     clock = workflow.Clock() if clock is None else clock
     identifiers = workflow.Identifiers() if identifiers is None else identifiers
