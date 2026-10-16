@@ -77,6 +77,12 @@ def build_parser():
     adoption.add_argument("--profile", required=True)
     adoption.add_argument("--profile-sha256", required=True)
     adoption.add_argument("--request-sha256", required=True)
+    lifecycle = commands.add_parser("service-lifecycle", help="explicit paid development preparation, adoption or recovery")
+    lifecycle.add_argument("operation", choices=("prepare", "adopt", "recover"))
+    lifecycle.add_argument("--profile", required=True)
+    lifecycle.add_argument("--profile-sha256", required=True)
+    lifecycle.add_argument("--expected-head", required=True)
+    lifecycle.add_argument("--payload")
     return parser
 
 
@@ -114,6 +120,26 @@ def main(argv=None, clock=None, identifiers=None, out=None, err=None):
         from vfy import service_tests_cli
         return service_tests_cli.run(request_sha256=options.request_sha256, stdin=sys.stdin.buffer, out=out)
 
+    if options.command == "service-lifecycle":
+        from vfy import service_lifecycle as lifecycle
+        try:
+            ledger = lifecycle.Ledger(options.profile, options.profile_sha256, options.expected_head)
+            if options.operation == "prepare":
+                if not options.payload: raise ValueError("Selected payload path required")
+                response = lifecycle.prepare(ledger, options.payload)
+            elif options.operation == "adopt":
+                raw = sys.stdin.buffer.read(lifecycle.MAX_STDIN + 1)
+                if len(raw) > lifecycle.MAX_STDIN: raise ValueError("Action request exceeds bound")
+                response = lifecycle.adopt(ledger, lifecycle.m.load.load_json_bytes(raw))
+            else:
+                response = lifecycle.recover(ledger)
+            response['full_physical_cost'] = 'UNKNOWN'
+            print(json.dumps(response, sort_keys=True), file=out)
+            return 0
+        except Exception as exc:
+            print(json.dumps({'state': 'REFUSED_OR_UNKNOWN', 'reason': str(exc),
+                'automatic_retry': False, 'full_physical_cost': 'UNKNOWN'}), file=err)
+            return 1
     if options.command == "adopt-service-copy":
         from vfy.service_adoption_cli import adopt_selected
         from vfy.service_read_cli import MAX_STDIN

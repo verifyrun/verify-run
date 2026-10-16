@@ -337,7 +337,8 @@ def _fault(stage):
 
 def adopt(root,plan,*,pool,ticket,pinned,snapshot,result,authorization,runtime_id,
           verification_time,authorization_keys,registry,authorization_store):
-    root=_path(root);m.need(type(pool) is AdoptionPool)
+    from vfy.service_lifecycle import LifecycleAdoptionPool
+    root=_path(root);m.need(type(pool) in (AdoptionPool, LifecycleAdoptionPool))
     # Cheap current-approval checks precede any selected source/evidence reads.
     policy=pool.policy;selected=policy['action_key'];sig=authorization['signature']
     m.need(verification_time is not None and runtime_id==policy['runtime_id'])
