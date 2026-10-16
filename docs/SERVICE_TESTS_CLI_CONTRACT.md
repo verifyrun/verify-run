@@ -95,3 +95,6 @@ Only new wrapper plus CLI dispatch added. Old wheel/environment and historical p
 Root owns ordinary Engineer subprocess wiring and separate consumer acceptance. Verify this
 exact wheel and wrapper selection before integration. No public release/Platform/full-V1
 closure is implied. Independent integration review remains needed after consumer wiring.
+
+General CLI regression: 67 checks passed initially; the explicit supported-command assertion
+needed the new command added. That corrected assertion passed on focused rerun.

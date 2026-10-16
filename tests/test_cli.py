@@ -171,7 +171,7 @@ class Parsing(unittest.TestCase):
             if getattr(action, "choices", None) and hasattr(action.choices, "keys"):
                 commands |= set(action.choices)
         self.assertEqual(commands, {"init", "check", "run", "replay", "receipts",
-                                    "verify-service-receipt", "reconcile-service-repair", "service-accounting-session"})
+                                    "verify-service-receipt", "reconcile-service-repair", "service-accounting-session", "check-service-tests"})
 
     def test_help_renders_for_every_command(self):
         for argv in ([], ["init"], ["check"], ["run"], ["replay"], ["receipts"]):
