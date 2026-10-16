@@ -97,3 +97,9 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(before,(root/'state.json').read_bytes())
         self.assertEqual(pending,(root/'pending.json').read_bytes())
         with self.assertRaises(Exception):lifecycle.recover(self.ledger(self.initial))
+
+    def test_interrupted_recovery_cannot_buy_another_allowance(self):
+        prepared=lifecycle.prepare(self.ledger(self.initial),self.payload)
+        with patch.object(lifecycle.os,'replace',side_effect=OSError('recovery publication interrupted')):
+            with self.assertRaises(OSError):lifecycle.recover(self.ledger(prepared['head_sha256']))
+        with self.assertRaises(Exception):lifecycle.recover(self.ledger(prepared['head_sha256']))
