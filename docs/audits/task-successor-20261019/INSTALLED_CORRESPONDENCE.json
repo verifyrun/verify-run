@@ -1,0 +1,267 @@
+{
+  "wheel_sha256": "3ea1a685526b85027f6f091186d4cfe7d45c0f66b0de32b32963b5719c2f0209",
+  "members": [
+    {
+      "member": "vfy/__init__.py",
+      "sha256": "c14e94c82af4a7fa2adfe2fba47f8cb29e4344d35fa88f5c3dc3b4842c58ed9c",
+      "source_present": true
+    },
+    {
+      "member": "vfy/authorization.py",
+      "sha256": "f1415d429f51fa18580298cff2c8de2f49a026e4280277a39f087a3679d500c8",
+      "source_present": true
+    },
+    {
+      "member": "vfy/canon.py",
+      "sha256": "45b8b2e54385e9e9fa60206cce3535af167f6c219232d8d467b17a02399a1f9c",
+      "source_present": true
+    },
+    {
+      "member": "vfy/child_ledger.py",
+      "sha256": "8bf96169f47d69d33c547566af4be178ca8a6577b6083f38bd1e5d7cae898036",
+      "source_present": true
+    },
+    {
+      "member": "vfy/child_observer.py",
+      "sha256": "0aad022b559100df54ff1d38b02b865c34d62d9fab460ee20fd500a335391d4a",
+      "source_present": true
+    },
+    {
+      "member": "vfy/cli.py",
+      "sha256": "0cb623fd4fe34f6bff0466603851f966c9fdb88b0a2a743c222d2a55d356dbad",
+      "source_present": true
+    },
+    {
+      "member": "vfy/common_capacity.py",
+      "sha256": "5e97a85f923a0a68423a050f276e0ca19cc6ffab1bd34f09576f218ee994f645",
+      "source_present": true
+    },
+    {
+      "member": "vfy/custody.py",
+      "sha256": "9ecff1fb3015e0998e3ed1b449680e0e38feb5f4626309db988291a84bcd6447",
+      "source_present": true
+    },
+    {
+      "member": "vfy/errors.py",
+      "sha256": "98f4599ffcca0caab83360298b03025ac038217045ad758a4acfb8d3054313a1",
+      "source_present": true
+    },
+    {
+      "member": "vfy/expr.py",
+      "sha256": "d09c2b61ec65b96cfac7bd103a2b685cb72cb46d084ce0ca531ef0e7fdb9e5e9",
+      "source_present": true
+    },
+    {
+      "member": "vfy/gate.py",
+      "sha256": "a7f7fec14424350dae55260b9ed9bd02755d50993ef34cca384d6a76c8f5b81f",
+      "source_present": true
+    },
+    {
+      "member": "vfy/load.py",
+      "sha256": "1010c4ff21a0e1b8ded5dcd7d7aee8453dccae06615ed2a8987aa21f361e6312",
+      "source_present": true
+    },
+    {
+      "member": "vfy/managed_capacity.py",
+      "sha256": "dce8afb69975a947b942f3e77bdb86ab1d922dd60a224a974333a9356bb023ca",
+      "source_present": true
+    },
+    {
+      "member": "vfy/receipt.py",
+      "sha256": "8fb82b1495b2b58539c2cdad4acf133a4e708b59c01e7f3ced3d662995b409c6",
+      "source_present": true
+    },
+    {
+      "member": "vfy/resources.py",
+      "sha256": "cf0ea70891e553c4a50150440a0ccd1eca7ceb45de0503d7bb579e6a9b49ef29",
+      "source_present": true
+    },
+    {
+      "member": "vfy/rulebook.py",
+      "sha256": "e577338730285c434eae37c33635a3965a39deffd68cd95d7ff7aab9c09c364d",
+      "source_present": true
+    },
+    {
+      "member": "vfy/runner.py",
+      "sha256": "581ab3f0b1cde9db16c2f61da7bb653a4060ea6529b15fabf961cfabbe5b57bb",
+      "source_present": true
+    },
+    {
+      "member": "vfy/schema.py",
+      "sha256": "2b036e75cfaa05fcc910c986af906e3592949e6b5bbe1533abd024ad4128b10a",
+      "source_present": true
+    },
+    {
+      "member": "vfy/service_accounting_cli.py",
+      "sha256": "d0b8aa97ca0b4eb06452a79fded89dd8ab5f7db139023e97c329707f6f00cef1",
+      "source_present": true
+    },
+    {
+      "member": "vfy/service_adoption.py",
+      "sha256": "63eb7b87fdb841ac04d1062a0346de8c12a2259567ff290d30dc6c1db0bd6e7a",
+      "source_present": true
+    },
+    {
+      "member": "vfy/service_adoption_cli.py",
+      "sha256": "3afcf48b05b9b60a1c4864cda6116bea3b9d1e3d9f46cdcb9b36e3a503f01e8a",
+      "source_present": true
+    },
+    {
+      "member": "vfy/service_attempt.py",
+      "sha256": "6e3c90bbf9cdce70918125d34e8a628e50b93bc79254f6a02fba441f48e40996",
+      "source_present": true
+    },
+    {
+      "member": "vfy/service_current_read_cli.py",
+      "sha256": "82eda5effe327e3c1e8b3a69cbc259bb5819209cb950ebe539a6cbe7fcb748c7",
+      "source_present": true
+    },
+    {
+      "member": "vfy/service_lifecycle.py",
+      "sha256": "e4d3d2132f09e4d6a043fd808cd3b94f362c5da099a5a378e2a6da84d8bd6315",
+      "source_present": true
+    },
+    {
+      "member": "vfy/service_obligation.py",
+      "sha256": "280c2d53aef80759c658043487b870332988bc461fcde477ed88614a382bfa52",
+      "source_present": true
+    },
+    {
+      "member": "vfy/service_read_cli.py",
+      "sha256": "95070fb475f1a4b443da4d3975cb9f2e26c49c9751099f411d30c61e2bc09cef",
+      "source_present": true
+    },
+    {
+      "member": "vfy/service_review.py",
+      "sha256": "31bcb1ac6b700b0bc8674a5d95491711afbdd3ca6a222eea6e2dad47bd26683d",
+      "source_present": true
+    },
+    {
+      "member": "vfy/service_review_receipt.py",
+      "sha256": "99c42d7d4ba0b00432a452fccaa744ef5b20f4a85f04d86375441f4b18a4d8cb",
+      "source_present": true
+    },
+    {
+      "member": "vfy/service_source_relation_cli.py",
+      "sha256": "be5631cd362f1cb817a7f11d35258283e2c38f54cfaaf4a999e7c1736e6f9645",
+      "source_present": true
+    },
+    {
+      "member": "vfy/service_test_successor.py",
+      "sha256": "9d567b66e037600df71096fe63f5c3c00fc6c0f26b559d4da7e46f2b64bed777",
+      "source_present": true
+    },
+    {
+      "member": "vfy/service_tests.py",
+      "sha256": "40b900a8a9d9d2d19a027542df2fa43ce9e6a6a099bca793d861af1c22204a83",
+      "source_present": true
+    },
+    {
+      "member": "vfy/service_tests_cli.py",
+      "sha256": "42b1ea65561bb17f3794a321f6e9c20496a470262ea6a0ce4cf6c260baf11e50",
+      "source_present": true
+    },
+    {
+      "member": "vfy/service_workflow.py",
+      "sha256": "1e0511935e75b9fc742de1c4a2566975d6ebd1e55c72fd3768c1cdeba9441079",
+      "source_present": true
+    },
+    {
+      "member": "vfy/snapshot.py",
+      "sha256": "99f4be66c8015ae5923881564cb9a396f3914e1db5f7b5326417d4c456e9ae50",
+      "source_present": true
+    },
+    {
+      "member": "vfy/store.py",
+      "sha256": "242ea9e7cd5618e80a97125717e64f054fdf715d175ca8340500a2c1bfc7d275",
+      "source_present": true
+    },
+    {
+      "member": "vfy/workflow.py",
+      "sha256": "4e90280a1b3d5483eb5a788d4e3fdd830be6949abc091e4fd66bca117eb4c331",
+      "source_present": true
+    },
+    {
+      "member": "vfy/_schemas/__init__.py",
+      "sha256": "f3aeb9dcc0047cc4a2605fc7d372dc84ce49322927644142ab81500929e22414",
+      "source_present": true
+    },
+    {
+      "member": "vfy/_schemas/authorization.schema.json",
+      "sha256": "963282c9c993c61ddd1adee282344aa8fc852f0ca79fed219203864a4d0f3713",
+      "source_present": true
+    },
+    {
+      "member": "vfy/_schemas/candidate.schema.json",
+      "sha256": "b00b64b5218284b4d9da547325862f383adf6c1672bf4dce6d157053c4a33419",
+      "source_present": true
+    },
+    {
+      "member": "vfy/_schemas/evidence.schema.json",
+      "sha256": "926751c5058456ece83ce687afe3e0f658914007b5e1e16e70e61f3eab1b0d72",
+      "source_present": true
+    },
+    {
+      "member": "vfy/_schemas/outcome.schema.json",
+      "sha256": "b1b69fb1fcaf61db9d290f3702d68ab882b83328ec2df34f1d0ece9e6b7ea0b0",
+      "source_present": true
+    },
+    {
+      "member": "vfy/_schemas/receipt.schema.json",
+      "sha256": "babd2a8e77336eb79afa5c3b1ea5279f7c013d7eebb1f3e6fc648d9c0a88cb15",
+      "source_present": true
+    },
+    {
+      "member": "vfy/_schemas/rulebook.schema.json",
+      "sha256": "7a295d6a7cbf5c9763a8cb539da7467779e30f9e69cfc02dc5e4e8efbf7d8e88",
+      "source_present": true
+    },
+    {
+      "member": "vfy/_templates/__init__.py",
+      "sha256": "67204ffa8ac69174bf87b5d2776db1458af5b82994550cab8eb4ca10d4eb6f2b",
+      "source_present": true
+    },
+    {
+      "member": "vfy/_templates/agent-guard.yaml",
+      "sha256": "7a42ffd4e4918dc405ad194f468c618f4cbe1d54b758a619be59bf42bb7373e6",
+      "source_present": true
+    },
+    {
+      "member": "vfy/_templates/claims-gate.yaml",
+      "sha256": "446ba174ade6755155a884a4419b6a6380c15854250e88a93eb582c7f106e3c0",
+      "source_present": true
+    },
+    {
+      "member": "vfy/_templates/pipeline-gate.yaml",
+      "sha256": "523fda076d79a0707f1adf46b7f00d5fe78203718c27e899712ef06d1d71c958",
+      "source_present": true
+    },
+    {
+      "member": "vfy/evidence/__init__.py",
+      "sha256": "e878e3cc3111cfb38a6ca3c5fc1fd3116bb4733ce4292db5d23058280ddc32df",
+      "source_present": true
+    },
+    {
+      "member": "vfy/evidence/_common.py",
+      "sha256": "8790cc5ba3a9b5964eb5359f7b704813c9fc364c347c35e3ad151d2f3f7ad1bb",
+      "source_present": true
+    },
+    {
+      "member": "vfy/evidence/acquisition.py",
+      "sha256": "02b925bdff9a4f0cbe93d1b5a1c3448c2444be38b96d86570d4d681a35dae580",
+      "source_present": true
+    },
+    {
+      "member": "vfy/evidence/command.py",
+      "sha256": "beecfcffbb329d0021dde81019d494ac5efbf616f03743ee4a777e83e5089443",
+      "source_present": true
+    },
+    {
+      "member": "vfy/evidence/file.py",
+      "sha256": "db71acb8c91ef094928b65953d019d55e0792263ea6d1c3c710b44a1e231abb8",
+      "source_present": true
+    }
+  ],
+  "installed_root": "/private/tmp/w08-task-successor-installed-20261019",
+  "scope": "package correspondence only; new verifier no execution consumer yet"
+}

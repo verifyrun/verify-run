@@ -1,0 +1,17 @@
+{
+  "status": "ACCEPTED_SCOPED_SOURCE",
+  "reviewer": "platform_redesign",
+  "files": {
+    "vfy/service_test_successor.py": "9d567b66e037600df71096fe63f5c3c00fc6c0f26b559d4da7e46f2b64bed777",
+    "tests/test_service_test_successor.py": "40fe6fcd8d383c5b9b5c8786e323087e458576eb93a8efb7544bc792a49c17ce",
+    "docs/audits/task-successor-20261019/CONTRACT.md": "e2f3e14f7a5d65bbd5214012ca1c37e98ee3f506231cf09085245f7c8cfc3584"
+  },
+  "review": "Original checker revalidates every link; exact task/parent/stable criteria and destination equality; old packets refuse. Host-selected trust/limits and atomic insertion are separate.",
+  "validation": "Five actual signed synthetic accounting controls pass; fixture runner not executed. Installed 52-member correspondence only.",
+  "remaining": [
+    "versioned ordinary producer hook before approval",
+    "actual disposable production-backend observations",
+    "atomic authenticated destination retention and fresh-session bilateral consumer"
+  ],
+  "upload": "not authorized; local checkpoint only"
+}
