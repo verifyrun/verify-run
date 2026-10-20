@@ -3,6 +3,7 @@ import base64
 import json
 import os
 import select
+import signal
 import subprocess
 import sys
 import unittest
@@ -60,7 +61,9 @@ class WorkflowProcessRecoveryTests(unittest.TestCase):
         return self.reply(proc)
 
     def check_recovery(self, proc, expected):
+        self.assertIsNone(proc.poll(), "workflow exited before the interruption")
         proc.kill(); proc.wait(timeout=10)
+        self.assertEqual(proc.returncode, -signal.SIGKILL)
         head, before = self.current()
         self.assertEqual(before['phase'], expected)
         result = subprocess.run(self.args('recover', head), capture_output=True, timeout=10)
