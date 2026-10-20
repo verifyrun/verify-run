@@ -51,8 +51,13 @@ p=json.loads(sys.stdin.readline()); print(json.dumps(l.recover(l.Ledger(p['profi
    self.assertFalse(result['automatic_retry']);self.assertFalse(result['authority_granted'])
    after=(root/'state.json').read_bytes();body=json.loads(after)['body']
    self.assertEqual(body['reserved'],before['reserved']);self.assertTrue(body['recovery_used'])
-   with self.assertRaises(Exception): lifecycle.adopt(f.ledger(f.current()),request)
-   with self.assertRaises(Exception): lifecycle.recover(f.ledger(f.current()))
+   profile_before=f.path.read_bytes()
+   nonce_path=f.f.f.nonces._consumption_path('fresh-paid-nonce')
+   nonce_before=nonce_path.read_bytes()
+   with self.assertRaisesRegex(m.Refused,'Not a fresh prepared action'): lifecycle.adopt(f.ledger(f.current()),request)
+   with self.assertRaisesRegex(m.Refused,'Recovery budget consumed'): lifecycle.recover(f.ledger(f.current()))
+   self.assertEqual(f.path.read_bytes(),profile_before)
+   self.assertEqual(nonce_path.read_bytes(),nonce_before)
    self.assertEqual(after,(root/'state.json').read_bytes())
    self.assertEqual((f.f.f.original/'app/a.py').read_bytes(),b'base a')
   finally:
