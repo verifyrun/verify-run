@@ -39,7 +39,7 @@ shapes and primitive types; success must have the selected unique complete case 
 outcomes, consistent counts/summary/PREVIEW hash, and exact requirement IDs/mapped case lists
 with successful states. Bind report to the selected raw stdout document. Refuse contradictory
 replies; preserve legitimate UNKNOWN's partial/null report, refs and counts as allowed by Run's
-schema rather than forcing success-shaped details. Run remains owner of signature/accounting
+schema rather than requiring success-shaped details. Run remains owner of signature/accounting
 and observation evaluation. Add hostile controls that keep state, success boolean and reasons
 mutually consistent while changing each of these inner fields.
 

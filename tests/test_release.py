@@ -3,6 +3,7 @@
 These are the checks that must never again depend on somebody remembering to run a grep.
 """
 
+import hashlib
 import json
 import pathlib
 import re
@@ -36,6 +37,29 @@ SCANNER_EXEMPT = {"tests/test_release.py", "tests/test_adapters.py", "tests/test
 # credential and least likely to be noticed. A gate that skips what it exists to check is not a
 # gate, so this matches segments and the test below proves those exact paths are reached.
 SKIP_TREES = (".venv", ".git", "dist", "build", "__pycache__", "verify-run", ".vfy")
+
+# Retained signed lifecycle records use this ordinary protocol field. Do not
+# rename the field or exempt a module from scanning. These exact source bytes
+# have only the reviewed non-theoretical uses; any edit requires renewed review.
+REVIEWED_PROTOCOL_TOKEN = "phase"
+REVIEWED_PROTOCOL_SOURCES = {
+    "vfy/service_lifecycle.py": "e4d3d2132f09e4d6a043fd808cd3b94f362c5da099a5a378e2a6da84d8bd6315",
+    "vfy/service_workflow.py": "1e0511935e75b9fc742de1c4a2566975d6ebd1e55c72fd3768c1cdeba9441079",
+    "tests/test_service_lifecycle.py": "1c4ddf0100232452f0ffc85a5e94c28b7274c3619c9165943678450e11f1d69d",
+    "tests/test_service_workflow.py": "a147c800e1aef7aba2acce72b9d24bbeece7aca86c5235624ee404efa38dfe09",
+}
+
+
+def _vocabulary_findings(relative, content, exact, anycase):
+    reviewed = hashlib.sha256(content).hexdigest() == REVIEWED_PROTOCOL_SOURCES.get(relative)
+    findings = []
+    for number, line in enumerate(content.decode("utf-8").splitlines(), 1):
+        for pattern in (exact, anycase):
+            for found in pattern.finditer(line):
+                if reviewed and found.group(0) == REVIEWED_PROTOCOL_TOKEN:
+                    continue
+                findings.append("%s:%d %s" % (relative, number, found.group(0)))
+    return findings
 
 
 def _skipped(relative):
@@ -79,11 +103,7 @@ class VocabularyGate(unittest.TestCase):
             if text is None:
                 continue
             scanned += 1
-            for number, line in enumerate(text.splitlines(), 1):
-                for pattern in (exact, anycase):
-                    found = pattern.search(line)
-                    if found:
-                        findings.append("%s:%d %s" % (relative, number, found.group(0)))
+            findings.extend(_vocabulary_findings(relative, path.read_bytes(), exact, anycase))
         self.assertGreater(scanned, 100, "the scanner read almost nothing; check SKIP_TREES")
         self.assertEqual(findings, [], "banned vocabulary on a public surface")
 
@@ -105,6 +125,26 @@ class VocabularyGate(unittest.TestCase):
         anycase = re.compile(r"\b(" + "|".join(self.ANYCASE) + r")\b", re.IGNORECASE)
         self.assertTrue(anycase.search("Kernel"))
         self.assertIsNone(anycase.search("itself"), "ELF-style substring matching would fire here")
+
+    def test_protocol_compatibility_requires_exact_source_and_path(self):
+        exact = re.compile(r"\b(" + "|".join(self.EXACT) + r")\b")
+        anycase = re.compile(r"\b(" + "|".join(self.ANYCASE) + r")\b", re.IGNORECASE)
+        for relative, digest in REVIEWED_PROTOCOL_SOURCES.items():
+            content = (REPO_ROOT / relative).read_bytes()
+            self.assertEqual(hashlib.sha256(content).hexdigest(), digest)
+            self.assertEqual(_vocabulary_findings(relative, content, exact, anycase), [])
+            self.assertTrue(_vocabulary_findings(relative, content + b"\n", exact, anycase))
+            self.assertTrue(_vocabulary_findings("unreviewed/" + relative, content, exact, anycase))
+
+    def test_protocol_rule_never_hides_other_tokens_or_later_matches(self):
+        from unittest.mock import patch
+        exact = re.compile(r"\b(" + "|".join(self.EXACT) + r")\b")
+        anycase = re.compile(r"\b(" + "|".join(self.ANYCASE) + r")\b", re.IGNORECASE)
+        content = b"phase kernel AURA phase\n"
+        with patch.dict(REVIEWED_PROTOCOL_SOURCES, {"example.py": hashlib.sha256(content).hexdigest()}):
+            self.assertEqual(_vocabulary_findings("example.py", content, exact, anycase),
+                             ["example.py:1 AURA", "example.py:1 kernel"])
+        self.assertEqual(len(_vocabulary_findings("example.py", content, exact, anycase)), 4)
 
 
 class LegacyGate(unittest.TestCase):

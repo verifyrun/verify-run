@@ -66,7 +66,7 @@ new output path. Keep old hostile_plants, closure and seal bytes immutable. Requ
   accounting context/reservation or explicit uncharged coordinates; reserve before advertised paid
   reads. Separately authorize any create/delete probe; reading history must not hide a mutation.
 - `observations`: raw bounded Git outputs/statuses and their digests, actual manifest comparison,
-  flags/config checks, explicit probe phase (not attempted/open refused/created/I/O failure/cleanup),
+  flags/config checks, explicit probe stage (not attempted/open refused/created/I/O failure/cleanup),
   errno and remaining artifact identity. Distinguish observed facts from inferences.
 - `result`: CURRENT_BOUND_ROOT_CREATE_REFUSED only for all identity checks and open-time eligible
   refusal; otherwise MISMATCH/UNKNOWN/NOT_RUN with reasons. Historical execution NOT_REVALIDATED,
