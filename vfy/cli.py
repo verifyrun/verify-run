@@ -66,6 +66,14 @@ def build_parser():
     actions.add_parser("list", help="list committed receipts")
     show = actions.add_parser("show", help="load, verify, and replay one receipt")
     show.add_argument("receipt_id", help="the receipt id")
+    selected_check = commands.add_parser("execute-selected-check", help="one operator-selected development CHECK; no retry or adoption")
+    selected_check.add_argument("--profile", required=True)
+    selected_check.add_argument("--profile-sha256", required=True)
+    selected_check.add_argument("--request-sha256", required=True)
+    check_status = commands.add_parser("status-selected-check", help="read retained exact CHECK state; no retry")
+    check_status.add_argument("--profile", required=True)
+    check_status.add_argument("--profile-sha256", required=True)
+    check_status.add_argument("--request-sha256", required=True)
     for name in ("verify-service-adoption-accounting", "verify-service-adoption-history", "verify-service-receipt", "reconcile-service-repair", "reconcile-service-repair-current", "check-service-tests", "preflight-service-proposal", "inspect-service-source-relation"):
         reader = commands.add_parser(name, help="bounded selected service reading; no action or retry")
         reader.add_argument("--request-sha256", required=True,
@@ -132,6 +140,16 @@ def main(argv=None, clock=None, identifiers=None, out=None, err=None):
         return service_read_cli.run(command=options.command, request_sha256=options.request_sha256,
                                     stdin=sys.stdin.buffer, out=out)
 
+    if options.command == "status-selected-check":
+        from vfy import check_execution
+        return check_execution.status(profile=options.profile, profile_sha256=options.profile_sha256,
+            request_sha256=options.request_sha256, stdin=sys.stdin.buffer, out=out)
+    if options.command == "execute-selected-check":
+        from vfy import check_execution
+        from datetime import datetime, timezone
+        return check_execution.run(profile=options.profile, profile_sha256=options.profile_sha256,
+            request_sha256=options.request_sha256, stdin=sys.stdin.buffer, out=out,
+            now=lambda: datetime.now(timezone.utc).isoformat())
     if options.command == "preflight-service-proposal":
         from vfy import service_proposal_cli
         return service_proposal_cli.run(request_sha256=options.request_sha256, stdin=sys.stdin.buffer, out=out)
