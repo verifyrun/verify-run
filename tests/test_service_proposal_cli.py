@@ -44,4 +44,8 @@ class ProposalTests(unittest.TestCase):
  def test_task_binding_size_bound(self):
   for value in (b'',b'x'*131073):
    q=json.loads(m.raw(self.q));q['inputs']['task']=packed(value)
+   preview=json.loads(self.inputs['preview']);preview['task_successor_binding']['task_sha256']=m.sha(value)
+   preview=m.raw(preview);request=json.loads(self.inputs['request']);request['preview_sha256']=m.sha(preview)
+   q['inputs']['preview']=packed(preview);q['inputs']['request']=packed(m.raw(request))
+   q['inputs']['approval']=packed(self.f.approval(request,preview))
    self.assertEqual(self.call(q)[0],12)
