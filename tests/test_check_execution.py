@@ -46,9 +46,9 @@ class ExecutionTests(unittest.TestCase):
 
  def test_hostile_supplier_manifest_refused_before_import(self):
   root=self.f.f.base/'engineer';root.mkdir();(root/'__init__.py').write_bytes(b'')
-  with self.assertRaises(Exception):c.load_adapter({'root':str(root),'files':{'__init__.py':'f'*64}})
+  with self.assertRaises(m.Refused):c.load_adapter({'root':str(root),'files':{'__init__.py':'f'*64}})
   (root/'escape.py').symlink_to(self.sp)
-  with self.assertRaises(Exception):c.load_adapter({'root':str(root),'files':{'__init__.py':m.sha(b'')}})
+  with self.assertRaises(m.Refused):c.load_adapter({'root':str(root),'files':{'__init__.py':m.sha(b'')}})
  def test_pending_status_refuses(self):
   (self.f.f.old.root/'pending.json').write_bytes(b'pending')
   out=io.StringIO();self.assertEqual(c.status(profile=str(self.path),profile_sha256=m.sha(m.raw(self.p)),request_sha256=m.sha(self.data),stdin=io.BytesIO(self.data),out=out),12)
