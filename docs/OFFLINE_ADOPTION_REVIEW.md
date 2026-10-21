@@ -30,11 +30,11 @@ Export the four original inputs from the accepted receipt, not reconstructed dat
 
 ## Run the read-only example
 
-Use the explicitly selected installed interpreter; `-I` prevents accidental imports
+The consumer module is included in the wheel and source distribution; no source checkout is needed. Use the explicitly selected installed interpreter; `-I` prevents accidental imports
 from the current checkout. Substitute your own reviewed paths and pinned digests:
 
 ```sh
-/path/to/selected-env/bin/python -I /path/to/source/tools/verify_adoption_offline.py \
+/path/to/selected-env/bin/python -I -m vfy.offline_adoption_consumer \
   --bundle /path/to/four-inputs.json \
   --policy /path/to/recipient-policy.json \
   --policy-sha256 POLICY_FILE_SHA256 \

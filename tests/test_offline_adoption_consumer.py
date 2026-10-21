@@ -5,8 +5,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-spec=importlib.util.spec_from_file_location('offline',Path(__file__).parents[1]/'tools/verify_adoption_offline.py')
-consumer=importlib.util.module_from_spec(spec);spec.loader.exec_module(consumer)
+from vfy import offline_adoption_consumer as consumer
 class ConsumerControls(unittest.TestCase):
  def setUp(self):
   self.policy=b'{"independent":"example selection, not real trust"}'

@@ -28,3 +28,7 @@ historical verification and the example in OFFLINE_ADOPTION_REVIEW.md. It does n
 require completion of full physical accounting or the full connected theorem to
 be honestly described within that scope. Neither does its existence close those
 obligations or the actual governed customer journey.
+
+## Packaging successor —21October
+
+The offline consumer is now shipped as vfy.offline_adoption_consumer in wheel and sdist, with a source-tool compatibility shim. Private wheel build tag2offline20261021 avoids collision with retained artifacts; version a7 is not permission to publish. Clean virtual environments installed wheel and sdist using the retained dependency wheelhouse; off-checkout -I module invocation verified original receipt inputs and refused wrong policy/subject. Normal network dependency install was unavailable in the sandbox; the offline dependency install passed pip check. LICENSE/NOTICE and all historical explicitly excluded paths were inspected in artifacts. This is not a universal secrets/rights audit or hosted supported-platform matrix. Current source provenance is the new exact local commit plus artifact/member hashes; historical SOURCE_PROVENANCE.json remains historical.

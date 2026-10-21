@@ -17,13 +17,20 @@
         "tests/test_service_lifecycle.py"
       ],
       "trust_boundary": "Owner-selected trust and installed pins; uploaded evidence does not authorize action. Tenant mapping remains Platform-owned.",
-      "missing": "Actual shared requirement/source/check/environment coverage and fresh host consumer acceptance remain open.",
+      "missing": "Actual shared requirement/source/check/environment coverage and fresh host consumer acceptance remain open. Offline verification remains historical only: recipient trust provisioning, cross-connector atomic ordering, checker migration, hosted release matrix and full product acceptance remain open.",
       "accepted_scoped_candidates": [
         "ce947cc",
         "9211cec",
         "290feed"
       ],
-      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts."
+      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts.",
+      "offline_consumer_acceptance": {
+        "scope": "Fresh wheel and sdist installed off-checkout verify retained original receipt inputs; wrong independently selected policy and wrong final-plan digest refuse; no effects replayed.",
+        "command": "python -I -m vfy.offline_adoption_consumer",
+        "source": "vfy/offline_adoption_consumer.py",
+        "test": "tests/test_offline_adoption_consumer.py",
+        "receipt": "RUN_OFFLINE_PACKAGE_RESULT.json (parent private acceptance record; not distributed or a full exit)"
+      }
     },
     {
       "id": "ENT09",
@@ -249,13 +256,20 @@
         "tests/test_service_test_successor.py"
       ],
       "trust_boundary": "Owner-selected trust and installed pins; uploaded evidence does not authorize action. Tenant mapping remains Platform-owned.",
-      "missing": "O1 cross-ring identities/order not closed by Runtask projection. O2 offline selected chain scoped. O3 checker migration not closed by historical checker-input identity; operator compatibility evidence required.",
+      "missing": "O1 cross-ring identities/order not closed by Runtask projection. O2 offline selected chain scoped. O3 checker migration not closed by historical checker-input identity; operator compatibility evidence required. Offline verification remains historical only: recipient trust provisioning, cross-connector atomic ordering, checker migration, hosted release matrix and full product acceptance remain open.",
       "accepted_scoped_candidates": [
         "ce947cc",
         "9211cec",
         "290feed"
       ],
-      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts."
+      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts.",
+      "offline_consumer_acceptance": {
+        "scope": "Fresh wheel and sdist installed off-checkout verify retained original receipt inputs; wrong independently selected policy and wrong final-plan digest refuse; no effects replayed.",
+        "command": "python -I -m vfy.offline_adoption_consumer",
+        "source": "vfy/offline_adoption_consumer.py",
+        "test": "tests/test_offline_adoption_consumer.py",
+        "receipt": "RUN_OFFLINE_PACKAGE_RESULT.json (parent private acceptance record; not distributed or a full exit)"
+      }
     },
     {
       "id": "RES4",
@@ -297,13 +311,20 @@
         "tests/test_service_test_successor.py"
       ],
       "trust_boundary": "Owner-selected trust and installed pins; uploaded evidence does not authorize action. Tenant mapping remains Platform-owned.",
-      "missing": "O1 cross-ring identities/order not closed by Runtask projection. O2 offline selected chain scoped. O3 checker migration not closed by historical checker-input identity; operator compatibility evidence required.",
+      "missing": "O1 cross-ring identities/order not closed by Runtask projection. O2 offline selected chain scoped. O3 checker migration not closed by historical checker-input identity; operator compatibility evidence required. Offline verification remains historical only: recipient trust provisioning, cross-connector atomic ordering, checker migration, hosted release matrix and full product acceptance remain open.",
       "accepted_scoped_candidates": [
         "ce947cc",
         "9211cec",
         "290feed"
       ],
-      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts."
+      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts.",
+      "offline_consumer_acceptance": {
+        "scope": "Fresh wheel and sdist installed off-checkout verify retained original receipt inputs; wrong independently selected policy and wrong final-plan digest refuse; no effects replayed.",
+        "command": "python -I -m vfy.offline_adoption_consumer",
+        "source": "vfy/offline_adoption_consumer.py",
+        "test": "tests/test_offline_adoption_consumer.py",
+        "receipt": "RUN_OFFLINE_PACKAGE_RESULT.json (parent private acceptance record; not distributed or a full exit)"
+      }
     },
     {
       "id": "BIZ2",
