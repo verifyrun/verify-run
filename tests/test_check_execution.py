@@ -72,3 +72,11 @@ class ExecutionTests(unittest.TestCase):
    code,result=self.call()
   self.assertEqual(code,12);self.assertTrue((self.root/'ACCOUNTING.json').is_file());self.assertFalse((self.root/'START.json').exists())
   self.assertEqual(self.call()[0],12);self.assertEqual(self.count,0)
+ def test_binding_write_delay_expires_before_admission(self):
+  original=m.fresh
+  def delayed(path,data):
+   result=original(path,data)
+   if path.name=='ACCOUNTING.json':self.ticks=32000000000
+   return result
+  with patch.object(m,'fresh',side_effect=delayed):code,result=self.call()
+  self.assertEqual(code,12);self.assertTrue((self.root/'ACCOUNTING.json').is_file());self.assertEqual(self.f.f.state()['entries'],[]);self.assertEqual(self.count,0)
