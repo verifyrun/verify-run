@@ -26,6 +26,8 @@ class ExecutionTests(unittest.TestCase):
   return code,json.loads(out.getvalue())
  def test_live_accounting_exact_once_and_readonly_status(self):
   code,result=self.call();self.assertEqual(code,0,result);self.assertEqual(self.count,1)
+  for name in ('ACCOUNTING.json','ACCOUNTING_ADMISSION.json','ACCOUNTING_CONSUMPTION.json','ACCOUNTING_RESULT.json'):self.assertTrue((self.root/name).is_file())
+  self.assertEqual((self.root/'ACCOUNTING_RESULT.json').read_bytes(),m.raw(result['accounting']))
   self.assertEqual(self.call()[0],12);self.assertEqual(self.count,1)
   out=io.StringIO();self.assertEqual(c.status(profile=str(self.path),profile_sha256=m.sha(m.raw(self.p)),request_sha256=m.sha(self.data),stdin=io.BytesIO(self.data),out=out),0)
   self.assertEqual(json.loads(out.getvalue())['state'],'OBSERVED_EXIT_ZERO')
@@ -63,3 +65,10 @@ class ExecutionTests(unittest.TestCase):
   self.adapter._execute=suspend
   code,result=self.call();self.assertEqual(code,12);self.assertEqual(result['state'],'UNKNOWN_NO_RETRY');self.assertEqual(self.count,0)
   self.assertEqual(self.f.f.state()['entries'][0]['state'],'UNKNOWN')
+
+ def test_refused_admission_retains_binding_before_start(self):
+  from vfy import service_attempt
+  with patch.object(service_attempt.ServicePool,'admit',side_effect=m.Refused('stopped')):
+   code,result=self.call()
+  self.assertEqual(code,12);self.assertTrue((self.root/'ACCOUNTING.json').is_file());self.assertFalse((self.root/'START.json').exists())
+  self.assertEqual(self.call()[0],12);self.assertEqual(self.count,0)
