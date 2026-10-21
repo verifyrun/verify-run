@@ -66,7 +66,7 @@ def build_parser():
     actions.add_parser("list", help="list committed receipts")
     show = actions.add_parser("show", help="load, verify, and replay one receipt")
     show.add_argument("receipt_id", help="the receipt id")
-    for name in ("verify-service-adoption-accounting", "verify-service-adoption-history", "verify-service-receipt", "reconcile-service-repair", "reconcile-service-repair-current", "check-service-tests", "inspect-service-source-relation"):
+    for name in ("verify-service-adoption-accounting", "verify-service-adoption-history", "verify-service-receipt", "reconcile-service-repair", "reconcile-service-repair-current", "check-service-tests", "preflight-service-proposal", "inspect-service-source-relation"):
         reader = commands.add_parser(name, help="bounded selected service reading; no action or retry")
         reader.add_argument("--request-sha256", required=True,
                             help="independently selected SHA256 of exact JSON stdin bytes")
@@ -132,6 +132,9 @@ def main(argv=None, clock=None, identifiers=None, out=None, err=None):
         return service_read_cli.run(command=options.command, request_sha256=options.request_sha256,
                                     stdin=sys.stdin.buffer, out=out)
 
+    if options.command == "preflight-service-proposal":
+        from vfy import service_proposal_cli
+        return service_proposal_cli.run(request_sha256=options.request_sha256, stdin=sys.stdin.buffer, out=out)
     if options.command == "check-service-tests":
         from vfy import service_tests_cli
         return service_tests_cli.run(request_sha256=options.request_sha256, stdin=sys.stdin.buffer, out=out)
