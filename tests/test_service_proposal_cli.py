@@ -40,3 +40,8 @@ class ProposalTests(unittest.TestCase):
  def test_changed_trust_limits_and_checker_refused(self):
   for change in ({'module_sha256':'f'*64},{'minimum_revision':999},{'limits':dict(self.q['limits'],input_bytes=1)}):self.assertEqual(self.call(dict(self.q,**change))[0],12)
   q=json.loads(m.raw(self.q));ctx=json.loads(self.inputs['context']);ctx['owner_trust']={};q['inputs']['context']=packed(m.raw(ctx));self.assertEqual(self.call(q)[0],12)
+
+ def test_task_binding_size_bound(self):
+  for value in (b'',b'x'*131073):
+   q=json.loads(m.raw(self.q));q['inputs']['task']=packed(value)
+   self.assertEqual(self.call(q)[0],12)

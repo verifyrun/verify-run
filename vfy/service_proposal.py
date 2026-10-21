@@ -23,6 +23,7 @@ def check(pool,checker,inputs):
     w=m.load.load_json_bytes(inputs['workflow'])
     m.need(w.get('schema')=='vfy.service-workflow/1' and w.get('scope')=='DISPOSABLE_DEVELOPMENT_ONLY'
         and w.get('labels')==p['labels'] and w.get('observation_limits')==q['resources'],'PROPOSAL_WORKFLOW_SELECTION_MISMATCH')
+    m.need(1<=len(inputs['task'])<=131072,'PROPOSAL_TASK_BYTES_BOUND')
     binding=p.get('task_successor_binding')
     m.need(type(binding) is dict and set(binding)=={'schema','task_sha256','revision','predecessor_observation_sha256','authority_granted','automatic_retry'}
         and binding['schema']=='vfy.service-test-task-binding/1' and binding['task_sha256']==m.sha(inputs['task'])
