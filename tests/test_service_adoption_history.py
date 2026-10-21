@@ -18,15 +18,29 @@ class HistoricalTests(unittest.TestCase):
   result=history.verify(self.inputs,self.policy,self.expected)
   self.assertEqual(result['final_plan_sha256'],self.expected)
   self.assertNotEqual(result['base_plan_sha256'],self.expected)
+  plan=json.loads(self.inputs['plan']);intent=json.loads(self.inputs['intent'])
+  self.assertEqual(result['task_id'],plan['task_id'])
+  self.assertEqual(result['historical_runtime_id'],intent['runtime_id'])
+  for field in ('rulebook','snapshot','result'):
+   name='gate_result' if field=='result' else field
+   self.assertEqual(result['historical_'+name+'_value_sha256'],m.digest(intent[field]))
   for key in history.FLAGS:self.assertIs(result[key],False)
   self.assertEqual(before,{str(p):p.read_bytes() for p in self.root.rglob('*') if p.is_file()})
  def test_cli_tamper_and_wrong_registry_refuse(self):
   q=dict(schema='vfy.verify-service-adoption-history-request/1',inputs={k:dict(base64=base64.b64encode(v).decode(),sha256=m.sha(v)) for k,v in self.inputs.items()},policy=self.policy,expected_final_plan_sha256=self.expected)
-  for field in ('valid','completion','profile','plan'):
+  for field in ('valid','completion','profile','plan','runtime','task','rulebook','snapshot','result'):
    request=copy.deepcopy(q)
    if field=='completion':request['inputs']['completion']['base64']=base64.b64encode(b'{}').decode();request['inputs']['completion']['sha256']=m.sha(b'{}')
    if field=='profile':request['policy']['profile_sha256']='0'*64
    if field=='plan':request['expected_final_plan_sha256']='0'*64
+   if field=='runtime':request['policy']['runtime_id']='different-runtime'
+   if field=='task':
+    plan=json.loads(self.inputs['plan']);plan['task_id']='different-task'
+    request['inputs']['plan']=dict(base64=base64.b64encode(m.raw(plan)).decode(),sha256=m.digest(plan))
+    request['expected_final_plan_sha256']=m.digest(plan)
+   if field in ('rulebook','snapshot','result'):
+    intent=json.loads(self.inputs['intent']);intent[field]={}
+    request['inputs']['intent']=dict(base64=base64.b64encode(m.raw(intent)).decode(),sha256=m.digest(intent))
    raw=m.raw(request);out=io.StringIO();code=history.run(request_sha256=m.sha(raw),stdin=io.BytesIO(raw),out=out)
    self.assertEqual(code,0 if field=='valid' else 12)
    self.assertEqual(json.loads(out.getvalue())['state'],'HISTORICAL_ADOPTION_VERIFIED' if field=='valid' else 'REFUSED')
