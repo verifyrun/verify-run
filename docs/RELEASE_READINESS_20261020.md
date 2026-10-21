@@ -14,7 +14,7 @@ reconciliation; historical permission is not evidence that new files were audite
 The retained /private/tmp/verify-run-source-publication-20261012 directory is not a
 usable Git checkout in this session (Git cannot resolve its repository); do not
 infer current public HEAD from its name. Current runtime lineage is290feed with
-docs-only bec13ec. Published remote state was not verified in this local block.
+docs-only bec13ec. Read-only GitHub API verification in this block confirms verifyrun/verify-run is public, default branch main at 2de202eda9fbb6590234bdb5246b4c3bdf680c11. The latest-release endpoint returned404, which does not establish absence of tags or prereleases. No current PyPI metadata was verified. The accepted local successor is therefore not the current public main.
 
 Before a new public artifact: reconcile the authorized public repository and
 exact payload, current per-file provenance and notices, private-fixture/package
