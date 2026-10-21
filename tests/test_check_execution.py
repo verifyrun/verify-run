@@ -13,8 +13,8 @@ class ExecutionTests(unittest.TestCase):
   self.sp=fixture.base/'selected-profile.json';self.sp.write_bytes(m.raw(sp))
   self.data=m.raw(self.f.q);self.root=Path(json.loads(self.f.inputs['request'])['attempt_root'])
   (self.root/'PREVIEW.json').write_bytes(self.f.inputs['preview'])
-  self.p=dict(schema=c.FORMAT,accounting_profile=str(self.sp),accounting_profile_sha256=m.sha(self.sp.read_bytes()),proposal_sha256=m.sha(self.data),platform_context_sha256=m.sha(self.f.inputs['platform_context']),engineer_package={})
-  self.path=fixture.base/'check-profile.json';self.path.write_bytes(m.raw(self.p));self.count=0
+  self.p=dict(schema=c.FORMAT,accounting_profile=str(self.sp),accounting_profile_sha256=m.sha(self.sp.read_bytes()),proposal_sha256=m.sha(self.data),platform_context_sha256=m.sha(self.f.inputs['platform_context']),engineer_package={},launch_window_seconds=30)
+  self.path=fixture.base/'check-profile.json';self.path.write_bytes(m.raw(self.p));self.count=0;self.ticks=1000000000;self.stamp=1000000000
   def execute(root,digest,*,_consume,_before_launch):
    start=m.raw({'preview':digest});(root/'START.json').write_bytes(start);_consume(start);_before_launch();self.count+=1
    result=fixture.result((json.loads(self.f.inputs['request']),self.f.inputs['preview']))
@@ -22,7 +22,7 @@ class ExecutionTests(unittest.TestCase):
  def call(self):
   out=io.StringIO()
   with patch.object(c,'load_adapter',return_value=self.adapter):
-   code=c.run(profile=str(self.path),profile_sha256=m.sha(m.raw(self.p)),request_sha256=m.sha(self.data),stdin=io.BytesIO(self.data),out=out,now=lambda:'NOW')
+   code=c.run(profile=str(self.path),profile_sha256=m.sha(m.raw(self.p)),request_sha256=m.sha(self.data),stdin=io.BytesIO(self.data),out=out,now=lambda:'NOW',authorization_monotonic_ns=self.stamp,monotonic_ns=lambda:self.ticks)
   return code,json.loads(out.getvalue())
  def test_live_accounting_exact_once_and_readonly_status(self):
   code,result=self.call();self.assertEqual(code,0,result);self.assertEqual(self.count,1)
@@ -52,3 +52,14 @@ class ExecutionTests(unittest.TestCase):
  def test_pending_status_refuses(self):
   (self.f.f.old.root/'pending.json').write_bytes(b'pending')
   out=io.StringIO();self.assertEqual(c.status(profile=str(self.path),profile_sha256=m.sha(m.raw(self.p)),request_sha256=m.sha(self.data),stdin=io.BytesIO(self.data),out=out),12)
+
+ def test_expired_or_future_commit_never_admits(self):
+  self.ticks=32000000000;self.assertEqual(self.call()[0],12);self.assertEqual(self.count,0)
+  self.ticks=0;self.assertEqual(self.call()[0],12);self.assertEqual(self.count,0)
+ def test_suspension_before_launch_burns_without_execution(self):
+  def suspend(root,digest,*,_consume,_before_launch):
+   start=m.raw({'preview':digest});(root/'START.json').write_bytes(start);_consume(start)
+   self.ticks=32000000000;_before_launch();self.count+=1
+  self.adapter._execute=suspend
+  code,result=self.call();self.assertEqual(code,12);self.assertEqual(result['state'],'UNKNOWN_NO_RETRY');self.assertEqual(self.count,0)
+  self.assertEqual(self.f.f.state()['entries'][0]['state'],'UNKNOWN')

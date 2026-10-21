@@ -70,6 +70,7 @@ def build_parser():
     selected_check.add_argument("--profile", required=True)
     selected_check.add_argument("--profile-sha256", required=True)
     selected_check.add_argument("--request-sha256", required=True)
+    selected_check.add_argument("--authorization-monotonic-ns", required=True, type=int)
     check_status = commands.add_parser("status-selected-check", help="read retained exact CHECK state; no retry")
     check_status.add_argument("--profile", required=True)
     check_status.add_argument("--profile-sha256", required=True)
@@ -148,7 +149,7 @@ def main(argv=None, clock=None, identifiers=None, out=None, err=None):
         from vfy import check_execution
         from datetime import datetime, timezone
         return check_execution.run(profile=options.profile, profile_sha256=options.profile_sha256,
-            request_sha256=options.request_sha256, stdin=sys.stdin.buffer, out=out,
+            request_sha256=options.request_sha256, authorization_monotonic_ns=options.authorization_monotonic_ns, stdin=sys.stdin.buffer, out=out,
             now=lambda: datetime.now(timezone.utc).isoformat())
     if options.command == "preflight-service-proposal":
         from vfy import service_proposal_cli

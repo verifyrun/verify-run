@@ -9,6 +9,7 @@ import io
 import os
 import stat
 import sys
+import time
 from pathlib import Path
 from vfy import child_ledger as m, service_accounting_cli as accounting
 from vfy import service_proposal_cli as proposal_cli
@@ -37,17 +38,25 @@ def load_adapter(selected):
     m.need(Path(adapter.__file__)==root/'change/service_observation.py')
     return adapter
 
-def run(*,profile,profile_sha256,request_sha256,stdin,out,now):
+def run(*,profile,profile_sha256,request_sha256,authorization_monotonic_ns,stdin,out,now,monotonic_ns=time.monotonic_ns):
     result=dict(schema='vfy.check-execution-result/1',state='REFUSED_BEFORE_ADMISSION',
         profile_sha256=profile_sha256,proposal_sha256=request_sha256,accounting=None,
-        platform_context_sha256=None,automatic_retry=False,application_adoption=False,
+        platform_context_sha256=None,authorization_monotonic_ns=str(authorization_monotonic_ns),launch_deadline_monotonic_ns=None,automatic_retry=False,application_adoption=False,
         semantic_acceptance='UNESTABLISHED',error=None)
     ticket=None;pool=None
     try:
         raw=accounting.bounded_file(profile,proposal_cli.MAX_STDIN)
         m.need(m.sha(raw)==profile_sha256)
         p=m.load.load_json_bytes(raw)
-        m.need(type(p) is dict and set(p)=={'schema','accounting_profile','accounting_profile_sha256','proposal_sha256','platform_context_sha256','engineer_package'} and p['schema']==FORMAT)
+        m.need(type(p) is dict and set(p)=={'schema','accounting_profile','accounting_profile_sha256','proposal_sha256','platform_context_sha256','engineer_package','launch_window_seconds'} and p['schema']==FORMAT)
+        m.need(type(p['launch_window_seconds']) is int and 1<=p['launch_window_seconds']<=30)
+        m.need(type(authorization_monotonic_ns) is int and 0<=authorization_monotonic_ns<=2**63-1)
+        deadline=authorization_monotonic_ns+p['launch_window_seconds']*1000000000
+        result['launch_deadline_monotonic_ns']=str(deadline)
+        def fresh():
+            current=monotonic_ns()
+            m.need(authorization_monotonic_ns<=current<=deadline,'One-shot launch window expired')
+        fresh()
         m.need(m.hex64(request_sha256) and request_sha256==p['proposal_sha256'])
         data=stdin.read(proposal_cli.MAX_STDIN+1)
         check=io.StringIO();m.need(proposal_cli.run(request_sha256=request_sha256,stdin=io.BytesIO(data),out=check)==0,'Proposal refused')
@@ -71,13 +80,16 @@ def run(*,profile,profile_sha256,request_sha256,stdin,out,now):
                 m.need(stat.S_ISREG(os.fstat(fd).st_mode) and os.fstat(fd).st_nlink==1)
                 fcntl.flock(fd,fcntl.LOCK_EX|fcntl.LOCK_NB)
                 m.need(not os.path.lexists(root/'START.json') and not os.path.lexists(root/'ACCOUNTING.json'),'Attempt already used')
+                fresh()
                 ticket=pool.admit(request_bytes=inputs['request'],preview_bytes=inputs['preview'],approval_bytes=inputs['approval'],recorded_at=now())
                 result['state']='ADMITTED_NOT_EXECUTED'
                 def consume(start):
+                    fresh()
                     m.need(accounting.bounded_file(profile,proposal_cli.MAX_STDIN)==raw,'Host selection changed')
                     pool.consume(ticket,request_bytes=inputs['request'],preview_bytes=inputs['preview'],start_bytes=start,recorded_at=now())
                     result['state']='CONSUMED_OUTCOME_UNKNOWN'
                 def before_launch():
+                    fresh()
                     m.need(accounting.bounded_file(profile,proposal_cli.MAX_STDIN)==raw,'Host selection changed')
                 adapter._execute(root,request['preview_sha256'],_consume=consume,_before_launch=before_launch)
                 settled=pool.settle(ticket,result_bytes=accounting.bounded_file(root/'RESULT.json',m.MAX_BYTES),stdout_bytes=accounting.bounded_file(root/'stdout.bin',request['resources']['output_bytes']),stderr_bytes=accounting.bounded_file(root/'stderr.bin',request['resources']['output_bytes']),recorded_at=now())
