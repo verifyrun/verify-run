@@ -1,8 +1,10 @@
 """One selected development CHECK through an existing live Run pool.
 
-The trusted host holds its current caller/task authority lock while invoking this
-command. A profile pins that host selection; it does not authenticate a remote
-caller. No application adoption, retry, or reusable admission ticket is returned.
+The trusted host revalidates caller/task authority at a durable one-shot commit,
+then invokes once within the selected launch window. Revocation after that commit
+is not retroactive; no cross-store atomicity or lock across execution is claimed.
+A profile pins host selection, not remote authentication. No application adoption,
+retry, or reusable admission ticket is returned.
 """
 import importlib
 import io
