@@ -85,18 +85,19 @@ def run(*,profile,profile_sha256,request_sha256,authorization_monotonic_ns,stdin
                     approval_sha256=m.sha(inputs['approval']),preview_sha256=request['preview_sha256'],
                     profile_sha256=p['accounting_profile_sha256'],
                     scope='selected Run accounting only; no semantic or adoption authority')))
+                fresh()
                 ticket=pool.admit(request_bytes=inputs['request'],preview_bytes=inputs['preview'],approval_bytes=inputs['approval'],recorded_at=now())
                 m.fresh(root/'ACCOUNTING_ADMISSION.json',m.raw(ticket))
                 result['state']='ADMITTED_NOT_EXECUTED'
                 def consume(start):
-                    fresh()
                     m.need(accounting.bounded_file(profile,proposal_cli.MAX_STDIN)==raw,'Host selection changed')
+                    fresh()
                     consumed=pool.consume(ticket,request_bytes=inputs['request'],preview_bytes=inputs['preview'],start_bytes=start,recorded_at=now())
                     m.fresh(root/'ACCOUNTING_CONSUMPTION.json',m.raw(consumed))
                     result['state']='CONSUMED_OUTCOME_UNKNOWN'
                 def before_launch():
-                    fresh()
                     m.need(accounting.bounded_file(profile,proposal_cli.MAX_STDIN)==raw,'Host selection changed')
+                    fresh()
                 adapter._execute(root,request['preview_sha256'],_consume=consume,_before_launch=before_launch)
                 settled=pool.settle(ticket,result_bytes=accounting.bounded_file(root/'RESULT.json',m.MAX_BYTES),stdout_bytes=accounting.bounded_file(root/'stdout.bin',request['resources']['output_bytes']),stderr_bytes=accounting.bounded_file(root/'stderr.bin',request['resources']['output_bytes']),recorded_at=now())
                 m.fresh(root/'ACCOUNTING_RESULT.json',m.raw(settled))
