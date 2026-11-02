@@ -3,7 +3,7 @@
 No action signer, pool provisioning, replacement evaluator or automatic retry.
 The independently selected profile supplies current action trust and predecessor.
 """
-from datetime import datetime, timezone
+from vfy.workflow import Clock
 from pathlib import Path
 from vfy import authorization, canon, gate, resources, rulebook, schema, snapshot, store
 from vfy import child_ledger as m, service_adoption as adoption
@@ -11,7 +11,8 @@ from vfy.service_accounting_cli import bounded_file, selected_pool
 from vfy.service_read_cli import MAX_STDIN
 
 
-def adopt_selected(request_raw, expected_request, profile_path, expected_profile):
+def adopt_selected(request_raw, expected_request, profile_path, expected_profile, *, clock=None):
+    clock = Clock() if clock is None else clock
     m.need(len(request_raw) <= MAX_STDIN and m.hex64(expected_request)
            and m.sha(request_raw) == expected_request)
     raw = bounded_file(profile_path, MAX_STDIN)
@@ -43,7 +44,7 @@ def adopt_selected(request_raw, expected_request, profile_path, expected_profile
     m.need(nonce_root.is_absolute() and nonce_root == nonce_root.resolve()
            and nonce_root.is_dir() and not nonce_root.is_symlink())
     nonces = store.LocalStore(nonce_root)
-    now = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+    now = clock.now_utc()
     auth = request['authorization']
     consumed = {auth['nonce']} if nonces.is_consumed(auth['nonce']) else set()
     authorization.verify_authorization(auth, pinned, action, frozen, result,
@@ -59,7 +60,7 @@ def adopt_selected(request_raw, expected_request, profile_path, expected_profile
         receipt = adoption.adopt(request['root'], request['plan'], pool=pool,
             ticket=ticket, pinned=pinned, snapshot=frozen, result=result,
             authorization=auth, runtime_id=policy['runtime_id'],
-            verification_time=datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+            verification_time=clock.now_utc(),
             authorization_keys=keys, registry=registry, authorization_store=nonces)
     return {'schema': 'vfy.service-adoption-entry-response/1',
         'request_sha256': expected_request, 'profile_sha256': expected_profile,

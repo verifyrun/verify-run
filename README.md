@@ -1,3 +1,5 @@
+> **Current development source — November 2, 2026.** This branch consolidates the recovered engineering work. Source integration is separate from a package release or deployment. The original historical reader is retained byte-for-byte alongside the current implementation; historical checks do not confer new action permission.
+
 # verify-run
 
 **The open reference runtime for verifiable consequential decisions.**

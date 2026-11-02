@@ -8,7 +8,7 @@ import contextlib
 import fcntl
 import os
 from pathlib import Path
-from datetime import datetime, timezone
+from vfy.workflow import Clock
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from vfy import child_ledger as m, service_tests, service_adoption as a
 from vfy import authorization, gate, rulebook, snapshot, schema, resources, store
@@ -19,7 +19,7 @@ FORMAT='vfy.service-preparation-lifecycle/1'
 PREP_AXES={'payload_bytes','copy_bytes','staged_bytes','checked_bytes','files','artifact_bytes'}
 
 
-def now():return datetime.now(timezone.utc).isoformat().replace('+00:00','Z')
+def now():return Clock().now_utc()
 def identity():return {'schema':FORMAT,'source_sha256':m.sha(Path(__file__).read_bytes()),'adoption':a.identity()}
 def positive(v):return type(v) is int and 0<v<=m.canon.MAX_SAFE_INTEGER
 

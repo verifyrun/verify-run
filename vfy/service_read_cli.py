@@ -15,7 +15,9 @@ FLAGS=dict(authority_granted=False,automatic_retry=False)
 
 
 def _module(name,expected):
-    path=Path(__file__).resolve().with_name(name+'.py')
+    # The historical protocol keeps its original exact source alongside newer code.
+    selected = 'service_adoption_v1' if name == 'service_adoption' and expected == ADOPTION_SHA256 else name
+    path=Path(__file__).resolve().with_name(selected+'.py')
     raw=m.read_file(path)
     m.need(m.sha(raw)==expected,'Installed module does not match selected source.')
     return path,raw

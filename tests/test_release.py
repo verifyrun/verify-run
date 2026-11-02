@@ -45,7 +45,7 @@ REVIEWED_PROTOCOL_TOKEN = "phase"
 REVIEWED_PROTOCOL_SOURCES = {
     'tests/test_service_posteffect_recovery.py': '30247563273a9ce16bd6a98ef068d65c8c72eb63c4b72319d74729cb7a4d84c6',
     'tests/test_service_workflow_process_recovery.py': '75c5c41ba56166b84a7f176d932bd8b1ed7bb02c26c77821cac07fa9fc7e6a91',
-    "vfy/service_lifecycle.py": "e4d3d2132f09e4d6a043fd808cd3b94f362c5da099a5a378e2a6da84d8bd6315",
+    "vfy/service_lifecycle.py": "0cdf1953456c2898ec4b8211f087102b921f90285d4389fc622fd99262e18181",
     "vfy/service_workflow.py": "1e0511935e75b9fc742de1c4a2566975d6ebd1e55c72fd3768c1cdeba9441079",
     "tests/test_service_lifecycle.py": "1c4ddf0100232452f0ffc85a5e94c28b7274c3619c9165943678450e11f1d69d",
     "tests/test_service_workflow.py": "a147c800e1aef7aba2acce72b9d24bbeece7aca86c5235624ee404efa38dfe09",

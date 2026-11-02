@@ -6,12 +6,14 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 from tests import test_service_adoption as adoption_fixtures, test_common_capacity as common_fixtures
-from vfy import child_ledger as m, service_adoption as adoption, service_review as r
+from vfy import child_ledger as m, service_adoption_v1 as adoption, service_review as r
 
 class ReviewTests(unittest.TestCase):
     def setUp(self):
-        self.f=adoption_fixtures.AdoptionTests();self.f.setUp();self.addCleanup(self.f.doCleanups)
-        self.f.run_adopt()
+        # Historical review vectors must come from the exact retained producer.
+        with patch.object(adoption_fixtures, "a", adoption):
+            self.f=adoption_fixtures.AdoptionTests();self.f.setUp();self.addCleanup(self.f.doCleanups)
+            self.f.run_adopt()
         self.trust=self.f.f.base/'selected-trust.json';m.fresh(self.trust,m.raw(self.f.f.old.trust))
         self.owner=common_fixtures.owner(self.f.f.base/'review-pool',self.f.f.job[0],slots=3,byte_limit=3000000)
         self.head=self.owner.snapshot()
@@ -172,9 +174,12 @@ class AdditionalControls(unittest.TestCase):
         self.assertEqual(b['reserved']['retained_bytes'],65536)
 
     def test_existing_adoption_pool_usage_is_preserved_on_explicit_transition(self):
-        head=self.f.pool.snapshot();before=self.f.pool.verify_snapshot(head)['used']
-        policy=dict(self.policy,pool_root=str(self.f.pool.root),predecessor_sha256=m.sha(head))
-        pool=r.PaidReviewPool.attach(self.f.pool,expected_snapshot_bytes=head,policy_bytes=m.raw(policy))
+        # This transition examines the current pool type; retained operation vectors stay old.
+        current=adoption_fixtures.AdoptionTests();current.setUp();self.addCleanup(current.doCleanups)
+        current.run_adopt()
+        head=current.pool.snapshot();before=current.pool.verify_snapshot(head)['used']
+        policy=dict(self.policy,pool_root=str(current.pool.root),predecessor_sha256=m.sha(head))
+        pool=r.PaidReviewPool.attach(current.pool,expected_snapshot_bytes=head,policy_bytes=m.raw(policy))
         self.assertEqual(pool.verify_snapshot(pool.snapshot())['used'],before)
         req=dict(self.request,pool_root=str(pool.root),policy_sha256=m.sha(m.raw(policy)))
         pool.reserve(request_bytes=m.raw(req),recorded_at='SYNTHETIC')

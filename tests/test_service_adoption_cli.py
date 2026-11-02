@@ -2,7 +2,7 @@
 import json
 import types
 import unittest
-from datetime import datetime, timezone
+from vfy.workflow import FixedClock
 from unittest.mock import patch
 from vfy import service_adoption as a, service_adoption_cli as cli, child_ledger as m
 from tests.test_service_adoption import AdoptionTests
@@ -27,11 +27,10 @@ class EntryTests(unittest.TestCase):
             adoption_policy=self.f.policy,action_key=dict(**self.f.policy['action_key'],status='active'))
         self.path=self.f.f.base/'entry-profile.json'
 
-    def run_entry(self):
+    def run_entry(self, clock=None):
         raw=m.raw(self.request);profile=m.raw(self.profile);self.path.write_bytes(profile)
-        with patch.object(cli, 'datetime') as clock:
-            clock.now.return_value=datetime(2026,8,5,0,1,tzinfo=timezone.utc)
-            return cli.adopt_selected(raw,m.sha(raw),self.path,m.sha(profile))
+        return cli.adopt_selected(raw,m.sha(raw),self.path,m.sha(profile),
+                                  clock=FixedClock('2026-08-05T00:01:00Z') if clock is None else clock)
 
     def test_real_transition_and_duplicate_refusal(self):
         result=self.run_entry()
@@ -66,3 +65,11 @@ class EntryTests(unittest.TestCase):
         with self.assertRaises(Exception):self.run_entry()
         self.assertEqual(before,(self.f.f.pool.root/'state.json').read_bytes())
         self.assertFalse((self.f.root/'COMPLETE.json').exists())
+
+    def test_expired_second_clock_read_refuses_adoption(self):
+        instants = iter(['2026-08-05T00:01:00Z', '2099-01-01T00:00:00Z'])
+        clock = types.SimpleNamespace(now_utc=lambda: next(instants))
+        with self.assertRaises(m.Refused):
+            self.run_entry(clock=clock)
+        self.assertFalse((self.f.root/'COMPLETE.json').exists())
+        self.assertEqual((self.f.original/'app/a.py').read_bytes(), b'base a')

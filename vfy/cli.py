@@ -207,7 +207,7 @@ def main(argv=None, clock=None, identifiers=None, out=None, err=None):
         try:
             raw = sys.stdin.buffer.read(MAX_STDIN + 1)
             response = adopt_selected(raw, options.request_sha256,
-                options.profile, options.profile_sha256)
+                options.profile, options.profile_sha256, clock=clock)
             print(json.dumps(response, sort_keys=True), file=out)
             return 0
         except (OSError, ValueError, KeyError, TypeError, VerifyError) as exc:

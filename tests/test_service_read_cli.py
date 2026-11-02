@@ -3,6 +3,7 @@ import base64
 import io
 import json
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 from tests import test_service_review_receipt as receipts
 from vfy import child_ledger as m, service_read_cli as c
@@ -108,3 +109,21 @@ class AdditionalReadCliTests(unittest.TestCase):
         with patch.object(os,'scandir',side_effect=scan):code,result=self.call('reconcile-service-repair',self.reconcile)
         self.assertEqual(code,0);self.assertTrue(result['read_incomplete'])
         self.assertEqual(result['result']['state'],'UNKNOWN')
+
+
+class RetainedSourceSelectionTests(unittest.TestCase):
+    def test_old_and_current_sources_remain_distinct_and_exact(self):
+        from vfy import service_adoption
+        old_path, old_raw = c._module('service_adoption', c.ADOPTION_SHA256)
+        current_digest = m.sha(Path(service_adoption.__file__).read_bytes())
+        current_path, current_raw = c._module('service_adoption', current_digest)
+        self.assertNotEqual(old_path, current_path)
+        self.assertNotEqual(old_raw, current_raw)
+        self.assertEqual(m.sha(old_raw), c.ADOPTION_SHA256)
+        self.assertEqual(current_path, Path(service_adoption.__file__).resolve())
+
+    def test_changed_retained_bytes_cannot_fall_back_to_current_source(self):
+        _, raw = c._module('service_adoption', c.ADOPTION_SHA256)
+        with patch.object(m, 'read_file', return_value=raw + b'\n'):
+            with self.assertRaises(m.Refused):
+                c._module('service_adoption', c.ADOPTION_SHA256)
