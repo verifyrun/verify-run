@@ -3,6 +3,7 @@ import json
 import types
 import unittest
 from vfy.workflow import FixedClock
+from vfy.errors import AuthorizationExpired
 from unittest.mock import patch
 from vfy import service_adoption as a, service_adoption_cli as cli, child_ledger as m
 from tests.test_service_adoption import AdoptionTests
@@ -69,7 +70,7 @@ class EntryTests(unittest.TestCase):
     def test_expired_second_clock_read_refuses_adoption(self):
         instants = iter(['2026-08-05T00:01:00Z', '2099-01-01T00:00:00Z'])
         clock = types.SimpleNamespace(now_utc=lambda: next(instants))
-        with self.assertRaises(m.Refused):
+        with self.assertRaises(AuthorizationExpired):
             self.run_entry(clock=clock)
         self.assertFalse((self.f.root/'COMPLETE.json').exists())
         self.assertEqual((self.f.original/'app/a.py').read_bytes(), b'base a')
