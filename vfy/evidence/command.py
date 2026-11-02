@@ -5,7 +5,9 @@ its stdout. No command interpreter is ever involved. This is not a sandbox: the 
 user's privileges and nothing here confines what it does. What is bounded is the interface.
 """
 
+import os
 import selectors
+import signal
 import subprocess
 import time
 from pathlib import Path
@@ -112,6 +114,7 @@ def _run_bounded(argument, directory, environment, timeout_seconds):
         stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        start_new_session=True,
     )
     limits = {process.stdout: MAX_STDOUT_BYTES, process.stderr: MAX_STDERR_BYTES}
     captured = {process.stdout: bytearray(), process.stderr: bytearray()}
@@ -143,8 +146,6 @@ def _run_bounded(argument, directory, environment, timeout_seconds):
             except subprocess.TimeoutExpired:
                 timed_out = True
         if timed_out:
-            process.kill()
-            process.wait()
             return -1, b"", False
         stdout = bytes(captured[process.stdout])
         # stderr was read only to keep the child running and is discarded here. Nothing an
@@ -153,8 +154,25 @@ def _run_bounded(argument, directory, environment, timeout_seconds):
         return process.returncode, stdout, len(stdout) > MAX_STDOUT_BYTES
     finally:
         selector.close()
-        if process.poll() is None:
-            process.kill()
-            process.wait()
+        _end_group(process)
         for stream in (process.stdout, process.stderr):
             stream.close()
+
+
+def _end_group(process):
+    """Clean ordinary descendants even if the leader exited before its pipes closed."""
+    killpg = getattr(os, "killpg", None)
+    if killpg is not None:
+        try:
+            killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        except OSError:
+            if process.poll() is None:
+                process.kill()
+    elif process.poll() is None:
+        process.kill()
+    try:
+        process.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        pass  # an unkillable OS process is outside the lifecycle guarantee

@@ -1,0 +1,14 @@
+{
+ "$schema":"https://json-schema.org/draft/2020-12/schema",
+ "$id":"vfy.child-ledger-envelope/1",
+ "description":"Wire envelope structure only. vfy.child_ledger.verify_report is required for signatures, exact selected parent/budget bytes and cross-event semantic constraints. JSON Schema alone is not acceptance.",
+ "type":"object","additionalProperties":false,
+ "required":["issuer_identity","producer_identity","body","signature","sha256"],
+ "properties":{
+  "issuer_identity":{"type":"string","minLength":1},
+  "producer_identity":{"type":"object","additionalProperties":false,"required":["component","version","source_sha256","source_identity_scope"],"properties":{"component":{"const":"verify-run"},"version":{"type":"string"},"source_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},"source_identity_scope":{"const":"child_ledger.py"}}},
+  "body":{"type":"object","required":["schema","authority_granted","automatic_retry"],"properties":{"schema":{"enum":["engineer.resource-child-ledger/2","vfy.child-reservation/1","vfy.child-dispatch/1","vfy.child-completion/1","vfy.child-settlement/1"]},"authority_granted":{"const":false},"automatic_retry":{"const":false}}},
+  "signature":{"type":"string","pattern":"^[a-f0-9]{128}$"},
+  "sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"}
+ }
+}

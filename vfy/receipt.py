@@ -29,7 +29,6 @@ from vfy.errors import (
     SignatureInvalid,
     SignatureMalformed,
     SigningKeyInvalid,
-    SigningKeyRetired,
     SigningKeyUnknown,
 )
 
@@ -163,8 +162,7 @@ def verify_receipt(value, keys, registry):
         raise SigningKeyUnknown("No receipt key in the registry matches " + repr(identity))
     # A retired key may not sign new receipts, but still verifies what it already signed:
     # spec/receipt-and-replay.md, so that "offline-replayable" stays true.
-    if entry.get("status") == "revoked":
-        raise SigningKeyRetired("The receipt signing key is revoked.")
+    auth_module.check_key_status(entry, historical=True)
 
     # One signature byte string, one accepted encoding. Strict base64 refuses a bad alphabet and
     # bad padding but not unused trailing bits, so sixteen distinct texts decoded to the same
@@ -256,7 +254,8 @@ def replay_receipt(value, rulebook_source, candidate, snapshot_value, receipt_ke
                         "The authorization's %s is not the receipt's." % field)
             auth_module.verify_authorization(
                 authorization, pinned, candidate, frozen, recomputed,
-                authorization["runtime_id"], verification_time, authorization_keys, registry)
+                authorization["runtime_id"], verification_time, authorization_keys, registry,
+                historical=True)
             authorization_verified = True
 
     return ReplayVerification(

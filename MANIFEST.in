@@ -11,7 +11,7 @@
 #
 # Every line below is here because a shipped test or a shipped verification instruction reads
 # the files it names. The rule for adding one is that rule, not convenience.
-include LICENSE NOTICE README.md CHANGELOG.md pyproject.toml MANIFEST.in
+include LICENSE NOTICE README.md CHANGELOG.md SECURITY.md pyproject.toml MANIFEST.in
 recursive-include spec *.md *.schema.json
 recursive-include templates *.yaml
 recursive-include fixtures *.json *.md
@@ -40,3 +40,7 @@ prune verify-run
 prune dist
 prune build
 global-exclude .DS_Store __pycache__
+
+# Internal consumer coordination records remain local audit evidence. Public behavior is
+# specified in spec/execution-report.md, already included above.
+prune docs/contracts

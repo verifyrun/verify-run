@@ -1,0 +1,9 @@
+test_kill_after_admission_preserves_hold_and_refuses_resume (tests.test_service_workflow_process_recovery.WorkflowProcessRecoveryTests.test_kill_after_admission_preserves_hold_and_refuses_resume) ... ok
+test_kill_after_consume_preserves_hold_and_refuses_resume (tests.test_service_workflow_process_recovery.WorkflowProcessRecoveryTests.test_kill_after_consume_preserves_hold_and_refuses_resume) ... ok
+test_kill_after_reservation_preserves_hold_and_refuses_resume (tests.test_service_workflow_process_recovery.WorkflowProcessRecoveryTests.test_kill_after_reservation_preserves_hold_and_refuses_resume) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 1.337s
+
+OK
+INSTALLED: /private/tmp/verify-run-release-installed-20261020/lib/python3.14/site-packages/vfy/__init__.py

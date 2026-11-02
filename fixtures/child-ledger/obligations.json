@@ -1,0 +1,27 @@
+{
+  "schema": "run-child-ledger-obligations/1",
+  "positive": [
+    "exact-parent-population",
+    "local-hold-before-dispatch",
+    "completion-with-unsettled-resource",
+    "resource-settlement-financial-UNKNOWN",
+    "same-receipt-readback"
+  ],
+  "negative": [
+    "parent-subject-mismatch",
+    "basis-mismatch",
+    "undeclared-child",
+    "duplicate-attempt",
+    "duplicate-reservation",
+    "duplicate-settlement",
+    "overcommit",
+    "wrong-issuer",
+    "signature-tamper",
+    "axis-mismatch",
+    "missing-completion-hold",
+    "unmeasured-axis-hold",
+    "stale-revision",
+    "concurrent-budget-spend"
+  ],
+  "effect_authority": false
+}

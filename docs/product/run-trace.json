@@ -1,0 +1,467 @@
+{
+  "schema": "verify.run.requirements-trace/1",
+  "register_sha256": "7ac24b3e7ba40cf019b5b54276eda0cba9e5e86a935036b765adb8a50d3f7e61",
+  "scope": "19 Run-owned/shared rows traced; 73 definitions preserved, not 73 implementations. No FEH double counting.",
+  "requirements": [
+    {
+      "id": "W02",
+      "title": "Compatible Run producer",
+      "status": "PARTIAL_IMPLEMENTATION_FULL_EXIT_OPEN",
+      "command_handler_store": "service-tests CLI \u2192 service_tests_cli.run; lifecycle.prepare \u2192 signed preparation ledger",
+      "source_paths": [
+        "vfy/service_tests_cli.py",
+        "vfy/service_lifecycle.py"
+      ],
+      "test_paths": [
+        "tests/test_service_tests_cli.py",
+        "tests/test_service_lifecycle.py"
+      ],
+      "trust_boundary": "Owner-selected trust and installed pins; uploaded evidence does not authorize action. Tenant mapping remains Platform-owned.",
+      "missing": "Actual shared requirement/source/check/environment coverage and fresh host consumer acceptance remain open. Offline verification remains historical only: recipient trust provisioning, cross-connector atomic ordering, checker migration, hosted release matrix and full product acceptance remain open.",
+      "accepted_scoped_candidates": [
+        "ce947cc",
+        "9211cec",
+        "290feed"
+      ],
+      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts.",
+      "offline_consumer_acceptance": {
+        "scope": "Fresh wheel and sdist installed off-checkout verify retained original receipt inputs; wrong independently selected policy and wrong final-plan digest refuse; no effects replayed.",
+        "command": "python -I -m vfy.offline_adoption_consumer",
+        "source": "vfy/offline_adoption_consumer.py",
+        "test": "tests/test_offline_adoption_consumer.py",
+        "receipt": "RUN_OFFLINE_PACKAGE_RESULT.json (parent private acceptance record; not distributed or a full exit)"
+      }
+    },
+    {
+      "id": "ENT09",
+      "title": "API, integrations and lifecycle",
+      "status": "PARTIAL_IMPLEMENTATION_FULL_EXIT_OPEN",
+      "command_handler_store": "service-tests CLI \u2192 service_tests_cli.run; lifecycle.prepare \u2192 signed preparation ledger",
+      "source_paths": [
+        "vfy/service_tests_cli.py",
+        "vfy/service_lifecycle.py"
+      ],
+      "test_paths": [
+        "tests/test_service_tests_cli.py",
+        "tests/test_service_lifecycle.py"
+      ],
+      "trust_boundary": "Owner-selected trust and installed pins; uploaded evidence does not authorize action. Tenant mapping remains Platform-owned.",
+      "missing": "Actual shared requirement/source/check/environment coverage and fresh host consumer acceptance remain open.",
+      "accepted_scoped_candidates": [
+        "ce947cc",
+        "9211cec",
+        "290feed"
+      ],
+      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts."
+    },
+    {
+      "id": "BIZ1",
+      "title": "Finish a difficult real code change",
+      "status": "PARTIAL_IMPLEMENTATION_FULL_EXIT_OPEN",
+      "command_handler_store": "service-tests CLI \u2192 service_tests_cli.run; lifecycle.prepare \u2192 signed preparation ledger",
+      "source_paths": [
+        "vfy/service_tests_cli.py",
+        "vfy/service_lifecycle.py"
+      ],
+      "test_paths": [
+        "tests/test_service_tests_cli.py",
+        "tests/test_service_lifecycle.py"
+      ],
+      "trust_boundary": "Owner-selected trust and installed pins; uploaded evidence does not authorize action. Tenant mapping remains Platform-owned.",
+      "missing": "Actual shared requirement/source/check/environment coverage and fresh host consumer acceptance remain open.",
+      "accepted_scoped_candidates": [
+        "ce947cc",
+        "9211cec",
+        "290feed"
+      ],
+      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts."
+    },
+    {
+      "id": "HEAD03",
+      "title": "Evidence-producing tests and checks",
+      "status": "PARTIAL_IMPLEMENTATION_FULL_EXIT_OPEN",
+      "command_handler_store": "service-tests CLI \u2192 service_tests_cli.run; lifecycle.prepare \u2192 signed preparation ledger",
+      "source_paths": [
+        "vfy/service_tests_cli.py",
+        "vfy/service_lifecycle.py"
+      ],
+      "test_paths": [
+        "tests/test_service_tests_cli.py",
+        "tests/test_service_lifecycle.py"
+      ],
+      "trust_boundary": "Owner-selected trust and installed pins; uploaded evidence does not authorize action. Tenant mapping remains Platform-owned.",
+      "missing": "Actual shared requirement/source/check/environment coverage and fresh host consumer acceptance remain open.",
+      "accepted_scoped_candidates": [
+        "ce947cc",
+        "9211cec",
+        "290feed"
+      ],
+      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts."
+    },
+    {
+      "id": "W07",
+      "title": "Exact authorization and observed effect",
+      "status": "PARTIAL_IMPLEMENTATION_FULL_EXIT_OPEN",
+      "command_handler_store": "service adoption lifecycle \u2192 adopt \u2192 authorization/gate \u2192 managed destination",
+      "source_paths": [
+        "vfy/authorization.py",
+        "vfy/service_adoption.py",
+        "vfy/service_lifecycle.py"
+      ],
+      "test_paths": [
+        "tests/test_service_adoption.py",
+        "tests/test_service_lifecycle.py"
+      ],
+      "trust_boundary": "Owner-selected trust and installed pins; uploaded evidence does not authorize action. Tenant mapping remains Platform-owned.",
+      "missing": "Only selected authenticated exact action is supported; real enterprise operator/tenant/remote-provider approvals remain consumer obligations.",
+      "accepted_scoped_candidates": [
+        "ce947cc",
+        "9211cec",
+        "290feed"
+      ],
+      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts."
+    },
+    {
+      "id": "ECO-AUTHORITY",
+      "title": "Bind reviewer and action permissions to exact change",
+      "status": "PARTIAL_IMPLEMENTATION_FULL_EXIT_OPEN",
+      "command_handler_store": "service adoption lifecycle \u2192 adopt \u2192 authorization/gate \u2192 managed destination",
+      "source_paths": [
+        "vfy/authorization.py",
+        "vfy/service_adoption.py",
+        "vfy/service_lifecycle.py"
+      ],
+      "test_paths": [
+        "tests/test_service_adoption.py",
+        "tests/test_service_lifecycle.py"
+      ],
+      "trust_boundary": "Owner-selected trust and installed pins; uploaded evidence does not authorize action. Tenant mapping remains Platform-owned.",
+      "missing": "Only selected authenticated exact action is supported; real enterprise operator/tenant/remote-provider approvals remain consumer obligations.",
+      "accepted_scoped_candidates": [
+        "ce947cc",
+        "9211cec",
+        "290feed"
+      ],
+      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts."
+    },
+    {
+      "id": "W10",
+      "title": "Execution interruption and resource account",
+      "status": "PARTIAL_IMPLEMENTATION_FULL_EXIT_OPEN",
+      "command_handler_store": "lifecycle.recover; verify-service-adoption-accounting \u2192 history.verify/accounting; service-accounting-session \u2192 locked pool",
+      "source_paths": [
+        "vfy/service_lifecycle.py",
+        "vfy/service_adoption_accounting.py",
+        "vfy/service_accounting_cli.py"
+      ],
+      "test_paths": [
+        "tests/test_service_posteffect_recovery.py",
+        "tests/test_service_adoption_accounting.py",
+        "tests/test_service_accounting_cli.py"
+      ],
+      "trust_boundary": "Owner-selected trust and installed pins; uploaded evidence does not authorize action. Tenant mapping remains Platform-owned.",
+      "missing": "No automatic retry/refund; UNKNOWN retained. Complete physical costs, production recovery and cross-connector ordering remain open.",
+      "accepted_scoped_candidates": [
+        "ce947cc",
+        "9211cec",
+        "290feed"
+      ],
+      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts."
+    },
+    {
+      "id": "ENT03",
+      "title": "Recovery and continuity",
+      "status": "PARTIAL_IMPLEMENTATION_FULL_EXIT_OPEN",
+      "command_handler_store": "lifecycle.recover; verify-service-adoption-accounting \u2192 history.verify/accounting; service-accounting-session \u2192 locked pool",
+      "source_paths": [
+        "vfy/service_lifecycle.py",
+        "vfy/service_adoption_accounting.py",
+        "vfy/service_accounting_cli.py"
+      ],
+      "test_paths": [
+        "tests/test_service_posteffect_recovery.py",
+        "tests/test_service_adoption_accounting.py",
+        "tests/test_service_accounting_cli.py"
+      ],
+      "trust_boundary": "Owner-selected trust and installed pins; uploaded evidence does not authorize action. Tenant mapping remains Platform-owned.",
+      "missing": "No automatic retry/refund; UNKNOWN retained. Complete physical costs, production recovery and cross-connector ordering remain open.",
+      "accepted_scoped_candidates": [
+        "ce947cc",
+        "9211cec",
+        "290feed"
+      ],
+      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts."
+    },
+    {
+      "id": "RES2",
+      "title": "Bound and recover experiments",
+      "status": "PARTIAL_IMPLEMENTATION_FULL_EXIT_OPEN",
+      "command_handler_store": "lifecycle.recover; verify-service-adoption-accounting \u2192 history.verify/accounting; service-accounting-session \u2192 locked pool",
+      "source_paths": [
+        "vfy/service_lifecycle.py",
+        "vfy/service_adoption_accounting.py",
+        "vfy/service_accounting_cli.py"
+      ],
+      "test_paths": [
+        "tests/test_service_posteffect_recovery.py",
+        "tests/test_service_adoption_accounting.py",
+        "tests/test_service_accounting_cli.py"
+      ],
+      "trust_boundary": "Owner-selected trust and installed pins; uploaded evidence does not authorize action. Tenant mapping remains Platform-owned.",
+      "missing": "No automatic retry/refund; UNKNOWN retained. Complete physical costs, production recovery and cross-connector ordering remain open.",
+      "accepted_scoped_candidates": [
+        "ce947cc",
+        "9211cec",
+        "290feed"
+      ],
+      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts."
+    },
+    {
+      "id": "HEAD04",
+      "title": "Reliable task orchestration and delivery",
+      "status": "PARTIAL_IMPLEMENTATION_FULL_EXIT_OPEN",
+      "command_handler_store": "lifecycle.recover; verify-service-adoption-accounting \u2192 history.verify/accounting; service-accounting-session \u2192 locked pool",
+      "source_paths": [
+        "vfy/service_lifecycle.py",
+        "vfy/service_adoption_accounting.py",
+        "vfy/service_accounting_cli.py"
+      ],
+      "test_paths": [
+        "tests/test_service_posteffect_recovery.py",
+        "tests/test_service_adoption_accounting.py",
+        "tests/test_service_accounting_cli.py"
+      ],
+      "trust_boundary": "Owner-selected trust and installed pins; uploaded evidence does not authorize action. Tenant mapping remains Platform-owned.",
+      "missing": "No automatic retry/refund; UNKNOWN retained. Complete physical costs, production recovery and cross-connector ordering remain open.",
+      "accepted_scoped_candidates": [
+        "ce947cc",
+        "9211cec",
+        "290feed"
+      ],
+      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts."
+    },
+    {
+      "id": "ECO-RECEIPTS",
+      "title": "Share independently checkable evidence and action records",
+      "status": "PARTIAL_IMPLEMENTATION_FULL_EXIT_OPEN",
+      "command_handler_store": "verify-service-adoption-history/accounting \u2192 signed chain/gate recomputation \u2192 false-authority historical output",
+      "source_paths": [
+        "vfy/service_adoption_history.py",
+        "vfy/service_adoption_accounting.py",
+        "vfy/service_test_successor.py"
+      ],
+      "test_paths": [
+        "tests/test_service_adoption_history.py",
+        "tests/test_service_adoption_accounting.py",
+        "tests/test_service_test_successor.py"
+      ],
+      "trust_boundary": "Owner-selected trust and installed pins; uploaded evidence does not authorize action. Tenant mapping remains Platform-owned.",
+      "missing": "O1 cross-ring identities/order not closed by Runtask projection. O2 offline selected chain scoped. O3 checker migration not closed by historical checker-input identity; operator compatibility evidence required. Offline verification remains historical only: recipient trust provisioning, cross-connector atomic ordering, checker migration, hosted release matrix and full product acceptance remain open.",
+      "accepted_scoped_candidates": [
+        "ce947cc",
+        "9211cec",
+        "290feed"
+      ],
+      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts.",
+      "offline_consumer_acceptance": {
+        "scope": "Fresh wheel and sdist installed off-checkout verify retained original receipt inputs; wrong independently selected policy and wrong final-plan digest refuse; no effects replayed.",
+        "command": "python -I -m vfy.offline_adoption_consumer",
+        "source": "vfy/offline_adoption_consumer.py",
+        "test": "tests/test_offline_adoption_consumer.py",
+        "receipt": "RUN_OFFLINE_PACKAGE_RESULT.json (parent private acceptance record; not distributed or a full exit)"
+      }
+    },
+    {
+      "id": "RES4",
+      "title": "Keep evidence portable",
+      "status": "PARTIAL_IMPLEMENTATION_FULL_EXIT_OPEN",
+      "command_handler_store": "verify-service-adoption-history/accounting \u2192 signed chain/gate recomputation \u2192 false-authority historical output",
+      "source_paths": [
+        "vfy/service_adoption_history.py",
+        "vfy/service_adoption_accounting.py",
+        "vfy/service_test_successor.py"
+      ],
+      "test_paths": [
+        "tests/test_service_adoption_history.py",
+        "tests/test_service_adoption_accounting.py",
+        "tests/test_service_test_successor.py"
+      ],
+      "trust_boundary": "Owner-selected trust and installed pins; uploaded evidence does not authorize action. Tenant mapping remains Platform-owned.",
+      "missing": "O1 cross-ring identities/order not closed by Runtask projection. O2 offline selected chain scoped. O3 checker migration not closed by historical checker-input identity; operator compatibility evidence required.",
+      "accepted_scoped_candidates": [
+        "ce947cc",
+        "9211cec",
+        "290feed"
+      ],
+      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts."
+    },
+    {
+      "id": "ECO-BIND",
+      "title": "Cross-ring and independent receipt integrity",
+      "status": "PARTIAL_IMPLEMENTATION_FULL_EXIT_OPEN",
+      "command_handler_store": "verify-service-adoption-history/accounting \u2192 signed chain/gate recomputation \u2192 false-authority historical output",
+      "source_paths": [
+        "vfy/service_adoption_history.py",
+        "vfy/service_adoption_accounting.py",
+        "vfy/service_test_successor.py"
+      ],
+      "test_paths": [
+        "tests/test_service_adoption_history.py",
+        "tests/test_service_adoption_accounting.py",
+        "tests/test_service_test_successor.py"
+      ],
+      "trust_boundary": "Owner-selected trust and installed pins; uploaded evidence does not authorize action. Tenant mapping remains Platform-owned.",
+      "missing": "O1 cross-ring identities/order not closed by Runtask projection. O2 offline selected chain scoped. O3 checker migration not closed by historical checker-input identity; operator compatibility evidence required. Offline verification remains historical only: recipient trust provisioning, cross-connector atomic ordering, checker migration, hosted release matrix and full product acceptance remain open.",
+      "accepted_scoped_candidates": [
+        "ce947cc",
+        "9211cec",
+        "290feed"
+      ],
+      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts.",
+      "offline_consumer_acceptance": {
+        "scope": "Fresh wheel and sdist installed off-checkout verify retained original receipt inputs; wrong independently selected policy and wrong final-plan digest refuse; no effects replayed.",
+        "command": "python -I -m vfy.offline_adoption_consumer",
+        "source": "vfy/offline_adoption_consumer.py",
+        "test": "tests/test_offline_adoption_consumer.py",
+        "receipt": "RUN_OFFLINE_PACKAGE_RESULT.json (parent private acceptance record; not distributed or a full exit)"
+      }
+    },
+    {
+      "id": "BIZ2",
+      "title": "Keep resolution trustworthy through change",
+      "status": "PARTIAL_IMPLEMENTATION_FULL_EXIT_OPEN",
+      "command_handler_store": "verify-service-adoption-history/accounting \u2192 signed chain/gate recomputation \u2192 false-authority historical output",
+      "source_paths": [
+        "vfy/service_adoption_history.py",
+        "vfy/service_adoption_accounting.py",
+        "vfy/service_test_successor.py"
+      ],
+      "test_paths": [
+        "tests/test_service_adoption_history.py",
+        "tests/test_service_adoption_accounting.py",
+        "tests/test_service_test_successor.py"
+      ],
+      "trust_boundary": "Owner-selected trust and installed pins; uploaded evidence does not authorize action. Tenant mapping remains Platform-owned.",
+      "missing": "O1 cross-ring identities/order not closed by Runtask projection. O2 offline selected chain scoped. O3 checker migration not closed by historical checker-input identity; operator compatibility evidence required.",
+      "accepted_scoped_candidates": [
+        "ce947cc",
+        "9211cec",
+        "290feed"
+      ],
+      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts."
+    },
+    {
+      "id": "BIZ3",
+      "title": "Coordinate agents across team",
+      "status": "PARTIAL_IMPLEMENTATION_FULL_EXIT_OPEN",
+      "command_handler_store": "verify-service-adoption-history/accounting \u2192 signed chain/gate recomputation \u2192 false-authority historical output",
+      "source_paths": [
+        "vfy/service_adoption_history.py",
+        "vfy/service_adoption_accounting.py",
+        "vfy/service_test_successor.py"
+      ],
+      "test_paths": [
+        "tests/test_service_adoption_history.py",
+        "tests/test_service_adoption_accounting.py",
+        "tests/test_service_test_successor.py"
+      ],
+      "trust_boundary": "Owner-selected trust and installed pins; uploaded evidence does not authorize action. Tenant mapping remains Platform-owned.",
+      "missing": "O1 cross-ring identities/order not closed by Runtask projection. O2 offline selected chain scoped. O3 checker migration not closed by historical checker-input identity; operator compatibility evidence required.",
+      "accepted_scoped_candidates": [
+        "ce947cc",
+        "9211cec",
+        "290feed"
+      ],
+      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts."
+    },
+    {
+      "id": "ECO-CHECKS",
+      "title": "Connect checkers/CI and execution-environment evidence",
+      "status": "PARTIAL_IMPLEMENTATION_FULL_EXIT_OPEN",
+      "command_handler_store": "verify-service-adoption-history/accounting \u2192 signed chain/gate recomputation \u2192 false-authority historical output",
+      "source_paths": [
+        "vfy/service_adoption_history.py",
+        "vfy/service_adoption_accounting.py",
+        "vfy/service_test_successor.py"
+      ],
+      "test_paths": [
+        "tests/test_service_adoption_history.py",
+        "tests/test_service_adoption_accounting.py",
+        "tests/test_service_test_successor.py"
+      ],
+      "trust_boundary": "Owner-selected trust and installed pins; uploaded evidence does not authorize action. Tenant mapping remains Platform-owned.",
+      "missing": "O1 cross-ring identities/order not closed by Runtask projection. O2 offline selected chain scoped. O3 checker migration not closed by historical checker-input identity; operator compatibility evidence required.",
+      "accepted_scoped_candidates": [
+        "ce947cc",
+        "9211cec",
+        "290feed"
+      ],
+      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts."
+    },
+    {
+      "id": "ENT02",
+      "title": "Concurrent users and capacity envelope",
+      "status": "PARTIAL_IMPLEMENTATION_FULL_EXIT_OPEN",
+      "command_handler_store": "bounded accounting session plus typed historical counters",
+      "source_paths": [
+        "vfy/service_accounting_cli.py",
+        "vfy/service_adoption_accounting.py"
+      ],
+      "test_paths": [
+        "tests/test_service_accounting_cli.py",
+        "tests/test_service_adoption_accounting.py"
+      ],
+      "trust_boundary": "Owner-selected trust and installed pins; uploaded evidence does not authorize action. Tenant mapping remains Platform-owned.",
+      "missing": "Enterprise concurrency/latency/SLO and economic throughput not measured here. Logical counters are not full physical cost.",
+      "accepted_scoped_candidates": [
+        "ce947cc",
+        "9211cec",
+        "290feed"
+      ],
+      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts."
+    },
+    {
+      "id": "ENT11",
+      "title": "Observability and economic operation",
+      "status": "PARTIAL_IMPLEMENTATION_FULL_EXIT_OPEN",
+      "command_handler_store": "bounded accounting session plus typed historical counters",
+      "source_paths": [
+        "vfy/service_accounting_cli.py",
+        "vfy/service_adoption_accounting.py"
+      ],
+      "test_paths": [
+        "tests/test_service_accounting_cli.py",
+        "tests/test_service_adoption_accounting.py"
+      ],
+      "trust_boundary": "Owner-selected trust and installed pins; uploaded evidence does not authorize action. Tenant mapping remains Platform-owned.",
+      "missing": "Enterprise concurrency/latency/SLO and economic throughput not measured here. Logical counters are not full physical cost.",
+      "accepted_scoped_candidates": [
+        "ce947cc",
+        "9211cec",
+        "290feed"
+      ],
+      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts."
+    },
+    {
+      "id": "ENT05",
+      "title": "Security and software supply chain",
+      "status": "PARTIAL_IMPLEMENTATION_FULL_EXIT_OPEN",
+      "command_handler_store": "historical trust registry + signed authorization; installed byte pins are consumer-owned",
+      "source_paths": [
+        "vfy/service_adoption_history.py",
+        "vfy/authorization.py"
+      ],
+      "test_paths": [
+        "tests/test_service_adoption_history.py"
+      ],
+      "trust_boundary": "Owner-selected trust and installed pins; uploaded evidence does not authorize action. Tenant mapping remains Platform-owned.",
+      "missing": "No complete SBOM/security audit/key rotation/production supply chain acceptance claimed.",
+      "accepted_scoped_candidates": [
+        "ce947cc",
+        "9211cec",
+        "290feed"
+      ],
+      "acceptance_note": "Candidate references indicate scoped evidence only; not acceptance of this full requirement. See parent exact receipts."
+    }
+  ]
+}

@@ -30,6 +30,7 @@ it goes in `rule_id` and `evidence_id`.
 | `signature_invalid` | a signature does not verify over the artifact's canonical payload |
 | `signing_key_unknown` | no key in the registry matches the signature's `key_id` and `key_version` |
 | `signing_key_retired` | the signing key is retired and authorizes nothing |
+| `signing_key_revoked` | caller trust policy rejects this key for history and present authority |
 | `signing_key_invalid` | key material is not a well-formed Ed25519 key |
 | `receipt_outcome_ineligible` | a receipt was requested for ERROR, which is not a decision (spec/receipt-and-replay.md) |
 | `receipt_binding_mismatch` | a receipt's bound rulebook, candidate, snapshot, result, authorization, or execution record is not the one supplied, or its shape contradicts its terminal class |

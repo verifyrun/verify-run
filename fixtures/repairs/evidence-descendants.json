@@ -1,0 +1,11 @@
+{
+  "description": "Timeout must clean ordinary descendants, including when the leader exited first.",
+  "scripts": [
+    "#!/bin/sh\n(/bin/sleep 2; printf survived > marker) &\nwait\n",
+    "#!/bin/sh\n(/bin/sleep 2; printf survived > marker) &\nexit 0\n"
+  ],
+  "timeout_seconds": 1,
+  "normal_exit_script": "#!/bin/sh\n(/bin/sleep 2; printf survived > marker) >/dev/null 2>&1 &\nprintf '\"passed\"'\n",
+  "expected_status": "error",
+  "marker_must_exist": false
+}

@@ -39,6 +39,8 @@ def build_parser():
                         help="workspace root (default: the current directory)")
     parser.add_argument("--json", action="store_true", dest="as_json",
                         help="print one canonical JSON object on stdout")
+    parser.add_argument("--execution-report", action="store_true",
+                        help="with --json run, include versioned execution and recovery facts")
     commands = parser.add_subparsers(dest="command", required=True, metavar="command")
 
     initialize = commands.add_parser("init", help="create a workspace from a template")
@@ -49,6 +51,7 @@ def build_parser():
     checker.add_argument("candidate", help="path to a candidate JSON document")
 
     runner_parser = commands.add_parser("run", help="gate a command")
+    runner_parser.add_argument("--custody-handoff", help="exact opt-in local custody envelope")
     runner_parser.add_argument("--identity", action="append", default=[], metavar="NAME=VALUE",
                                help="a value for one of the rulebook's track fields; repeatable")
     runner_parser.add_argument("argv", nargs=argparse.REMAINDER,
@@ -63,6 +66,36 @@ def build_parser():
     actions.add_parser("list", help="list committed receipts")
     show = actions.add_parser("show", help="load, verify, and replay one receipt")
     show.add_argument("receipt_id", help="the receipt id")
+    selected_check = commands.add_parser("execute-selected-check", help="one operator-selected development CHECK; no retry or adoption")
+    selected_check.add_argument("--profile", required=True)
+    selected_check.add_argument("--profile-sha256", required=True)
+    selected_check.add_argument("--request-sha256", required=True)
+    selected_check.add_argument("--authorization-monotonic-ns", required=True, type=int)
+    check_status = commands.add_parser("status-selected-check", help="read retained exact CHECK state; no retry")
+    check_status.add_argument("--profile", required=True)
+    check_status.add_argument("--profile-sha256", required=True)
+    check_status.add_argument("--request-sha256", required=True)
+    for name in ("verify-service-adoption-accounting", "verify-service-adoption-history", "verify-service-receipt", "reconcile-service-repair", "reconcile-service-repair-current", "check-service-tests", "preflight-service-proposal", "inspect-service-source-relation"):
+        reader = commands.add_parser(name, help="bounded selected service reading; no action or retry")
+        reader.add_argument("--request-sha256", required=True,
+                            help="independently selected SHA256 of exact JSON stdin bytes")
+    session = commands.add_parser("service-accounting-session", help="selected development pool session; no execution")
+    session.add_argument("--profile", required=True)
+    session.add_argument("--profile-sha256", required=True)
+    adoption = commands.add_parser("adopt-service-copy", help="separately authorized managed development copy adoption")
+    adoption.add_argument("--profile", required=True)
+    adoption.add_argument("--profile-sha256", required=True)
+    adoption.add_argument("--request-sha256", required=True)
+    lifecycle = commands.add_parser("service-lifecycle", help="explicit paid development preparation, adoption or recovery")
+    lifecycle.add_argument("operation", choices=("prepare", "adopt", "recover"))
+    lifecycle.add_argument("--profile", required=True)
+    lifecycle.add_argument("--profile-sha256", required=True)
+    lifecycle.add_argument("--expected-head", required=True)
+    lifecycle.add_argument("--payload")
+    workflow_service = commands.add_parser("service-workflow", help="held pre-observation development workflow")
+    workflow_service.add_argument("operation", choices=("session", "adopt", "recover"))
+    for field in ("profile", "profile-sha256", "expected-head"):
+        workflow_service.add_argument("--" + field, required=True)
     return parser
 
 
@@ -87,6 +120,111 @@ def main(argv=None, clock=None, identifiers=None, out=None, err=None):
     finally:
         sys.stderr, sys.stdout = previous_stderr, previous_stdout
 
+    if options.execution_report and (not options.as_json or options.command != "run"):
+        print("--execution-report requires --json and run", file=err)
+        return EXIT_USAGE
+
+    if options.command == "verify-service-adoption-accounting":
+        from vfy import service_adoption_accounting
+        return service_adoption_accounting.run(request_sha256=options.request_sha256, stdin=sys.stdin.buffer, out=out)
+    if options.command == "verify-service-adoption-history":
+        from vfy import service_adoption_history
+        return service_adoption_history.run(request_sha256=options.request_sha256, stdin=sys.stdin.buffer, out=out)
+    if options.command == "inspect-service-source-relation":
+        from vfy import service_source_relation_cli
+        return service_source_relation_cli.run(request_sha256=options.request_sha256, stdin=sys.stdin.buffer, out=out)
+    if options.command == "reconcile-service-repair-current":
+        from vfy import service_current_read_cli
+        return service_current_read_cli.run(request_sha256=options.request_sha256, stdin=sys.stdin.buffer, out=out)
+    if options.command in ("verify-service-receipt", "reconcile-service-repair"):
+        from vfy import service_read_cli
+        return service_read_cli.run(command=options.command, request_sha256=options.request_sha256,
+                                    stdin=sys.stdin.buffer, out=out)
+
+    if options.command == "status-selected-check":
+        from vfy import check_execution
+        return check_execution.status(profile=options.profile, profile_sha256=options.profile_sha256,
+            request_sha256=options.request_sha256, stdin=sys.stdin.buffer, out=out)
+    if options.command == "execute-selected-check":
+        from vfy import check_execution
+        from datetime import datetime, timezone
+        return check_execution.run(profile=options.profile, profile_sha256=options.profile_sha256,
+            request_sha256=options.request_sha256, authorization_monotonic_ns=options.authorization_monotonic_ns, stdin=sys.stdin.buffer, out=out,
+            now=lambda: datetime.now(timezone.utc).isoformat())
+    if options.command == "preflight-service-proposal":
+        from vfy import service_proposal_cli
+        return service_proposal_cli.run(request_sha256=options.request_sha256, stdin=sys.stdin.buffer, out=out)
+    if options.command == "check-service-tests":
+        from vfy import service_tests_cli
+        return service_tests_cli.run(request_sha256=options.request_sha256, stdin=sys.stdin.buffer, out=out)
+
+    if options.command == "service-workflow":
+        from vfy import service_workflow as service_workflow, service_lifecycle
+        import time
+        try:
+            if options.operation == "session":
+                selected_clock = workflow.Clock() if clock is None else clock
+                selected_ids = workflow.Identifiers() if identifiers is None else identifiers
+                return service_workflow.session(profile=options.profile, profile_sha256=options.profile_sha256,
+                    expected_head=options.expected_head, input_fd=sys.stdin.fileno(), output_fd=out.fileno(),
+                    session_id=selected_ids.nonce(), now=selected_clock.now_utc, monotonic=time.monotonic)
+            ledger = service_workflow.Ledger(options.profile, options.profile_sha256, options.expected_head)
+            if options.operation == "adopt":
+                raw = sys.stdin.buffer.read(service_workflow.MAX_STDIN + 1)
+                if len(raw) > service_workflow.MAX_STDIN: raise ValueError("Request bound exceeded")
+                result = service_lifecycle.adopt(ledger, service_workflow.m.load.load_json_bytes(raw))
+            else:
+                result = service_workflow.recover(ledger)
+            print(json.dumps(result, sort_keys=True), file=out)
+            return 0
+        except Exception as exc:
+            print(json.dumps({"state":"REFUSED_OR_UNKNOWN", "reason":str(exc), "automatic_retry":False}),file=out)
+            return 12
+
+    if options.command == "service-lifecycle":
+        from vfy import service_lifecycle as lifecycle
+        try:
+            ledger = lifecycle.Ledger(options.profile, options.profile_sha256, options.expected_head)
+            if options.operation == "prepare":
+                if not options.payload: raise ValueError("Selected payload path required")
+                response = lifecycle.prepare(ledger, options.payload)
+            elif options.operation == "adopt":
+                raw = sys.stdin.buffer.read(lifecycle.MAX_STDIN + 1)
+                if len(raw) > lifecycle.MAX_STDIN: raise ValueError("Action request exceeds bound")
+                response = lifecycle.adopt(ledger, lifecycle.m.load.load_json_bytes(raw))
+            else:
+                response = lifecycle.recover(ledger)
+            response['full_physical_cost'] = 'UNKNOWN'
+            print(json.dumps(response, sort_keys=True), file=out)
+            return 0
+        except Exception as exc:
+            print(json.dumps({'state': 'REFUSED_OR_UNKNOWN', 'reason': str(exc),
+                'automatic_retry': False, 'full_physical_cost': 'UNKNOWN'}), file=err)
+            return 1
+    if options.command == "adopt-service-copy":
+        from vfy.service_adoption_cli import adopt_selected
+        from vfy.service_read_cli import MAX_STDIN
+        try:
+            raw = sys.stdin.buffer.read(MAX_STDIN + 1)
+            response = adopt_selected(raw, options.request_sha256,
+                options.profile, options.profile_sha256, clock=clock)
+            print(json.dumps(response, sort_keys=True), file=out)
+            return 0
+        except (OSError, ValueError, KeyError, TypeError, VerifyError) as exc:
+            print(json.dumps({'state': 'ADOPTION_REFUSED_OR_INCOMPLETE',
+                'reason': str(exc), 'automatic_retry': False,
+                'next': 'Inspect retained state; never resend uncertain adoption.'}), file=err)
+            return 1
+    if options.command == "service-accounting-session":
+        from vfy import service_accounting_cli
+        import time
+        session_clock = workflow.Clock() if clock is None else clock
+        session_identifiers = workflow.Identifiers() if identifiers is None else identifiers
+        return service_accounting_cli.run(profile=options.profile, profile_sha256=options.profile_sha256,
+                                          input_fd=sys.stdin.fileno(), output_fd=out.fileno(),
+                                          session_id=session_identifiers.nonce(), now=session_clock.now_utc,
+                                          monotonic=time.monotonic)
+
     clock = workflow.Clock() if clock is None else clock
     identifiers = workflow.Identifiers() if identifiers is None else identifiers
 
@@ -102,6 +240,9 @@ def main(argv=None, clock=None, identifiers=None, out=None, err=None):
         if os.environ.get(_DEVELOPER_TRACEBACK):
             raise
         print("internal error: %s" % type(defect).__name__, file=err)
+        if options.execution_report:
+            _emit({"command": "run", "error": "internal_error",
+                   "execution_report": _execution_report()}, out)
         return EXIT_OPERATIONAL
 
 
@@ -152,7 +293,9 @@ def _run(options, clock, identifiers, out, err):
     workspace = workflow.open_workspace(options.workspace, resources.schema_dir())
     _warn_on_permissive_keys(workspace, err)
     try:
-        decision = workflow.run(workspace, argv, clock, identifiers, identity or None)
+        decision = workflow.run(workspace, argv, clock, identifiers, identity or None,
+                                **({} if options.custody_handoff is None else
+                                   {"custody_handoff": options.custody_handoff}))
     except VerifyError as typed:
         if typed.code == "execution_recording_failed":
             # The authorization is spent and the action may have happened. Say so plainly, and
@@ -196,6 +339,14 @@ def _run(options, clock, identifiers, out, err):
                         "receipt_id": receipt.receipt_id if receipt is not None else None,
                         "preserved_at": preserved,
                         "receipt": receipt.value() if receipt is not None else None}
+                if options.execution_report:
+                    availability = ("preserved_uncommitted" if preserved else
+                                    "inline_uncommitted" if receipt is not None else "unavailable")
+                    body["execution_report"] = _execution_report(
+                        launcher=("started" if execution["started"] else "not_started")
+                        if "started" in execution else "unknown",
+                        consumption="consumed", availability=availability,
+                        completion=_completion(execution))
                 _emit(body, out)
             return EXIT_RECORDING_FAILED
         raise
@@ -281,7 +432,7 @@ def _receipts(options, clock, identifiers, out, err):
 
 def _render(decision, options, out, err, previewed=False):
     if options.as_json:
-        _emit({"command": "check" if previewed else "run",
+        body = {"command": "check" if previewed else "run",
                "outcome": decision.outcome,
                "matched_rule": decision.matched_rule,
                "reasons": [dict(reason) for reason in decision.reasons],
@@ -289,7 +440,17 @@ def _render(decision, options, out, err, previewed=False):
                "receipt_path": decision.receipt_path,
                "executed": decision.executed,
                "exit_status": decision.exit_status,
-               "notes": list(decision.notes)}, out)
+               "notes": list(decision.notes)}
+        if getattr(options, "execution_report", False):
+            body["execution_report"] = _execution_report(
+                launcher="started" if decision.executed else "not_started",
+                consumption="consumed" if decision.nonce_consumed else "not_consumed",
+                availability="committed" if decision.receipt_id else "unavailable",
+                completion=_completion({"started": decision.executed,
+                                        "exit_status": decision.exit_status,
+                                        "timed_out": decision.timed_out,
+                                        "signal_number": 1 if decision.signalled else None}))
+        _emit(body, out)
         return
     rule = ("   rule: " + decision.matched_rule) if decision.matched_rule else ""
     print("%-7s %s%s" % (decision.outcome, decision.summary, rule), file=out)
@@ -312,6 +473,31 @@ def _render(decision, options, out, err, previewed=False):
         print("        nothing executed", file=out)
 
 
+def _completion(observed):
+    if observed.get("timed_out"):
+        return "timed_out"
+    if observed.get("signal_number") is not None:
+        return "signalled"
+    if observed.get("started") and observed.get("exit_status") is not None:
+        return "exited"
+    if observed.get("started") is False:
+        return "not_started"
+    return "unknown"
+
+
+def _execution_report(*, launcher="unknown", consumption="unknown", availability="unknown",
+                      completion="unknown"):
+    """Only observed runtime facts; a child exit code is not a checker attestation."""
+    recovery = ("new_request_only" if consumption == "not_consumed" else
+                "inspect_recorded_attempt" if availability == "committed" else
+                "reconcile_before_new_request")
+    return {"version": 1, "launcher_execution": launcher,
+            "checker_execution": "not_observed", "context_refusal": "not_observed",
+            "nonce_consumption": consumption, "receipt_availability": availability,
+            "completion": completion, "trust_policy": "supplied_snapshot",
+            "automatic_retry_permitted": False, "recovery": recovery}
+
+
 def _emit(body, out):
     # Canonical because the frozen canonicalizer produced it, not because it is JSON.
     print(canon.canonicalize(body), file=out)
@@ -323,7 +509,10 @@ def _typed_failure(typed, options, out, err):
     if typed.code in _DECISION_EXIT:  # pragma: no cover - reason codes are not outcome names
         return _DECISION_EXIT[typed.code]
     if getattr(options, "as_json", False):
-        _emit({"command": options.command, "error": typed.code}, out)
+        body = {"command": options.command, "error": typed.code}
+        if getattr(options, "execution_report", False):
+            body["execution_report"] = _execution_report()
+        _emit(body, out)
     return EXIT_OPERATIONAL
 
 

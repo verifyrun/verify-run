@@ -1,0 +1,11 @@
+{
+  "evidence_profile": "execution-report-v1",
+  "version": 1,
+  "cases": [
+    {"case": "success", "launcher_execution": "started", "nonce_consumption": "consumed", "receipt_availability": "committed", "completion": "exited"},
+    {"case": "checker_exits_65", "launcher_execution": "started", "nonce_consumption": "consumed", "receipt_availability": "committed", "completion": "exited"},
+    {"case": "hold", "launcher_execution": "not_started", "nonce_consumption": "not_consumed", "receipt_availability": "committed", "completion": "not_started"},
+    {"case": "recording_failure", "launcher_execution": "started", "nonce_consumption": "consumed", "receipt_availability": "preserved_uncommitted", "completion": "exited"},
+    {"case": "unexpected_failure", "launcher_execution": "unknown", "nonce_consumption": "unknown", "receipt_availability": "unknown", "completion": "unknown"}
+  ]
+}

@@ -13,6 +13,10 @@ on:
 permissions:
   contents: read
 
+# Match tools/build_reference_result.py so rebuilt wheels match the recorded artifact.
+env:
+  SOURCE_DATE_EPOCH: "1735689600"
+
 jobs:
   test:
     name: tests (Python ${{ matrix.python }})
@@ -203,3 +207,34 @@ jobs:
         # a downloadable copy. The verdict is already enforced above by
         # `check_conformance_result.py`, and the log is a permanent record of the same bytes.
         run: cat /tmp/conformance-result.json
+
+  offline-consumer-artifacts:
+    name: offline consumer artifacts (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Build exact artifacts and select module pin
+        run: |
+          python -m pip install build
+          python -m build
+          python -c "import hashlib,pathlib; print(hashlib.sha256(pathlib.Path('vfy/offline_adoption_consumer.py').read_bytes()).hexdigest())" > /tmp/offline-module.sha256
+      - name: Inspect installed wheel entry and refusals outside checkout
+        run: |
+          python -m venv /tmp/offline-wheel
+          /tmp/offline-wheel/bin/python -m pip install dist/*.whl
+          /tmp/offline-wheel/bin/python -m pip check
+          /tmp/offline-wheel/bin/python -I tools/check_installed_offline.py --module-sha256 "$(cat /tmp/offline-module.sha256)"
+      - name: Inspect installed source artifact entry and refusals outside checkout
+        run: |
+          python -m venv /tmp/offline-sdist
+          /tmp/offline-sdist/bin/python -m pip install dist/*.tar.gz
+          /tmp/offline-sdist/bin/python -m pip check
+          /tmp/offline-sdist/bin/python -I tools/check_installed_offline.py --module-sha256 "$(cat /tmp/offline-module.sha256)"

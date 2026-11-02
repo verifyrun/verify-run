@@ -111,6 +111,9 @@ class Decision:
     executed: bool = False
     exit_status: int | None = None
     notes: tuple = field(default_factory=tuple)
+    nonce_consumed: bool = False
+    timed_out: bool = False
+    signalled: bool = False
 
 
 # --- workspace ---------------------------------------------------------------------------------
@@ -342,8 +345,8 @@ def load_trust(workspace):
             if not isinstance(entry["public_key_hex"], str) \
                     or not _HEX_KEY.fullmatch(entry["public_key_hex"]):
                 raise CliConfigInvalid("A public key is 64 lowercase hex characters.")
-            if entry["status"] not in ("active", "retired"):
-                raise CliConfigInvalid("A key status is active or retired.")
+            if entry["status"] not in ("active", "retired", "revoked"):
+                raise CliConfigInvalid("A key status is active, retired, or revoked.")
             built.append({"key_id": entry["key_id"], "key_version": entry["key_version"],
                           "public_key": bytes.fromhex(entry["public_key_hex"]),
                           "status": entry["status"]})
@@ -500,7 +503,15 @@ def evaluate(workspace, pinned, candidate, clock):
     return frozen, gate.evaluate(pinned, candidate, frozen.value(), workspace.registry), unsupported
 
 
-def run(workspace, argv, clock, identifiers, identity=None):
+def run(workspace, argv, clock, identifiers, identity=None, custody_handoff=None):
+    if custody_handoff is None:
+        return _run(workspace, argv, clock, identifiers, identity)
+    from vfy.custody import open_handoff
+    with open_handoff(custody_handoff) as custody:
+        return _run(workspace, argv, clock, identifiers, identity, custody)
+
+
+def _run(workspace, argv, clock, identifiers, identity=None, custody=None):
     """The complete gated run, through the closed chain and nothing else.
 
     The clock is read once at each point in the chain where a distinct instant exists: the run's
@@ -514,6 +525,11 @@ def run(workspace, argv, clock, identifiers, identity=None):
     started_at = clock.now_utc()
     pinned = pin_rulebook(workspace)
     candidate = build_candidate(workspace, argv, started_at, identity)
+    if custody is not None:
+        from vfy.custody import commitment, need
+        candidate['action']['params'] = {'run_custody_sha256': commitment(custody.envelope)}
+        custody.validate(candidate, workspace.config['execution']['environment'])
+        need(all(e['source'] != 'exec' for e in pinned.value()['evidence']))
     frozen, result, unsupported = evaluate(workspace, pinned, candidate, clock)
     notes = tuple("evidence %s is declared over %s, which this local runtime does not acquire"
                   % (identifier, source) for identifier, source in unsupported)
@@ -528,7 +544,14 @@ def run(workspace, argv, clock, identifiers, identity=None):
         return Decision(**base)
 
     trust = load_trust(workspace)
+    receipt_signer = trust["receipt"].get(("receipt-key", 1))
+    if receipt_signer is None:
+        raise auth_module.SigningKeyUnknown("The configured receipt signer is not trusted.")
+    auth_module.check_key_status(receipt_signer)
     receipt_seed, _ = load_signing_seed(workspace, "receipt")
+    if _public_of(receipt_seed, "receipt signer") != receipt_signer["public_key"]:
+        raise auth_module.SigningKeyInvalid(
+            "The configured receipt signing key does not match its trusted identity.")
     store = workspace.store()
     receipt_id = identifiers.receipt_id()
 
@@ -540,7 +563,14 @@ def run(workspace, argv, clock, identifiers, identity=None):
         return Decision(receipt_id=receipt_id, receipt_path=_receipt_path(workspace, receipt_id),
                         **base)
 
+    authorization_signer = trust["authorization"].get(("authorization-key", 1))
+    if authorization_signer is None:
+        raise auth_module.SigningKeyUnknown("The configured authorization signer is not trusted.")
+    auth_module.check_key_status(authorization_signer)
     authorization_seed, _ = load_signing_seed(workspace, "authorization")
+    if _public_of(authorization_seed, "authorization signer") != authorization_signer["public_key"]:
+        raise auth_module.SigningKeyInvalid(
+            "The configured authorization signing key does not match its trusted identity.")
     nonce = identifiers.nonce()
     granted = auth_module.issue_authorization(
         pinned, candidate, frozen, result, "a-" + receipt_id[2:], nonce,
@@ -562,10 +592,13 @@ def run(workspace, argv, clock, identifiers, identity=None):
         receipt_key_id="receipt-key", receipt_key_version=1, receipt_private_key=receipt_seed,
         cwd=workspace.path(workspace.config["execution"]["working_directory"]),
         environment=workspace.config["execution"]["environment"],
-        timeout_seconds=workspace.config["execution"]["timeout_seconds"])
+        timeout_seconds=workspace.config["execution"]["timeout_seconds"],
+        **({} if custody is None else {"custody": custody}))
 
     return Decision(receipt_id=receipt_id, receipt_path=_receipt_path(workspace, receipt_id),
-                    executed=record.started, exit_status=record.exit_status, **base)
+                    executed=record.started, exit_status=record.exit_status,
+                    nonce_consumed=record.nonce_consumed, timed_out=record.timed_out,
+                    signalled=record.signal_number is not None, **base)
 
 
 def check(workspace, candidate_path, clock):

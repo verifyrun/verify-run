@@ -1,0 +1,17 @@
+{
+  "evidence_profile": "consumer-interface-probe-v1",
+  "version": 1,
+  "not_historical_conformance": true,
+  "cases": [
+    "captured source runs after original source changes",
+    "source body substitution refuses",
+    "unknown profile refuses",
+    "actual environment mismatch refuses before checker",
+    "actual directory mismatch refuses before checker",
+    "actual interpreter flags mismatch refuses before checker",
+    "correct context executes captured checker",
+    "source path changes after authorization cannot replace captured code",
+    "environment changes after authorization refuse before checker but consume launcher authority",
+    "argv bundle substitution after authorization refuses before consumption"
+  ]
+}

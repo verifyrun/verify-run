@@ -107,7 +107,7 @@ def execute_authorized_command(pinned, candidate, snapshot, result, authorizatio
                                receipt_private_key, cwd,
                                acknowledged_at=None, receipt_created_at=None,
                                completion_clock=None,
-                               environment=None, timeout_seconds=300):
+                               environment=None, timeout_seconds=300, custody=None):
     """Verify, consume, execute, acknowledge, receipt, and store one authorized command.
 
     The order is the guarantee: every refusal above the consume leaves nothing spent and nothing
@@ -160,9 +160,18 @@ def execute_authorized_command(pinned, candidate, snapshot, result, authorizatio
         consumed_nonces=_ConsumedView(store))
 
     # --- the line. Nothing above spends anything; nothing below is free. --------------------
+    binding = candidate['action'].get('params', {}).get('run_custody_sha256')
+    if binding is not None or custody is not None:
+        from vfy.custody import Handoff, need
+        need(type(custody) is Handoff and binding is not None)
+        custody.validate(candidate, child_environment)
+        # Command evidence cannot have been covered by this handoff protocol.
+        need(all(e['source'] != 'exec' for e in pinned.value()['evidence']))
+        custody.claim(verified.authorization_id)
     store.consume_once(verified)
 
-    outcome = _launch(argv, directory, child_environment, timeout_seconds)
+    outcome = (_launch(argv, directory, child_environment, timeout_seconds) if custody is None else
+               _launch(argv, directory, child_environment, timeout_seconds, custody=custody))
     if completion_clock is not None:
         # Below the line: the authorization is spent and the command has already run, so a clock
         # that misbehaves is a recording failure and never a reason to pretend nothing happened.
@@ -292,24 +301,31 @@ def _acknowledge(outcome, acknowledged_at):
     return body
 
 
-def _launch(argv, directory, environment, timeout_seconds):
+def _launch(argv, directory, environment, timeout_seconds, custody=None, measurement=None):
     """Run the authorized argv directly, bounded, with a timeout that can end its descendants."""
+    launch_options = {} if custody is None else {'pass_fds': (custody.fd,), 'close_fds': True}
+    if custody is not None:
+        environment = custody.child_environment(environment)
     try:
-        process = subprocess.Popen(
+        process = (subprocess.Popen if measurement is None else measurement.spawn)(
             argv,                             # the authorized argv, verbatim
             shell=False,                      # no interpreter, no splitting, no expansion
             cwd=str(directory),
             env=environment,                  # nothing ambient is inherited
-            stdin=subprocess.DEVNULL,         # the candidate contract carries no input
+            stdin=(subprocess.DEVNULL if measurement is None else measurement.stdin),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             start_new_session=True,           # its own process group, so a timeout can end it
+            **launch_options,
         )
     except OSError:
+        if custody is not None:
+            custody.terminal(None, not_started=True)
         return {"started": False, "exit_status": None, "timed_out": False,
                 "signal_number": None, "stdout": b"", "stderr": b"", "truncated": False}
 
-    limits = {process.stdout: MAX_STDOUT_BYTES, process.stderr: MAX_STDERR_BYTES}
+    limits = {process.stdout: MAX_STDOUT_BYTES if measurement is None else measurement.output_limit,
+              process.stderr: MAX_STDERR_BYTES if measurement is None else measurement.output_limit}
     captured = {process.stdout: bytearray(), process.stderr: bytearray()}
     # A monotonic counter is an elapsed-time budget, not a clock reading: no time value reaches
     # the acknowledgment, which takes acknowledged_at from the caller alone.
@@ -348,8 +364,10 @@ def _launch(argv, directory, environment, timeout_seconds):
         for stream in (process.stdout, process.stderr):
             stream.close()
 
+    if custody is not None:
+        custody.terminal(process.returncode, pid=process.pid)
     stdout, stderr = bytes(captured[process.stdout]), bytes(captured[process.stderr])
-    truncated = len(stdout) > MAX_STDOUT_BYTES or len(stderr) > MAX_STDERR_BYTES
+    truncated = len(stdout) > limits[process.stdout] or len(stderr) > limits[process.stderr]
     signal_number = None
     exit_status = None
     if timed_out:
@@ -360,7 +378,7 @@ def _launch(argv, directory, environment, timeout_seconds):
         exit_status = code
     return {"started": True, "exit_status": exit_status, "timed_out": timed_out,
             "signal_number": signal_number,
-            "stdout": stdout[:MAX_STDOUT_BYTES], "stderr": stderr[:MAX_STDERR_BYTES],
+            "stdout": stdout[:limits[process.stdout]], "stderr": stderr[:limits[process.stderr]],
             "truncated": truncated}
 
 

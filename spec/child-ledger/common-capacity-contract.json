@@ -1,0 +1,46 @@
+{
+  "schema": "vfy.common-capacity-contract/1",
+  "status": "ADDITIVE_LOCAL_DEVELOPMENT_PROFILE",
+  "owner": "Run; independent protected pool owner issuer and immutable selection supplied by Engineer/allocation owner",
+  "config": {
+    "schema": "vfy.common-capacity/1",
+    "pool_id": "owner-selected nonempty ID",
+    "owner_issuer": "independent selected issuer",
+    "capacities": {
+      "dispatch_slots": "nonnegative safe JSON integer; proposed9",
+      "retained_output_bytes": "nonnegative safe JSON integer; proposed786432"
+    },
+    "scope": "REVIEWED_LOCAL_VERIFIER_ONLY"
+  },
+  "api": {
+    "create": "CapacityOwner.create(root,config_bytes,owner_seed,owner_issuer,owner_trust,child_trust=...,selected_observer=...)",
+    "reopen": "CapacityOwner(root,owner_seed,owner_issuer,owner_trust,expected_config_bytes=...,child_trust=...,selected_observer=...)",
+    "dispatch": "dispatch_common(ledger,owner,request_bytes,input_bytes,selected_observer=...,recorded_at=...,interrupt=False,timeout_seconds=30)",
+    "public_verify": "verify_capacity_snapshot(snapshot_bytes,owner_trust,expected_config_bytes,expected_pool_root=...,expected_child_trusts={request_identity:exact trust},selected_observer=...,minimum_revision=0)"
+  },
+  "ownership": "Common pool root/config/owner issuer public key must be selected independently of task requests. Owner key must differ from every selected child producer key. Single protected logical owner store and flock serialize all participating callers. Owner may be reopened from separate processes. This is distinct signing/control state, NOT a hostile-process isolation service or host/global allocator. No daemon/cloud/database introduced. Each handle selects exact child_trust for the current parent; fresh parent issuers can be selected just-in-time on reopen. Each ticket immutably binds its own scoped child_trust under owner signature; no mutable permissive registry. Public verification requires exact expected per-request selections covering all entries.",
+  "identity": "State binds canonical absolute pool root, raw selected config hash, exact owner module profile and selected observer; each reservation includes independently selected per-parent child trust; reservation binds exact parent raw START hash, task/subject, operation/attempt, child ID, request raw/hash identity, input hash, child partition root and budget hash. Duplicate same raw-parent/child OR same task_key/operation/attempt/child refuses even with whitespace-changed START or another child store.",
+  "atomicity": "Exclusive owner flock loads authenticated selected state, checks shared remaining capacity, and atomically publishes signed pending->state. Pending publication quarantines future writes. Reservation precedes child reservation and all Popen. Later refusal/crash retains common hold conservatively; no cancel/reset/retry endpoint.",
+  "dimensions": {
+    "dispatch_slots": "CUMULATIVE_ADMITTED_ATTEMPTS: reserve1 irrevocably on common reservation, before dispatch intent. Never released even for known completion or setup failure. Not reusable concurrency or process-liveness count.",
+    "retained_output_bytes": "Reserve262144 worstcase before launch; reused runner caps stdout131072 and stderr131072. Applies to logical captured payload bytes returned/retained for this child, NOT emitted bytes, transient limit+1 sentinels, copies, files, observer memory or all storage. Known authenticated measured completion settles to exact captured count; unused reserved portion released. Unknown/interrupted/missing settlement retains262144. No deletion refund.",
+    "cpu_wall": "Observations/accounting only. Not enforced hard quotas. Parent/child interval overlap stays nonadditive; full lifecycle/global/host/provider/financial costs UNKNOWN."
+  },
+  "receipt_mapping": {
+    "common_reservation": "Owner-signed envelope body vfy.common-reservation/1; envelope.sha256 is receipt identity digest; body.reservation_id deterministic from exact binding",
+    "common_settlement": "Owner-signed envelope body vfy.common-settlement/1 links reservation_sha256, acquisition_sha256, child_settlement_sha256; retained_bytes, dispatch_slots_consumed1, state KNOWN_LOCAL_RETAINED_OUTPUT or UNKNOWN_HOLD_RETAINED",
+    "common_snapshot_bytes": "Owner-signed vfy.common-capacity-state/1 with revision, previous envelope digest, immutable selection, complete entries and nested ticket/dispatch/settlement. Byte hash differs from envelope.sha256.",
+    "dispatch_link": "Child signed binding includes common_reservation_sha256. Common owner persists exact child reservation+binding before runner entry.",
+    "measured_result": "Existing dev3 reservation/completion/settlement/acquisition/report_bytes/stdout/stderr preserved, with additional common_* fields."
+  },
+  "known_settlement_gate": "Validate independent child trust signatures; exact common ticket, child reservation, request binding, selected observer, acquisition/completion/settlement links and stdout/stderr hashes+length. Require matching PERFORMED, exit0, no timeout/truncation and exact settled output count. Otherwise authenticated uncertainty keeps full hold. Forged/conflicting correspondence refuses without owner mutation.",
+  "legacy_bypass": "First common reservation permanently creates owner-signed child-ledger common-owner.json. Legacy dispatch_development refuses on that partition without common owner, and another owner/config cannot replace it. Engineer must mark/select common pool before routing new operations and refuse legacy path for selected-but-not-yet-bound partitions. Private primitive/direct OS execution and malicious same-user mutation are outside protected-owner premise.",
+  "consumer": "Public verification checks selected state signatures, capacities, exact config/root/trust/observer and minimum revision. Consumer retains accepted revision+digest to reject rollback/same-revision conflicts, validates prefix conservation if claiming preservation, and validates measured companions for observation truth. Snapshot signatures alone do not prove freshness or prevention of duplicated stores by privileged owner.",
+  "required_intake": [
+    "Exact fresh START/task/basis/child request/stdin/budget refs",
+    "ONE selected common root/config hash and independent owner issuer/public key",
+    "Owner-selected child issuer trust and reviewed observer/source/runtime pins",
+    "Later exact child requests generated from actual preceding output; no fabricated follow-on payloads"
+  ],
+  "holds": "No old child replay, action authority, financial spend, activation, migration, release or sibling edits by Run. Actual controls use fresh Run-owned operations; Engineer owns V26 integration."
+}

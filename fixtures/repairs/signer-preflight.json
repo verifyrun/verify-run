@@ -1,0 +1,8 @@
+{
+  "profile": "signer-preflight-review-v1",
+  "roles": ["receipt", "authorization"],
+  "mutation": "Replace configured seed with a different well-formed public test seed while preserving trust",
+  "expected": "signing_key_invalid",
+  "execution_started": false,
+  "nonce_consumed": false
+}

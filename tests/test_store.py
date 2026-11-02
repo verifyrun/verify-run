@@ -659,6 +659,7 @@ class ConsumptionPublishAtomicity(StoreTestCase):
 
         real_os = store.os
         holder = {}
+        outcomes = []
 
         class Seam:
             def __getattr__(self, name):
@@ -675,10 +676,15 @@ class ConsumptionPublishAtomicity(StoreTestCase):
             store.os = Seam()
             try:
                 self.store.consume_once(built.authorization)
+                outcomes.append("CONSUMED")
+            except VerifyError as failure:
+                outcomes.append(failure.code)
+            except BaseException as failure:
+                outcomes.append(failure)
             finally:
                 store.os = real_os
 
-        return threading.Thread(target=writer, daemon=True)
+        return threading.Thread(target=writer, daemon=True), outcomes
 
     def test_no_caller_ever_observes_a_partially_published_record(self):
         import threading
@@ -686,7 +692,7 @@ class ConsumptionPublishAtomicity(StoreTestCase):
         built = self.build()
         path = self.store._consumption_path("n" * 16)
         reached, release = threading.Event(), threading.Event()
-        writer = self._paused_writer(built, reached, release)
+        writer, outcomes = self._paused_writer(built, reached, release)
         writer.start()
         try:
             self.assertTrue(reached.wait(20), "the seam never engaged")
@@ -711,6 +717,10 @@ class ConsumptionPublishAtomicity(StoreTestCase):
         finally:
             release.set()
             writer.join(20)
+
+        self.assertFalse(writer.is_alive(), "consumption writer did not terminate")
+        self.assertEqual(len(outcomes), 1, "worker did not report its result")
+        self.assertIn(outcomes[0], self.PERMITTED, "unexpected worker failure")
 
         # Whatever happened above, the nonce is spent exactly once from here on.
         with self.assertRaises(VerifyError) as caught:

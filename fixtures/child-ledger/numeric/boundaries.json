@@ -1,0 +1,24 @@
+{
+  "profile": "vfy.parent-start-numeric/1",
+  "wide_fields": [
+    "started_wall_ns",
+    "started_process_ns"
+  ],
+  "accepted": [
+    0,
+    9007199254740991,
+    9007199254740992,
+    9223372036854775807
+  ],
+  "refused": [
+    -1,
+    9223372036854775808,
+    "1.0",
+    "1e9",
+    true,
+    null,
+    "123"
+  ],
+  "global_safe_integer_unchanged": 9007199254740991,
+  "fixture_sha256": "ae69394922f8b00269ddbe231b37f3a949797b41c684dcfa667c2f59ed0d0389"
+}

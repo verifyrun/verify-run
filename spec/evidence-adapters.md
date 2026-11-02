@@ -148,7 +148,7 @@ The working directory defaults to the root and may be set explicitly to a direct
 1. validate the declaration and the runtime bounds;
 2. launch directly with an empty environment;
 3. read bounded stdout and stderr;
-4. enforce the caller's timeout and terminate the child if it expires;
+4. enforce the caller's timeout and terminate its process group if it expires on POSIX;
 5. on exit code zero, strict-load stdout as JSON, canonicalize, return `ok`;
 6. otherwise return `error`.
 
@@ -161,6 +161,14 @@ exactly where secrets tend to appear.
 runs with the invoking user's privileges and can do anything that user can. What is bounded is the
 interface — no shell, no inherited environment, a path under the root, bounded output, and a
 timeout. Nothing here confines what the command itself does.
+
+On POSIX the child starts in its own session. Timeout kills its process group even if the
+leader already exited while descendants kept output pipes open. Cleanup also ends ordinary
+background descendants after a normal return; an evidence command must finish its work before
+returning its observation. A descendant that starts a separate session can escape. Without
+process-group support only the direct child is terminated. This is lifecycle cleanup, not a
+CPU/memory budget or isolation guarantee. Output bounds limit retained bytes, not total bytes
+drained before the timeout.
 
 ## Bounds
 Operational limits, versioned with the adapter, not universal truths. They exist so that ordinary
