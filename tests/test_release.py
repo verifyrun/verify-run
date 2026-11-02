@@ -43,6 +43,8 @@ SKIP_TREES = (".venv", ".git", "dist", "build", "__pycache__", "verify-run", ".v
 # have only the reviewed non-theoretical uses; any edit requires renewed review.
 REVIEWED_PROTOCOL_TOKEN = "phase"
 REVIEWED_PROTOCOL_SOURCES = {
+    'tests/test_service_posteffect_recovery.py': '30247563273a9ce16bd6a98ef068d65c8c72eb63c4b72319d74729cb7a4d84c6',
+    'tests/test_service_workflow_process_recovery.py': '75c5c41ba56166b84a7f176d932bd8b1ed7bb02c26c77821cac07fa9fc7e6a91',
     "vfy/service_lifecycle.py": "e4d3d2132f09e4d6a043fd808cd3b94f362c5da099a5a378e2a6da84d8bd6315",
     "vfy/service_workflow.py": "1e0511935e75b9fc742de1c4a2566975d6ebd1e55c72fd3768c1cdeba9441079",
     "tests/test_service_lifecycle.py": "1c4ddf0100232452f0ffc85a5e94c28b7274c3619c9165943678450e11f1d69d",

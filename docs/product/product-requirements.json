@@ -589,7 +589,7 @@
       "category": "enterprise",
       "title": "Billing, entitlements and commercial readiness",
       "owner": "Platform",
-      "acceptance": "Actual checkout -> webhook -> entitlement -> invoice -> cancellation/refund; retries, disputes, taxes, usage limits/caps, payment failure, plan change and emails. Reconcile provider records with ledger. Clear terms/privacy and customer support.",
+      "acceptance": "Actual checkout -> webhook -> paid access -> invoice -> cancellation/refund; retries, disputes, taxes, usage limits/caps, payment failure, plan change and emails. Reconcile provider records with ledger. Clear terms/privacy and customer support.",
       "dependencies": "W14 W15 W26",
       "sheet_row": 65,
       "definition_status": "EXPLICIT",
@@ -1911,7 +1911,7 @@
       "OPEN",
       "W14 W15 W26",
       "Platform",
-      "Actual checkout -> webhook -> entitlement -> invoice -> cancellation/refund; retries, disputes, taxes, usage limits/caps, payment failure, plan change and emails. Reconcile provider records with ledger. Clear terms/privacy and customer support.",
+      "Actual checkout -> webhook -> paid access -> invoice -> cancellation/refund; retries, disputes, taxes, usage limits/caps, payment failure, plan change and emails. Reconcile provider records with ledger. Clear terms/privacy and customer support.",
       "OPEN: templates or Stripe test mode do not establish live paid journey."
     ],
     [
